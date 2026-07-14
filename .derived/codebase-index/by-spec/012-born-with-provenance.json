@@ -1,0 +1,47 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '012-born-with-provenance' file unit '.stagecraft/born-with.schema.json' does not exist",
+        "path": ".stagecraft/born-with.schema.json"
+      },
+      {
+        "code": "W-001",
+        "message": "spec '012-born-with-provenance' file unit 'scripts/verify-born-with.mjs' does not exist",
+        "path": "scripts/verify-born-with.mjs"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "009-template-contract"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": ".stagecraft/born-with.schema.json"
+        }
+      },
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/verify-born-with.mjs"
+        }
+      }
+    ],
+    "specId": "012-born-with-provenance",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "0c20864ed707f0d5e1938a8937fc97b2bc6665ad8a1c38a2662a81f9af7f7da8"
+}

@@ -1,0 +1,34 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '017-idp-login-e2e' directory unit 'e2e/' is not a directory",
+        "path": "e2e/"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "005-rauthy-same-origin",
+      "006-webapp-spa"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "e2e/"
+        }
+      }
+    ],
+    "specId": "017-idp-login-e2e",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "ed268133c9135a4607d3fe2d60606ddd78dc4826fc90889224c1991b995a2909"
+}

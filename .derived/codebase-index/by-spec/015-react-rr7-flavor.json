@@ -1,0 +1,34 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '015-react-rr7-flavor' directory unit 'webapp-react/' is not a directory",
+        "path": "webapp-react/"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "006-webapp-spa",
+      "014-scaffold-verb"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "webapp-react/"
+        }
+      }
+    ],
+    "specId": "015-react-rr7-flavor",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "c4732276fb876d8521fa45c52aaf2e0a97bc106eeef10538f4f7cff6bd1c0ff8"
+}

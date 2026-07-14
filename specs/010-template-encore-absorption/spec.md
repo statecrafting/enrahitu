@@ -38,6 +38,10 @@ here or graduates into its own spec if it grows past a section.
 
 ## 3. Line items
 
+Each line item's design now lives in its own implementing spec: LI-2 is
+spec 012, LI-3 is spec 013, LI-4 is spec 014. This ledger tracks
+completion; the implementing specs own the how.
+
 ### LI-1: Born-green CI workflows
 
 - **Source**: template-encore `.github/workflows/` (lint, typecheck, test,

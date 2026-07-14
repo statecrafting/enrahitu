@@ -1,0 +1,34 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '014-scaffold-verb' file unit 'scripts/stamp.mjs' does not exist",
+        "path": "scripts/stamp.mjs"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "009-template-contract",
+      "012-born-with-provenance"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/stamp.mjs"
+        }
+      }
+    ],
+    "specId": "014-scaffold-verb",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "0e04419a594199f448883ac5c1774e8dd07e2c83105ca3352c8a493bce320e39"
+}

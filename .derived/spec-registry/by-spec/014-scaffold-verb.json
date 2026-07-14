@@ -1,0 +1,31 @@
+{
+  "record": {
+    "created": "2026-07-14",
+    "dependsOn": [
+      "009-template-contract",
+      "012-born-with-provenance"
+    ],
+    "establishes": [
+      {
+        "kind": "file",
+        "path": "scripts/stamp.mjs"
+      }
+    ],
+    "id": "014-scaffold-verb",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "014: Scaffold verb",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/014-scaffold-verb/spec.md",
+    "status": "approved",
+    "summary": "Moves stamping logic from \"factory-side folklore\" into the template itself: a scaffold verb the factory (or a human) invokes inside a fresh clone of this repo to turn it into a named app. Slot substitution, lockfile discipline, registry regeneration, and certificate placement all live in one script with one contract entry. Absorption line item LI-4 of spec 010; fills the scaffold verb reserved by spec 009 §3.2 and bumps the contract to 0.3.0.\n",
+    "title": "In-template scaffold verb + repoInit seeding (LI-4)"
+  },
+  "shardHash": "7bb29949b904898be3ccd5c229bafe0d8f4cb16c86b0a7bb2935817916e6fb2e",
+  "specVersion": "1.1.0"
+}

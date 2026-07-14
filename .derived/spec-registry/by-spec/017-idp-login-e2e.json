@@ -1,0 +1,31 @@
+{
+  "record": {
+    "created": "2026-07-14",
+    "dependsOn": [
+      "005-rauthy-same-origin",
+      "006-webapp-spa"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "e2e/"
+      }
+    ],
+    "id": "017-idp-login-e2e",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "017: IdP login e2e",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/017-idp-login-e2e/spec.md",
+    "status": "approved",
+    "summary": "The rauthy driver's full browser round-trip (SPA -> same-origin /auth proxy -> rauthy login UI -> OIDC callback -> app session cookie) has been exercised by hand but never by an automated end-to-end test; this was the standing owed item from the enrahi phase close-out. This spec adds a Playwright-driven e2e that boots the app plus the dev rauthy (docker compose, spec 005), completes a real password login in a real browser engine, and asserts the session, profile, and logout behavior. Kept out of the default verify verb; runs as its own npm script and an optional scheduled CI job.\n",
+    "title": "End-to-end rauthy login validation (browser-real)"
+  },
+  "shardHash": "8faa559a53612fcf1037f3d25b9bcc5845e53b6e775c237eb3bf0591f722d65f",
+  "specVersion": "1.1.0"
+}
