@@ -15,8 +15,8 @@ summary: >
   deployment, and repoInit seeding. This spec enumerates the absorption
   line items with their source locations and target shapes. When all four
   land here, template-encore retires as a chassis and the enrahitu repo is
-  the only template the Stagecraft factory stamps. LI-1 started
-  2026-07-14 (this repo's own verify workflow); each item flips to done
+  the only template the Stagecraft factory stamps. LI-1 done
+  2026-07-14 (born-green stamp proven); each item flips to done
   individually.
 ---
 
@@ -52,13 +52,16 @@ completion; the implementing specs own the how.
 - **Note**: the dependent-job guard lesson from template-encore #43
   applies: never let a custom job-level `if` override the implicit
   success() needs-guard.
-- **Status**: started 2026-07-14. This repo's own CI now runs the
-  contract's verify verb (`.github/workflows/verify.yml`, owned here)
-  alongside the pre-existing spec-spine governance gate
-  (`.github/workflows/spec-spine.yml`). Still owed: the workflow
-  templates a *stamped app* is born with (the factory copies them at
-  stamp time); LI-1 flips to done when those exist and a stamped repo is
-  born green with them.
+- **Status**: DONE 2026-07-14. This repo's own CI runs the contract's
+  verify verb (`.github/workflows/verify.yml`, owned here) alongside
+  the spec-spine governance gate (`.github/workflows/spec-spine.yml`).
+  Because stamping is a tracked-tree copy, these same workflows ARE the
+  born-with set: no separate per-repo copy step exists to drift.
+  Born-green proof: stagecraft-ing/enrahitu-stamp-smoke-1, a manual v0
+  stamp (spec 009 §3.2 factory-side mode: app_name slot into
+  package.json + lockfile, registry/index regenerated), whose verify
+  run 29369367571 succeeded on its initial commit with no repo-local
+  changes. The smoke repo is kept public as evidence.
 
 ### LI-2: Born-with certificate + agentic posture
 
