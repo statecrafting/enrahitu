@@ -89,7 +89,15 @@ version skew, no dependence on Encore's release pipeline.
   image); a config without `hosted_services`/`hosted_gateways` hosts
   nothing, hence the augmentation step.
 - **Tests** (vitest) resolve `ENCORE_RUNTIME_LIB` from the vendored build
-  instead of a CLI installation.
+  instead of a CLI installation, and receive `ENCORE_APP_META_PATH` +
+  `ENCORE_INFRA_CONFIG_PATH` (built by `npm run build:app`, augmented
+  like the dev runner) so the runtime's test mode short-circuits its
+  `encore test --prepare` CLI fallback. Amended 2026-07-14: the original
+  wiring set only `ENCORE_RUNTIME_LIB`, which silently leaned on a
+  locally installed encore CLI for runtime-touching tests; the first
+  CLI-less CI runner exposed the gap (dead vitest workers). Without a
+  prior `build:app`, pure tests still run and runtime-touching tests
+  require the CLI daemon.
 
 ## 4. Out of scope
 

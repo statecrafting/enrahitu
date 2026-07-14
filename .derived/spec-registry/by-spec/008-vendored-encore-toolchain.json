@@ -39,6 +39,6 @@
     "summary": "The enrahitu fork point: the Encore runtime is vendored (upstream encoredev/encore @ v1.57.9) and driven directly via napi-rs, removing the encore CLI from every flow. vendor/encore/ carries the rust core (runtimes/core), the napi bindings crate (runtimes/js, built into encore-runtime.node), the TS parser/compiler (tsparser, the tsparser-encore binary), miniredis (a core path dependency), and the published encore.dev JS runtime package (the app's encore.dev dep is a file: link into it). scripts/encore/ drives the toolchain: build, dev run, esbuild bundling, infra-config augmentation, and the linux cross-build.\n",
     "title": "Vendored Encore toolchain: rust core + js runtime via napi-rs, no CLI"
   },
-  "shardHash": "2356fbd38a1f2c40600e413ddf459bc543a7543bb40a3ae24e848280cac6712e",
+  "shardHash": "0e840acf03df3af3ce765d2371c5bae114c3306e4c7c35bbea143806892d427f",
   "specVersion": "1.1.0"
 }

@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import { transformWithEsbuild, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
+import { augmentInfraConfig } from "./scripts/encore/augment-infra.mjs";
+
 /**
  * Vitest 4 transforms TS via oxc (rolldown-vite), which cannot lower stage-3
  * decorators yet; esbuild (>= 0.21) can. Pre-transform only the files that
@@ -40,6 +42,26 @@ function encoreRuntimeLib(): string | undefined {
 
 const runtimeLib = encoreRuntimeLib();
 
+/**
+ * Test-mode equivalent of `encore test --prepare`, without the encore CLI
+ * (spec 008). The runtime's enable_test_mode() short-circuits when
+ * ENCORE_APP_META_PATH is set; otherwise it shells out to `encore`, which
+ * the kit does not require (and CI does not have). When the app has been
+ * built (npm run build:app), point every test worker at the compiled app
+ * meta and the augmented infra config, exactly as scripts/encore/dev.mjs
+ * does for `encore run`. Without a prior build this returns {} so pure
+ * tests still run; runtime-touching tests then need the CLI daemon.
+ */
+function encoreTestEnv(): Record<string, string> {
+  const repoRoot = dirname(fileURLToPath(import.meta.url));
+  const metaPath = resolve(repoRoot, ".encore/build/meta");
+  const compileResult = resolve(repoRoot, ".encore/build/compile-result.json");
+  if (!existsSync(metaPath) || !existsSync(compileResult)) return {};
+  const infraPath = resolve(repoRoot, ".encore/build/infra.config.test.json");
+  augmentInfraConfig(resolve(repoRoot, "infra.config.dev.json"), compileResult, infraPath);
+  return { ENCORE_APP_META_PATH: metaPath, ENCORE_INFRA_CONFIG_PATH: infraPath };
+}
+
 export default defineConfig({
   plugins: [stage3Decorators()],
   test: {
@@ -47,6 +69,9 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.test.ts"],
     exclude: ["node_modules/**", "addon/**", "webapp/**", "encore.gen/**"],
-    env: runtimeLib ? { ENCORE_RUNTIME_LIB: runtimeLib } : {},
+    env: {
+      ...(runtimeLib ? { ENCORE_RUNTIME_LIB: runtimeLib } : {}),
+      ...encoreTestEnv(),
+    },
   },
 });
