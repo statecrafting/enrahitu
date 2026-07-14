@@ -86,10 +86,15 @@ Skills live in `.claude/skills/`:
 
 This repo's backlog is its spec corpus: every spec with
 `implementation: pending` is a work order. One session implements one
-spec, start to finish. Current backlog: 011 (Postgres driver), 012
-(born-with provenance), 013 (Pages slot), 014 (scaffold verb), 015
-(react-rr7 flavor), 016 (amd64 image), 017 (IdP e2e); 011/012/013 are
-mutually independent, 014 needs 012, 015 needs 014.
+spec, start to finish. Build order (decided 2026-07-14: stagecraft's
+app-shell import waits on the slimmed template, so 018/019 jump the
+queue): 018 (packaged chassis) then 019 (frontend/backend layout)
+FIRST; then 011 (Postgres driver), 012 (born-with provenance), 014
+(scaffold verb; needs 012), then 013 (Pages), 016 (amd64; its
+cross-build matrix is largely delivered by 018's publish pipeline),
+017 (IdP e2e) in any order, and 015 (react-rr7 flavor; needs 014)
+last. Specs 011-017 that name pre-019 paths are amended to the new
+layout as part of whichever spec moves them (019 §3).
 
 1. Pick the next spec: the lowest-numbered spec whose frontmatter says
    `implementation: pending` and whose `depends_on` specs are all

@@ -1,0 +1,34 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '018-packaged-chassis' directory unit 'packages/' is not a directory",
+        "path": "packages/"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "008-vendored-encore-toolchain",
+      "009-template-contract"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "packages/"
+        }
+      }
+    ],
+    "specId": "018-packaged-chassis",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "2af9db85d2bffa8bd19d00319a4fb58e4a5e681be27a988ffc1d868420f4d587"
+}
