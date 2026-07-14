@@ -82,6 +82,43 @@ Skills live in `.claude/skills/`:
 - `/research`: deep research with parallel sub-agents.
 - `/refactor-claude-md`: tighten and restructure a `CLAUDE.md`.
 
+## Working the backlog
+
+This repo's backlog is its spec corpus: every spec with
+`implementation: pending` is a work order. One session implements one
+spec, start to finish. Current backlog: 011 (Postgres driver), 012
+(born-with provenance), 013 (Pages slot), 014 (scaffold verb), 015
+(react-rr7 flavor), 016 (amd64 image), 017 (IdP e2e); 011/012/013 are
+mutually independent, 014 needs 012, 015 needs 014.
+
+1. Pick the next spec: the lowest-numbered spec whose frontmatter says
+   `implementation: pending` and whose `depends_on` specs are all
+   implemented (`spec-spine registry show <id>` to inspect). If a
+   spec's dependency or prerequisite section names something missing,
+   stop and report exactly what is needed instead of mocking around it.
+   Note: spec 011 is `status: draft` with pending implementation; treat
+   it as claimable, and promote it to approved as part of implementing.
+2. Flip the spec to `implementation: in-progress` when you start.
+3. Re-read the spec fully before coding. If the design is imprecise or
+   wrong, amend the spec FIRST (design truth precedes code), then
+   implement. Never edit a spec afterwards to ratify what the code
+   happened to do. Contract changes (template.toml) always bump
+   `[contract].version` per spec 009 §3.1 and edit spec 009 together
+   with the owning spec.
+4. Implement within the spec's territory. Before every commit:
+   `spec-spine compile && spec-spine index &&
+   spec-spine lint --fail-on-warn && spec-spine index check`, plus
+   `npm run typecheck && npm test` (the contract verify verb) and any
+   build steps the change touches (CLAUDE.md).
+5. Satisfy the spec's Acceptance section verbatim. If an item cannot
+   be satisfied (external state, missing sibling repo work), keep
+   `implementation: in-progress`, add a dated Status note to the spec
+   saying exactly what remains, and report it. Flip to
+   `implementation: complete` only when acceptance holds.
+6. Commit with a conventional message referencing the spec id
+   (`feat(012): ...`), include the regenerated `.derived/` shards, and
+   push to main. Then stop: the next session takes the next spec.
+
 ## Conventions
 
 - Items added to the "New Sessions" init protocol are auto-loaded on the next init.
