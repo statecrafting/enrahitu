@@ -4,7 +4,14 @@
     "dependsOn": [
       "009-template-contract"
     ],
+    "establishes": [
+      {
+        "kind": "file",
+        "path": ".github/workflows/verify.yml"
+      }
+    ],
     "id": "010-template-encore-absorption",
+    "implementation": "in-progress",
     "sectionHeadings": [
       "010: template-encore absorption",
       "1. Purpose",
@@ -17,10 +24,10 @@
       "4. Out of scope"
     ],
     "specPath": "specs/010-template-encore-absorption/spec.md",
-    "status": "draft",
-    "summary": "template-encore (the previous chassis, stamped by factory-encore) still owns four capabilities this template does not have: born-green CI workflows, the born-with certificate + agentic posture flow, Pages deployment, and repoInit seeding. This spec enumerates the absorption line items with their source locations and target shapes. When all four land here, template-encore retires as a chassis and the enrahitu repo is the only template the Stagecraft factory stamps. Draft until the first line item starts; each item flips to done individually.\n",
+    "status": "approved",
+    "summary": "template-encore (the previous chassis, stamped by factory-encore) still owns four capabilities this template does not have: born-green CI workflows, the born-with certificate + agentic posture flow, Pages deployment, and repoInit seeding. This spec enumerates the absorption line items with their source locations and target shapes. When all four land here, template-encore retires as a chassis and the enrahitu repo is the only template the Stagecraft factory stamps. LI-1 started 2026-07-14 (this repo's own verify workflow); each item flips to done individually.\n",
     "title": "Absorb template-encore's remaining value, then retire it"
   },
-  "shardHash": "f51adaaa9ed13f272982c6d4257155119e04e83fd5cc18e3acfe7ca573fd1d80",
+  "shardHash": "e4863ba8df6201b9d9d9a4572c89dc07ff534adab241c8359b5e1035409d888e",
   "specVersion": "1.1.0"
 }

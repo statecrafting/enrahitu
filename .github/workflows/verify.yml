@@ -1,0 +1,52 @@
+# Verify (spec 010 LI-1): run the template contract's verify verb
+# (spec 009 §3.2, template.toml [verbs].verify) in CI, after the same
+# builds a stamped app's toolchain performs. CI and factory verification
+# exercise one gate, not two.
+name: verify
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            addon/package-lock.json
+            webapp/package-lock.json
+      - name: Install protoc
+        run: sudo apt-get update -q && sudo apt-get install -y -q protobuf-compiler
+      - name: Cache cargo (vendored runtime + addon)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            vendor/encore/target
+            addon/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('vendor/encore/Cargo.lock', 'addon/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
+      - run: npm ci
+      - run: npm --prefix addon ci
+      - run: npm --prefix webapp ci
+      - name: Build hiqlite-native addon
+        run: npm run build:addon
+      - name: Build vendored Encore runtime
+        run: npm run build:runtime
+      - name: Build app (generates encore.gen)
+        run: npm run build:app
+      - name: Verify (contract verb)
+        run: npm run typecheck && npm test

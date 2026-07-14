@@ -1,10 +1,13 @@
 ---
 id: "010-template-encore-absorption"
 title: "Absorb template-encore's remaining value, then retire it"
-status: draft
+status: approved
 created: "2026-07-14"
+implementation: in-progress
 depends_on:
   - "009-template-contract"
+establishes:
+  - ".github/workflows/verify.yml"
 summary: >
   template-encore (the previous chassis, stamped by factory-encore) still
   owns four capabilities this template does not have: born-green CI
@@ -12,8 +15,9 @@ summary: >
   deployment, and repoInit seeding. This spec enumerates the absorption
   line items with their source locations and target shapes. When all four
   land here, template-encore retires as a chassis and the enrahitu repo is
-  the only template the Stagecraft factory stamps. Draft until the first
-  line item starts; each item flips to done individually.
+  the only template the Stagecraft factory stamps. LI-1 started
+  2026-07-14 (this repo's own verify workflow); each item flips to done
+  individually.
 ---
 
 # 010: template-encore absorption
@@ -44,6 +48,13 @@ here or graduates into its own spec if it grows past a section.
 - **Note**: the dependent-job guard lesson from template-encore #43
   applies: never let a custom job-level `if` override the implicit
   success() needs-guard.
+- **Status**: started 2026-07-14. This repo's own CI now runs the
+  contract's verify verb (`.github/workflows/verify.yml`, owned here)
+  alongside the pre-existing spec-spine governance gate
+  (`.github/workflows/spec-spine.yml`). Still owed: the workflow
+  templates a *stamped app* is born with (the factory copies them at
+  stamp time); LI-1 flips to done when those exist and a stamped repo is
+  born green with them.
 
 ### LI-2: Born-with certificate + agentic posture
 
