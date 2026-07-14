@@ -1,0 +1,9 @@
+# Minimal rauthy 0.36 config file. rauthy panics if this file is absent; most
+# dev configuration is injected as environment variable overrides from
+# docker/compose.dev.yml (DEV_MODE, PUB_URL, PROXY_MODE, BOOTSTRAP_*, ...),
+# which take precedence over anything here.
+
+# Single-node embedded hiqlite (rauthy's own database).
+[cluster]
+node_id = 1
+nodes = ["1 localhost:8100 localhost:8200"]

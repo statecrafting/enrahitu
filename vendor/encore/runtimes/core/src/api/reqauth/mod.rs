@@ -1,0 +1,359 @@
+use crate::api::jsonschema::DecodeConfig;
+use crate::api::reqauth::caller::Caller;
+use crate::api::reqauth::meta::MetaMap;
+use crate::api::APIResult;
+use crate::encore::runtime::v1 as pb;
+use crate::{api, model, secrets};
+use anyhow::Context;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::SystemTime;
+
+use super::{jsonschema, PValues};
+
+pub mod caller;
+mod encoreauth;
+pub mod meta;
+pub mod platform;
+pub mod svcauth;
+
+/// Computes the service auth method to use for communicating with a given service.
+pub fn service_auth_method(
+    secrets: &secrets::Manager,
+    env: &pb::Environment,
+    auth_method: pb::ServiceAuth,
+) -> anyhow::Result<Arc<dyn svcauth::ServiceAuthMethod>> {
+    let obj: Arc<dyn svcauth::ServiceAuthMethod> = match auth_method.auth_method {
+        None | Some(pb::service_auth::AuthMethod::Noop(_)) => Arc::new(svcauth::Noop),
+        Some(pb::service_auth::AuthMethod::EncoreAuth(ea)) => {
+            let auth_keys = ea
+                .auth_keys
+                .into_iter()
+                .filter_map(|k| {
+                    let data = k.data?;
+                    Some(svcauth::EncoreAuthKey {
+                        key_id: k.id,
+                        data: secrets.load(data),
+                    })
+                })
+                .collect::<Vec<_>>();
+
+            if auth_keys.is_empty() {
+                anyhow::bail!("no auth keys provided for encore-auth method");
+            }
+
+            Arc::new(svcauth::EncoreAuth::new(
+                env.app_slug.clone(),
+                env.env_name.clone(),
+                auth_keys,
+            ))
+        }
+    };
+    Ok(obj)
+}
+
+#[derive(Debug, Clone)]
+pub struct CallMeta {
+    /// The trace id to use. Equal to caller_trace_id if set, and generated otherwise.
+    pub trace_id: model::TraceId,
+
+    /// The trace id of the caller; None if not traced.
+    pub caller_trace_id: Option<model::TraceId>,
+
+    /// The span id of the caller (None if there's no parent).
+    pub parent_span_id: Option<model::SpanId>,
+
+    /// The span id of THIS request, if predefined by the caller (None in most cases).
+    pub this_span_id: Option<model::SpanId>,
+
+    /// The event id which started the API call (None if there's no parent).
+    pub parent_event_id: Option<model::TraceEventId>,
+
+    /// Correlation id to use.
+    pub ext_correlation_id: Option<String>,
+
+    /// Whether the caller sampled trace info
+    /// None if there's no parent span or if the sampled flag couldn't be parsed.
+    pub trace_sampled: Option<bool>,
+
+    /// Information about an internal call, if any.
+    /// If set it can be trusted as it has been authenticated.
+    pub internal: Option<InternalCallMeta>,
+}
+
+#[derive(Debug, Clone)]
+pub struct InternalCallMeta {
+    /// The source of the call.
+    pub caller: Caller,
+
+    /// The authenticated user id, if any.
+    pub auth_uid: Option<String>,
+
+    /// The user data, if any.
+    pub auth_data: Option<PValues>,
+}
+
+impl CallMeta {
+    pub fn parse_with_caller(
+        auth: &[Arc<dyn svcauth::ServiceAuthMethod>],
+        headers: &axum::http::HeaderMap,
+        auth_data_schemas: &HashMap<String, Option<jsonschema::JSONSchema>>,
+    ) -> APIResult<Self> {
+        Self::parse(headers, auth, true, Some(auth_data_schemas))
+    }
+
+    pub fn parse_without_caller(headers: &axum::http::HeaderMap) -> APIResult<Self> {
+        Self::parse(headers, &[], false, None)
+    }
+
+    fn parse(
+        headers: &axum::http::HeaderMap,
+        auth: &[Arc<dyn svcauth::ServiceAuthMethod>],
+        parse_caller: bool,
+        auth_data_schemas: Option<&HashMap<String, Option<jsonschema::JSONSchema>>>,
+    ) -> APIResult<Self> {
+        let do_parse = move || -> anyhow::Result<CallMeta> {
+            use meta::MetaKey;
+
+            if let Some(version) = headers.get_meta(MetaKey::Version) {
+                if version != "1" {
+                    anyhow::bail!("unknown encore meta version");
+                }
+            }
+
+            let mut meta = CallMeta {
+                trace_id: model::TraceId::generate(),
+                caller_trace_id: None,
+                parent_span_id: None,
+                this_span_id: None,
+                parent_event_id: None,
+                ext_correlation_id: None,
+                trace_sampled: None,
+                internal: None,
+            };
+
+            // If it was an internal call, parse it.
+            if parse_caller {
+                if let Some(caller) = headers.get_meta(MetaKey::Caller) {
+                    // Find the auth method.
+                    let auth_method = headers.get_meta(MetaKey::SvcAuthMethod);
+                    let Some(auth) = auth.iter().find(|a| auth_method == Some(a.name())) else {
+                        anyhow::bail!("unknown service auth method");
+                    };
+
+                    // Verify the caller's signature.
+                    auth.verify(headers, SystemTime::now())
+                        .context("invalid service authentication data")?;
+
+                    let caller = caller.parse().context("invalid meta caller")?;
+
+                    // TODO: Currently we assume a single auth data schema.
+                    // When we support multiple gateways with distinct schemas we'll need to change this.
+                    let auth_data_schema = auth_data_schemas
+                        .and_then(|s| s.values().filter_map(|s| s.as_ref()).next());
+
+                    // Parse the auth data, if provided.
+                    let auth_data = match (headers.get_meta(MetaKey::UserData), &auth_data_schema) {
+                        (None, _) => None,
+                        (Some(data), None) => {
+                            // Hack: temporarily work around the absence of a schema in certain situations.
+                            let any_schema = {
+                                use crate::encore::parser::meta::v1 as meta;
+                                let md = meta::Data::default();
+                                let mut builder = jsonschema::Builder::new(&md);
+                                let idx = builder.register_value(jsonschema::Value::Basic(
+                                    jsonschema::Basic::Any,
+                                ));
+                                let registry = builder.build();
+                                registry.schema(idx)
+                            };
+                            let mut jsonde = serde_json::Deserializer::from_str(data);
+                            let data = any_schema
+                                .deserialize(&mut jsonde, DecodeConfig::default())
+                                .context("invalid auth data")?;
+                            Some(data)
+                        }
+                        (Some(data), Some(schema)) => {
+                            let mut jsonde = serde_json::Deserializer::from_str(data);
+                            let data = schema
+                                .deserialize(&mut jsonde, DecodeConfig::default())
+                                .context("invalid auth data")?;
+                            Some(data)
+                        }
+                    };
+
+                    meta.internal = Some(InternalCallMeta {
+                        caller,
+                        auth_uid: headers.get_meta(MetaKey::UserId).map(|s| s.to_string()),
+                        auth_data,
+                    });
+                };
+            }
+
+            // For now we only read the traceparent for internal-to-internal calls, this is because CloudRun
+            // is adding a traceparent header to all requests, which is causing our trace system to get confused
+            // and think that the initial request is a child of another already traced request
+            //
+            // In the future we should be able to remove this check and read the traceparent header for all requests
+            // to interopt with other tracing systems.
+            if meta.internal.is_some() {
+                if let Some(traceparent) = headers.get_meta(MetaKey::TraceParent) {
+                    // Parse the traceparent.
+                    if let Ok((trace_id, parent_span_id, sampled)) = parse_traceparent(traceparent)
+                    {
+                        meta.trace_id = trace_id;
+                        meta.caller_trace_id = Some(trace_id);
+                        meta.parent_span_id = parent_span_id;
+                        meta.trace_sampled = Some(sampled);
+                    }
+
+                    // Parse the trace state.
+                    let tracestate = parse_tracestate(headers.meta_values(MetaKey::TraceState));
+
+                    if let Some(event_id) = tracestate.event_id {
+                        meta.parent_event_id = Some(event_id);
+                    }
+                    // If we were given a parent span ID, use that instead of the one from the traceparent header.
+                    // This is because GCP Cloud Run will add its own spans in before the application code is run
+                    // and thus we lose the parent span ID from the traceparent header.
+                    if let Some(parent_span) = tracestate.span_id {
+                        meta.parent_span_id = Some(parent_span);
+                    }
+                    // Use the sampling decision from tracestate (set by Encore) rather than
+                    // the traceparent header since it might be tampered by GCP infra.
+                    if let Some(sampled) = tracestate.sampled {
+                        meta.trace_sampled = Some(sampled);
+                    }
+
+                    // If the caller is a gateway, ignore the parent span id
+                    // as gateways don't record a span.
+                    if let Some(internal) = &meta.internal {
+                        if matches!(internal.caller, Caller::Gateway { .. }) {
+                            meta.parent_span_id = None;
+                        }
+                    }
+
+                    // If this is an internal call but the tracestate didn't contain
+                    // encore/span-id, any parent_span_id from the traceparent was
+                    // injected by infrastructure (e.g. GCP Cloud Run), not by Encore.
+                    if meta.internal.is_some() && tracestate.span_id.is_none() {
+                        meta.parent_span_id = None;
+                    }
+                }
+            }
+
+            meta.ext_correlation_id = headers.get_meta(MetaKey::XCorrelationId).map(|s| {
+                // Limit the maximum length the correlation id can have.
+                s[..s.len().min(64)].to_string()
+            });
+
+            Ok(meta)
+        };
+
+        do_parse().map_err(|e| api::Error::invalid_argument("unable to parse request", e))
+    }
+}
+
+/// Parse a W3C traceparent header. Returns the trace ID, parent span ID (None if zero),
+/// and the sampled flag.
+fn parse_traceparent(s: &str) -> anyhow::Result<(model::TraceId, Option<model::SpanId>, bool)> {
+    let version = "00";
+    let trace_id_len = 32;
+    let span_id_len = 16;
+    let trace_flags_len = 2;
+
+    let ver_start = 0;
+    let ver_end = ver_start + version.len();
+    let ver_sep = ver_end;
+
+    let trace_id_start = ver_sep + 1;
+    let trace_id_end = trace_id_start + trace_id_len;
+    let trace_id_sep = trace_id_end;
+
+    let span_id_start = trace_id_sep + 1;
+    let span_id_end = span_id_start + span_id_len;
+    let span_id_sep = span_id_end;
+
+    let trace_flags_start = span_id_sep + 1;
+    let trace_flags_end = trace_flags_start + trace_flags_len;
+    let total_len = trace_flags_end;
+
+    if s.len() != total_len {
+        anyhow::bail!("invalid traceparent length");
+    } else if &s[ver_start..ver_end] != version {
+        anyhow::bail!("invalid traceparent version");
+    } else if &s[ver_sep..ver_sep + 1] != "-" {
+        anyhow::bail!("invalid traceparent version separator");
+    } else if &s[trace_id_sep..trace_id_sep + 1] != "-" {
+        anyhow::bail!("invalid traceparent trace id separator");
+    } else if &s[span_id_sep..span_id_sep + 1] != "-" {
+        anyhow::bail!("invalid traceparent span id separator");
+    }
+
+    let trace_id = &s[trace_id_start..trace_id_end];
+    let trace_id = model::TraceId::parse_std(trace_id).context("invalid trace id")?;
+
+    let span_id = &s[span_id_start..span_id_end];
+    let span_id = model::SpanId::parse_std(span_id).context("invalid span id")?;
+
+    // Parse trace flags - bit 0 (0x01) indicates "sampled"
+    let trace_flags = &s[trace_flags_start..trace_flags_end];
+    let trace_flags = u8::from_str_radix(trace_flags, 16).context("invalid trace flags")?;
+    let sampled = trace_flags & 0x01 != 0;
+
+    let span_id = if span_id.is_zero() {
+        None
+    } else {
+        Some(span_id)
+    };
+    Ok((trace_id, span_id, sampled))
+}
+
+struct TracestateData {
+    event_id: Option<model::TraceEventId>,
+    span_id: Option<model::SpanId>,
+    /// The sampling decision from the Encore caller, if present.
+    /// This is trusted over the traceparent sampled flag because
+    /// GCP Cloud Run can modify the traceparent header between services.
+    sampled: Option<bool>,
+}
+
+fn parse_tracestate<'a>(vals: impl Iterator<Item = &'a str>) -> TracestateData {
+    enum Data {
+        EventId(model::TraceEventId),
+        SpanId(model::SpanId),
+        Sampled(bool),
+    }
+
+    let parse_entry = |val: &str| -> Option<Data> {
+        let (key, val) = val.split_once('=')?;
+
+        match key {
+            "encore/event-id" => Some(Data::EventId(val.parse().ok()?)),
+            "encore/span-id" => Some(Data::SpanId(model::SpanId::parse_std(val).ok()?)),
+            "encore/sampled" => Some(Data::Sampled(val == "1")),
+            _ => None,
+        }
+    };
+
+    let mut event_id = None;
+    let mut span_id = None;
+    let mut sampled = None;
+
+    for val in vals {
+        for field in val.split(',') {
+            match parse_entry(field) {
+                Some(Data::EventId(id)) => event_id = Some(id),
+                Some(Data::SpanId(id)) => span_id = Some(id),
+                Some(Data::Sampled(s)) => sampled = Some(s),
+                None => (),
+            }
+        }
+    }
+
+    TracestateData {
+        event_id,
+        span_id,
+        sampled,
+    }
+}

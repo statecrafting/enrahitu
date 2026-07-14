@@ -1,0 +1,54 @@
+{
+  "record": {
+    "created": "2026-07-14",
+    "dependsOn": [
+      "002-in-process-hiqlite",
+      "005-rauthy-same-origin",
+      "006-webapp-spa"
+    ],
+    "establishes": [
+      {
+        "kind": "file",
+        "path": "docker/Dockerfile"
+      },
+      {
+        "kind": "file",
+        "path": "docker/entrypoint.sh"
+      },
+      {
+        "kind": "file",
+        "path": "docker/first-boot.mjs"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/docker-build.sh"
+      },
+      {
+        "kind": "file",
+        "path": "infra.config.json"
+      },
+      {
+        "kind": "file",
+        "path": ".dockerignore"
+      }
+    ],
+    "id": "007-single-container-packaging",
+    "implementation": "complete",
+    "origin": {
+      "retroactive": true
+    },
+    "sectionHeadings": [
+      "007: Single-container packaging",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "4. Out of scope"
+    ],
+    "specPath": "specs/007-single-container-packaging/spec.md",
+    "status": "approved",
+    "summary": "The deliverable image: one container running rauthy (loopback :8081) and the Encore app (:8080) under a die-together entrypoint, all durable state on a single /data volume, every secret self-provisioned at first boot. scripts/docker-build.sh builds from a clean git worktree of HEAD, injects the cross-built addon, the built SPA, and production node_modules, runs `encore build docker`, asserts the base-image entrypoint, and layers rauthy + the entrypoint on top.\n",
+    "title": "Single-container packaging: app + rauthy in one image"
+  },
+  "shardHash": "d1f070ec1d183f230e382ab257fdd52fec4adbf4d894117f60465f006debe344",
+  "specVersion": "1.1.0"
+}

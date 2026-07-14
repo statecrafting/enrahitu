@@ -1,0 +1,36 @@
+{
+  "record": {
+    "created": "2026-07-14",
+    "dependsOn": [
+      "005-rauthy-same-origin"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "webapp/"
+      },
+      {
+        "kind": "directory",
+        "path": "web/"
+      }
+    ],
+    "id": "006-webapp-spa",
+    "implementation": "complete",
+    "origin": {
+      "retroactive": true
+    },
+    "sectionHeadings": [
+      "006: Webapp SPA",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "4. Out of scope"
+    ],
+    "specPath": "specs/006-webapp-spa/spec.md",
+    "status": "approved",
+    "summary": "The minimal frontend: a Vue 3 + Vite SPA (login, OIDC callback handoff, /me, logout) built from webapp/ into web/dist, and the `web` Encore service that serves the built bundle as static files from the app's own origin. No separate frontend host: the same container serves UI, API, and IdP.\n",
+    "title": "Minimal Vue SPA served by the app itself"
+  },
+  "shardHash": "ba019bcec306188a64832c31ac2d2e55f5ebd3edb3d5352cf4a9402e81763d7c",
+  "specVersion": "1.1.0"
+}

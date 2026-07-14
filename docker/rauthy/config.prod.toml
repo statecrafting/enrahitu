@@ -1,0 +1,10 @@
+# rauthy config for the enrahitu single-container image (docker/Dockerfile).
+# Everything dynamic (PUB_URL, bootstrap, secrets) is injected as env
+# overrides by docker/entrypoint.sh, scoped to the rauthy process only.
+
+# Single-node embedded hiqlite (rauthy's own database), persisted on the
+# enrahitu data volume.
+[cluster]
+node_id = 1
+nodes = ["1 localhost:8100 localhost:8200"]
+data_dir = "/data/rauthy/db"

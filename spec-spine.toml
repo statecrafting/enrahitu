@@ -1,0 +1,46 @@
+# spec-spine.toml governs this repository. All keys are optional; an
+# absent file behaves as the defaults for a single-Cargo-workspace repo.
+# See the spec-spine docs for the full knob table.
+
+[manifest]
+# Drives the Cargo `[package.metadata.spec-spine].spec` and package.json `"spec-spine".spec` reads.
+metadata_namespace = "spec-spine"
+
+[domains]
+allowed = []   # empty: the `domain` field is free-text / disabled
+
+[kind]
+allowed = []   # empty: the `kind` field is free-text / disabled
+
+[layout]
+specs_dir     = "specs"
+derived_dir   = ".derived"
+standards_dir = "standards/spec"
+# Single npm package at the root (no workspaces; key decision 1 in spec 001).
+# The napi addon and the Vue SPA carry their own manifests outside any
+# workspace, so they are declared standalone. The addon is also a standalone
+# Rust crate (no root Cargo workspace exists).
+standalone_rust_workspaces = ["addon"]
+standalone_npm_packages    = ["addon", "webapp"]
+
+[index]
+# Governance surfaces beyond the always-hashed core: standards, CI workflows,
+# and the Claude Code kit (agents/rules/skills + the hook-bearing settings).
+# settings.local.json is intentionally NOT hashed (per-machine, gitignored).
+extra_hashed_inputs = [
+  "standards/**",
+  ".github/workflows/**",
+  ".claude/agents/**",
+  ".claude/rules/**",
+  ".claude/skills/**",
+  ".claude/settings.json",
+  ".mcp.json",
+]
+
+[coupling]
+# The PR-body waiver keyword (the reason follows the colon).
+waiver_keyword = "Spec-Drift-Waiver:"
+# Adopter bypass entries are ADDITIVE to the built-in generic floor.
+# Nested prose docs (e.g. docker/rauthy/README.md) live inside claimed
+# directories; a README tweak is not code drift.
+bypass_prefixes = ["**/README.md"]

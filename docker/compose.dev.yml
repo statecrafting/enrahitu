@@ -1,0 +1,55 @@
+# Development-time rauthy for enrahitu.
+#
+# The app (encore run on :4000) proxies /auth/* to this container via the idp
+# service, so the browser only ever sees http://localhost:4000. PUB_URL is
+# therefore the APP origin, not this container's. DEV_MODE permits plain-http
+# URLs; the production container (docker/, Phase 5) runs the same layout with
+# real secrets behind TLS.
+#
+#   docker compose -f docker/compose.dev.yml up -d
+#   npm run dev:idp-secret   # sync the dev client secret into keys/
+#
+# First boot bootstraps: the admin account (BOOTSTRAP_ADMIN_*) and the enrahitu
+# OIDC client (bootstrap/clients.json, declarative, first-boot-only: rauthy
+# skips bootstrap once its database is initialized).
+
+services:
+  rauthy:
+    image: ghcr.io/sebadob/rauthy:0.36.0
+    environment:
+      DEV_MODE: "true"
+      LOG_LEVEL: info
+      LISTEN_ADDRESS: "0.0.0.0"
+      LISTEN_PORT_HTTP: "8080"
+      LISTEN_SCHEME: http
+      PUB_URL: "localhost:4000"
+      # PROXY_MODE stays false in dev: rauthy derives the issuer scheme as
+      # `https unless (plain http listener AND no proxy_mode)`, and the whole
+      # dev loop is plain http on localhost:4000. The production container
+      # (Phase 5) sits behind real TLS and runs PROXY_MODE=true.
+      # DEV_MODE runs rauthy's dev migration, which seeds the admin account
+      # itself: admin@localhost / 123SuperSafe. (BOOTSTRAP_ADMIN_* env applies
+      # only on the prod-init path, so it is deliberately absent here; the
+      # Phase 5 production container uses it.) clients.json below IS applied
+      # in both modes.
+      BOOTSTRAP_DIR: /bootstrap
+      # DEV-ONLY key material (public by design; the production container
+      # generates fresh values at first boot, Phase 5). The bVCyTsGaggVy5yqQ
+      # entry is rauthy's own public dev key: DEV_MODE seeds pre-computed dev
+      # JWKS encrypted with it, so it must be in the keyring to decrypt them.
+      ENC_KEYS: "enrahitudev1/BhAUQkm0S49q/nABlZqHcoTFNjMuMKOoniB7hRiPSyw=\nbVCyTsGaggVy5yqQ/UzluN29DZW41M3hTSkx6Y3NtZmRuQkR2TnJxUTYzcjQ="
+      ENC_KEY_ACTIVE: "enrahitudev1"
+      HQL_SECRET_RAFT: "enrahitu-dev-raft-secret"
+      HQL_SECRET_API: "enrahitu-dev-api-secret0"
+      # WebAuthn relying party: must match the browser-facing origin.
+      RP_ID: "localhost"
+      RP_ORIGIN: "http://localhost:4000"
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - rauthy-data:/app/data
+      - ./rauthy/config.toml:/app/config.toml:ro
+      - ./rauthy/bootstrap:/bootstrap:ro
+
+volumes:
+  rauthy-data:

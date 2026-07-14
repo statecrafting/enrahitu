@@ -1,0 +1,53 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "005-rauthy-same-origin"
+    ],
+    "implementingPaths": [
+      {
+        "path": "web/",
+        "source": "spec-edge"
+      },
+      {
+        "path": "webapp",
+        "source": "manifest-metadata"
+      },
+      {
+        "path": "webapp/",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "web/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "web/"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "webapp/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "webapp/"
+        }
+      }
+    ],
+    "specId": "006-webapp-spa",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "31967514fbf414ca6c29cdb4502e8e931ac39e8fb66f4a20cdf4562a5bd6aadb"
+}

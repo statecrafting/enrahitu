@@ -1,0 +1,34 @@
+# Keep the image build contexts lean. Both docker builds honour this file:
+# the base image (docker/Dockerfile.base, context = the clean worktree) and
+# the rauthy layer (docker/Dockerfile, context = the repo root).
+# NOTE: the app's node_modules/ must stay IN the bundle (the runtime requires
+# it, and the @enrahitu/hiqlite-native file: symlink resolves against ./addon;
+# the encore.dev file: symlink resolves against ./vendor/encore/runtimes/js/
+# encore.dev, so that one vendor subtree must stay too).
+.git
+.data
+data
+addon/target
+addon/target-linux
+addon/node_modules
+webapp/node_modules
+*.log
+# Vendored Encore toolchain: only the encore.dev JS runtime is needed at
+# runtime (via the node_modules symlink). The Rust sources build the
+# tsparser/runtime binaries at build time on the host, and the target trees
+# are gigabytes; none of it belongs in an image or its context upload.
+vendor/encore/target
+vendor/encore/target-linux
+vendor/encore/tsparser
+vendor/encore/miniredis
+vendor/encore/proto
+vendor/encore/runtimes/core
+vendor/encore/runtimes/js/src
+vendor/encore/runtimes/js/build.rs
+vendor/encore/runtimes/js/Cargo.toml
+vendor/encore/Cargo.toml
+vendor/encore/Cargo.lock
+# Local dev secret material must never enter the image; the container
+# generates its own at first boot (docker/first-boot.mjs).
+.env
+keys

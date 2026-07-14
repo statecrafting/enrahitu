@@ -1,0 +1,53 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture"
+    ],
+    "implementingPaths": [
+      {
+        "path": "addon",
+        "source": "manifest-metadata"
+      },
+      {
+        "path": "addon/",
+        "source": "spec-edge"
+      },
+      {
+        "path": "hiq/",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "addon/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "addon/"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "hiq/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "hiq/"
+        }
+      }
+    ],
+    "specId": "002-in-process-hiqlite",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "8f173feb21813c669fd01a279451f852b0ae81b5efeb3c973e0374d9406a1b38"
+}

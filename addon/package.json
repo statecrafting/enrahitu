@@ -1,0 +1,25 @@
+{
+  "name": "@enrahitu/hiqlite-native",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "spec-spine": { "spec": "002-in-process-hiqlite" },
+  "type": "commonjs",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "binaryName": "hiqlite-native",
+    "targets": [
+      "aarch64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu"
+    ]
+  },
+  "scripts": {
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "3.1.5"
+  }
+}

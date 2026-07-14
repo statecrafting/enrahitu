@@ -1,0 +1,41 @@
+{
+  "record": {
+    "created": "2026-07-14",
+    "dependsOn": [
+      "002-in-process-hiqlite",
+      "003-coreledger"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "auth/"
+      },
+      {
+        "kind": "directory",
+        "path": "lib/"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/generate-keys.ts"
+      }
+    ],
+    "id": "004-auth-core",
+    "implementation": "complete",
+    "origin": {
+      "retroactive": true
+    },
+    "sectionHeadings": [
+      "004: Auth core",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "4. Out of scope"
+    ],
+    "specPath": "specs/004-auth-core/spec.md",
+    "status": "approved",
+    "summary": "The authentication core, re-based from template-encore apps/api onto enrahitu's own substrate: stateless RS256 JWT access tokens in httpOnly cookies, rotated DB-backed refresh tokens, CSRF double-submit, roles, and audit records on CoreLedger; login rate limiting on hiqlite counters. Drivers are pluggable: mock (dev) here, rauthy OIDC in spec 005 (which owns auth/rauthy.ts inside this spec's directory claim).\n",
+    "title": "Auth service on CoreLedger + hiqlite rate limiting"
+  },
+  "shardHash": "3ae4c85231ee716da59733fb8241dae13130e9faf6326bf5d752a7c6d0824c5b",
+  "specVersion": "1.1.0"
+}

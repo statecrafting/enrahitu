@@ -1,0 +1,12 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "003-coreledger"
+    ],
+    "implementingPaths": [],
+    "specId": "011-coreledger-postgres-driver",
+    "specStatus": "draft"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "260b7ea85d4ef8d9b554592ef2607e21f1fd3db7fafe446d5d30f7c1a7d9f413"
+}

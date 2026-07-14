@@ -1,0 +1,100 @@
+import { CallOpts } from "encore.dev/api";
+
+{{#if has_streams}}
+import {
+  StreamInOutHandlerFn,
+  StreamInHandlerFn,
+  StreamOutHandlerFn,
+  StreamOutWithResponse,
+  StreamIn,
+  StreamInOut,
+} from "encore.dev/api";
+
+{{#each endpoints}}
+{{#if (or streaming_request streaming_response)}}
+import { {{name}} as {{name}}_handler } from {{toJSON import_path}};
+{{/if}}
+{{/each}}
+
+type StreamHandshake<Type extends (...args: any[]) => any> = Parameters<Type> extends [infer H, any] ? H : void;
+
+type StreamRequest<Type> = Type extends
+  | StreamInOutHandlerFn<any, infer Req, any>
+  | StreamInHandlerFn<any, infer Req, any>
+  | StreamOutHandlerFn<any, any>
+  ? Req
+  : never;
+
+type StreamResponse<Type> = Type extends
+  | StreamInOutHandlerFn<any, any, infer Resp>
+  | StreamInHandlerFn<any, any, infer Resp>
+  | StreamOutHandlerFn<any, infer Resp>
+  ? Resp
+  : never;
+
+{{/if}}
+type Parameters<T> = T extends (...args: infer P) => unknown ? P : never;
+type WithCallOpts<T extends (...args: any) => any> = (
+  ...args: [...Parameters<T>, opts?: CallOpts]
+) => ReturnType<T>;
+
+{{#each endpoints}}
+{{#if (or streaming_request streaming_response)~}}
+
+{{#if (and streaming_request streaming_response)}}
+type {{name}}_Type = (
+  ...args: StreamHandshake<typeof {{name}}_handler> extends void
+    ? [opts?: CallOpts]
+    : [data: StreamHandshake<typeof {{name}}_handler>, opts?: CallOpts]
+) => Promise<
+  StreamInOut<
+    StreamResponse<typeof {{name}}_handler>,
+    StreamRequest<typeof {{name}}_handler>
+  >
+>;
+{{else}}
+{{#if streaming_request}}
+type {{name}}_Type = (
+  ...args: StreamHandshake<typeof {{name}}_handler> extends void
+    ? [opts?: CallOpts]
+    : [data: StreamHandshake<typeof {{name}}_handler>, opts?: CallOpts]
+) => Promise<
+  StreamOutWithResponse<
+    StreamRequest<typeof {{name}}_handler>,
+    StreamResponse<typeof {{name}}_handler>
+  >
+>;
+{{/if}}
+{{#if streaming_response}}
+type {{name}}_Type = (
+  ...args: StreamHandshake<typeof {{name}}_handler> extends void
+    ? [opts?: CallOpts]
+    : [data: StreamHandshake<typeof {{name}}_handler>, opts?: CallOpts]
+) => Promise<
+  StreamIn<
+    StreamResponse<typeof {{name}}_handler>
+  >
+>;
+{{/if}}
+{{/if}}
+
+export declare const {{name}}: {{name}}_Type;
+
+{{~else}}
+import { {{name}} as {{name}}_handler } from {{toJSON import_path}};
+type {{name}}_Type = WithCallOpts<typeof {{name}}_handler>;
+declare const {{name}}: {{name}}_Type;
+export { {{name}} };
+
+{{/if}}
+{{/each}}
+
+export class Client {
+  private constructor();
+
+{{#each endpoints}}
+  readonly {{name}}: {{name}}_Type;
+{{/each}}
+}
+
+export declare function ref(): Client;

@@ -1,0 +1,11 @@
+{
+  "package": {
+    "kind": "npm-package",
+    "name": "@enrahitu/webapp",
+    "path": "webapp",
+    "specRef": "006-webapp-spa",
+    "version": "0.1.0"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "2e1e81fd5a5e182066039b18c0b5678632aa2efbe3a8cd27bdbfaa14735db9d6"
+}

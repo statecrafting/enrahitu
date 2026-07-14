@@ -1,0 +1,119 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "002-in-process-hiqlite",
+      "005-rauthy-same-origin",
+      "006-webapp-spa"
+    ],
+    "implementingPaths": [
+      {
+        "path": ".dockerignore",
+        "source": "spec-edge"
+      },
+      {
+        "path": "docker/Dockerfile",
+        "source": "spec-edge"
+      },
+      {
+        "path": "docker/entrypoint.sh",
+        "source": "spec-edge"
+      },
+      {
+        "path": "docker/first-boot.mjs",
+        "source": "spec-edge"
+      },
+      {
+        "path": "infra.config.json",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/docker-build.sh",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": ".dockerignore"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": ".dockerignore"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "docker/Dockerfile"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/Dockerfile"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "docker/entrypoint.sh"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/entrypoint.sh"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "docker/first-boot.mjs"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/first-boot.mjs"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "infra.config.json"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "infra.config.json"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/docker-build.sh"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/docker-build.sh"
+        }
+      }
+    ],
+    "specId": "007-single-container-packaging",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "62e98eae27ed05f75130f40a67045e14c6dc18c085a0e91916265dc44a312fca"
+}

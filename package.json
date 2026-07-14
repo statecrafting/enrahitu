@@ -1,0 +1,42 @@
+{
+  "name": "enrahitu",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "spec-spine": {
+    "spec": "001-enrahitu-architecture"
+  },
+  "type": "module",
+  "description": "EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso/libSQL with the Encore runtime vendored (rust core + js runtime via napi-rs, no encore CLI): a self-contained, single-container application core with zero managed-infrastructure dependencies.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "node scripts/encore/dev.mjs",
+    "build:app": "node scripts/encore/build.mjs",
+    "build:runtime": "ENCORE_VERSION=v1.57.9 cargo build --release --manifest-path vendor/encore/Cargo.toml -p encore-js-runtime -p encore-tsparser && node scripts/encore/link-runtime.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "generate-keys": "tsx scripts/generate-keys.ts",
+    "dev:idp": "docker compose -f docker/compose.dev.yml up -d && node scripts/sync-dev-rauthy-secret.mjs",
+    "dev:idp-secret": "node scripts/sync-dev-rauthy-secret.mjs",
+    "build:addon": "npm --prefix addon run build",
+    "dev:web": "npm --prefix webapp run dev",
+    "build:web": "npm --prefix webapp run build"
+  },
+  "dependencies": {
+    "@enrahitu/hiqlite-native": "file:./addon",
+    "@libsql/client": "^0.17.4",
+    "encore.dev": "^1.57.9",
+    "jsonwebtoken": "^9.0.3",
+    "openid-client": "^6.8.4"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.0.1",
+    "esbuild": "^0.27.3",
+    "tsx": "^4.19.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.18"
+  }
+}

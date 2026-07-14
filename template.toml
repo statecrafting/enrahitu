@@ -1,0 +1,33 @@
+# template.toml: the versioned contract between this template and the
+# Stagecraft factory (spec 009). The factory reads ONLY this file to learn
+# how to stamp, verify, and package an app from this chassis; anything not
+# expressed here is not part of the interface.
+
+[template]
+name = "enrahitu"
+version = "0.1.0"
+license = "Apache-2.0"
+
+[contract]
+# Contract schema version (semver). The factory pins a compatible range;
+# a breaking change to this file's shape bumps the major.
+version = "0.1.0"
+
+[requires]
+node = ">=24"
+# Rust + protoc are template-development requirements only; stamped apps
+# consume the prebuilt addon and vendored-runtime artifacts (specs 002/008).
+
+[slots]
+# Values the factory substitutes at stamp time.
+app_name = { required = true, pattern = "^[a-z][a-z0-9-]*$" }
+org = { required = true }
+frontend = { default = "vue", allowed = ["vue"] }
+
+[verbs]
+# Commands the factory runs inside a stamped repo. Exit code is the verdict.
+verify = "npm run typecheck && npm test"
+package = "scripts/docker-build.sh"
+# scaffold: v0 stamping is factory-side (clone + slot substitution); an
+#   in-template scaffold verb arrives with the repoInit absorption (spec 010).
+# deploy: owned by the Stagecraft fleet service, never by the template.

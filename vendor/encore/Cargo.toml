@@ -1,0 +1,38 @@
+# Vendored Encore runtime workspace (upstream encoredev/encore @ v1.57.9).
+# Pruned to the crates enrahitu needs: the runtime core, the napi-rs JS
+# runtime bindings (encore-runtime.node), the TS parser/compiler
+# (tsparser-encore), and miniredis (a path dependency of the core).
+# Upstream members dropped: supervisor, tsparser/wasm.
+#
+# The [patch.crates-io] section is copied verbatim from upstream: the
+# runtime requires Encore's forks of rust-postgres and swc.
+[workspace]
+resolver = "2"
+members = [
+    "runtimes/core",
+    "runtimes/js",
+    "tsparser",
+    "miniredis",
+]
+
+[profile.dev.package]
+insta.opt-level = 3
+
+# Upstream ships lto = true / codegen-units = 1 for release distribution.
+# The kit relaxes to thin LTO for tolerable local build times; flip back to
+# upstream values if you want release-identical binaries.
+[profile.release]
+codegen-units = 16
+lto = "thin"
+
+[patch.crates-io]
+tokio-postgres = { git = "https://github.com/encoredev/rust-postgres", branch = "encore-patches-sync" }
+postgres-protocol = { git = "https://github.com/encoredev/rust-postgres", branch = "encore-patches-sync" }
+postgres-types = { git = "https://github.com/encoredev/rust-postgres", branch = "encore-patches-sync" }
+swc_ecma_parser = { git = "https://github.com/encoredev/swc", branch = "node-resolve-exports" }
+swc_ecma_ast = { git = "https://github.com/encoredev/swc", branch = "node-resolve-exports" }
+swc_ecma_transforms_base = { git = "https://github.com/encoredev/swc", branch = "node-resolve-exports" }
+swc_atoms = { git = "https://github.com/encoredev/swc", branch = "node-resolve-exports" }
+swc_common = { git = "https://github.com/encoredev/swc", branch = "node-resolve-exports" }
+swc_ecma_loader = { git = "https://github.com/encoredev/swc", branch = "node-resolve-exports" }
+swc_ecma_visit = { git = "https://github.com/encoredev/swc", branch = "node-resolve-exports" }

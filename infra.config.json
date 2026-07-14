@@ -1,0 +1,17 @@
+{
+  "$schema": "https://encore.dev/schemas/infra.schema.json",
+  "metadata": {
+    "app_id": "enrahitu",
+    "env_name": "selfhost",
+    "env_type": "production",
+    "cloud": "local",
+    "base_url": "http://localhost:8080"
+  },
+  "secrets": {
+    "JWT_PRIVATE_KEY": { "$env": "JWT_PRIVATE_KEY" },
+    "JWT_PUBLIC_KEY": { "$env": "JWT_PUBLIC_KEY" },
+    "JWT_REFRESH_PRIVATE_KEY": { "$env": "JWT_REFRESH_PRIVATE_KEY" },
+    "JWT_REFRESH_PUBLIC_KEY": { "$env": "JWT_REFRESH_PUBLIC_KEY" },
+    "RAUTHY_CLIENT_SECRET": { "$env": "RAUTHY_CLIENT_SECRET" }
+  }
+}

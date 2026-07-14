@@ -1,0 +1,44 @@
+{
+  "record": {
+    "amends": [
+      "007-single-container-packaging"
+    ],
+    "created": "2026-07-14",
+    "dependsOn": [
+      "001-enrahitu-architecture"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "vendor/encore/"
+      },
+      {
+        "kind": "directory",
+        "path": "scripts/encore/"
+      },
+      {
+        "kind": "file",
+        "path": "infra.config.dev.json"
+      },
+      {
+        "kind": "file",
+        "path": "docker/Dockerfile.base"
+      }
+    ],
+    "id": "008-vendored-encore-toolchain",
+    "implementation": "complete",
+    "sectionHeadings": [
+      "008: Vendored Encore toolchain",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "4. Out of scope"
+    ],
+    "specPath": "specs/008-vendored-encore-toolchain/spec.md",
+    "status": "approved",
+    "summary": "The enrahitu fork point: the Encore runtime is vendored (upstream encoredev/encore @ v1.57.9) and driven directly via napi-rs, removing the encore CLI from every flow. vendor/encore/ carries the rust core (runtimes/core), the napi bindings crate (runtimes/js, built into encore-runtime.node), the TS parser/compiler (tsparser, the tsparser-encore binary), miniredis (a core path dependency), and the published encore.dev JS runtime package (the app's encore.dev dep is a file: link into it). scripts/encore/ drives the toolchain: build, dev run, esbuild bundling, infra-config augmentation, and the linux cross-build.\n",
+    "title": "Vendored Encore toolchain: rust core + js runtime via napi-rs, no CLI"
+  },
+  "shardHash": "2356fbd38a1f2c40600e413ddf459bc543a7543bb40a3ae24e848280cac6712e",
+  "specVersion": "1.1.0"
+}

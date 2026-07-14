@@ -1,0 +1,100 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "004-auth-core"
+    ],
+    "implementingPaths": [
+      {
+        "path": "auth/rauthy.ts",
+        "source": "spec-edge"
+      },
+      {
+        "path": "docker/compose.dev.yml",
+        "source": "spec-edge"
+      },
+      {
+        "path": "docker/rauthy/",
+        "source": "spec-edge"
+      },
+      {
+        "path": "idp/",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/sync-dev-rauthy-secret.mjs",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "docker/rauthy/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "docker/rauthy/"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "idp/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "idp/"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "auth/rauthy.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "auth/rauthy.ts"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "docker/compose.dev.yml"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/compose.dev.yml"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/sync-dev-rauthy-secret.mjs"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/sync-dev-rauthy-secret.mjs"
+        }
+      }
+    ],
+    "specId": "005-rauthy-same-origin",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "a93853e15fb0ae860fee48709d6e9de2bd61238c454342122887fd727619c475"
+}

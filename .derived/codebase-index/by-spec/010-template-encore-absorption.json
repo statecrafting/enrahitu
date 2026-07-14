@@ -1,0 +1,12 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "009-template-contract"
+    ],
+    "implementingPaths": [],
+    "specId": "010-template-encore-absorption",
+    "specStatus": "draft"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "926b6c2005efcbf8b823fcb7c1cc0cc12b6b517c00e4e2e60b0e95982e2c092c"
+}

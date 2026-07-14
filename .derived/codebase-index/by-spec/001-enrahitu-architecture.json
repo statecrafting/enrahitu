@@ -1,0 +1,104 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "000-bootstrap"
+    ],
+    "implementingPaths": [
+      {
+        "path": "",
+        "source": "manifest-metadata"
+      },
+      {
+        "path": "encore.app",
+        "source": "spec-edge"
+      },
+      {
+        "path": "health/",
+        "source": "spec-edge"
+      },
+      {
+        "path": "tsconfig.json",
+        "source": "spec-edge"
+      },
+      {
+        "path": "vitest.config.ts",
+        "source": "spec-edge"
+      },
+      {
+        "path": "vitest.setup.ts",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "health/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "health/"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "encore.app"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "encore.app"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "tsconfig.json"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "tsconfig.json"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "vitest.config.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "vitest.config.ts"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "vitest.setup.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "vitest.setup.ts"
+        }
+      }
+    ],
+    "specId": "001-enrahitu-architecture",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "0e4a88473cd9f260df155f57746da8e379d31d83b36d15cfbe77f2f5ea62db56"
+}

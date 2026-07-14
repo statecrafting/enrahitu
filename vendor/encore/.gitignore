@@ -1,0 +1,5 @@
+# Rust build output. `target/` is the host build (tsparser-encore +
+# encore-runtime.node via scripts/encore/link-runtime.mjs); `target-linux/`
+# is the containerized linux cross-build (scripts/encore/build-runtime-linux.sh).
+/target
+/target-linux

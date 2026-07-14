@@ -1,0 +1,26 @@
+{
+  "record": {
+    "created": "2026-07-14",
+    "dependsOn": [
+      "009-template-contract"
+    ],
+    "id": "010-template-encore-absorption",
+    "sectionHeadings": [
+      "010: template-encore absorption",
+      "1. Purpose",
+      "2. Territory",
+      "3. Line items",
+      "LI-1: Born-green CI workflows",
+      "LI-2: Born-with certificate + agentic posture",
+      "LI-3: Pages deployment",
+      "LI-4: repoInit seeding",
+      "4. Out of scope"
+    ],
+    "specPath": "specs/010-template-encore-absorption/spec.md",
+    "status": "draft",
+    "summary": "template-encore (the previous chassis, stamped by factory-encore) still owns four capabilities this template does not have: born-green CI workflows, the born-with certificate + agentic posture flow, Pages deployment, and repoInit seeding. This spec enumerates the absorption line items with their source locations and target shapes. When all four land here, template-encore retires as a chassis and the enrahitu repo is the only template the Stagecraft factory stamps. Draft until the first line item starts; each item flips to done individually.\n",
+    "title": "Absorb template-encore's remaining value, then retire it"
+  },
+  "shardHash": "f51adaaa9ed13f272982c6d4257155119e04e83fd5cc18e3acfe7ca573fd1d80",
+  "specVersion": "1.1.0"
+}

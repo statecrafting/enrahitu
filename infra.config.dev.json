@@ -1,0 +1,10 @@
+{
+  "$schema": "https://encore.dev/schemas/infra.schema.json",
+  "metadata": {
+    "app_id": "enrahitu",
+    "env_name": "local",
+    "env_type": "development",
+    "cloud": "local",
+    "base_url": "http://localhost:4000"
+  }
+}

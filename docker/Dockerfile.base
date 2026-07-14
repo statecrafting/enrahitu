@@ -1,0 +1,34 @@
+# enrahitu app base image: replaces the `encore build docker` output with
+# the same layout, assembled from the vendored toolchain's artifacts.
+# Build via scripts/docker-build.sh, which prepares the context (a clean git
+# worktree with production node_modules, the built SPA, the compiled bundle
+# under .encore/build, and the cross-built linux encore-runtime.node injected
+# at docker/encore-runtime.node).
+FROM node:24-slim
+
+# node:24-slim ships no system CA store; the encore-built image injected
+# one. Both rauthy (outbound HTTPS at startup) and the app (Turso sync)
+# need it.
+RUN apt-get update -qq \
+  && apt-get install -y -qq --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# The app tree: bundle at .encore/build/combined/combined/main.mjs, external
+# packages resolved from /workspace/node_modules (encore.dev symlinks into
+# vendor/encore/runtimes/js/encore.dev inside this tree).
+COPY . /workspace
+
+# The Encore runtime surface, matching the encore-built image layout:
+# the napi runtime lib, the app metadata (its /encore/meta autodetect path),
+# and the augmented infra config (hosted services/gateways filled in by the
+# build script from the compile result).
+COPY docker/encore-runtime.node /encore/runtimes/js/encore-runtime.node
+COPY .encore/build/meta /encore/meta
+COPY infra.config.docker.json /encore/infra.config.json
+
+ENV ENCORE_RUNTIME_LIB=/encore/runtimes/js/encore-runtime.node
+ENV ENCORE_INFRA_CONFIG_PATH=/encore/infra.config.json
+
+WORKDIR /workspace
+EXPOSE 8080
+ENTRYPOINT ["node", "--enable-source-maps", "/workspace/.encore/build/combined/combined/main.mjs"]

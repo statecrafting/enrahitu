@@ -1,0 +1,980 @@
+use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::{Arc, Mutex};
+
+use anyhow::Context;
+use axum::extract::{FromRequestParts, WebSocketUpgrade};
+use axum::http::HeaderValue;
+use axum::response::IntoResponse;
+use bytes::{BufMut, BytesMut};
+use http::HeaderMap;
+use indexmap::IndexMap;
+use percent_encoding::percent_decode_str;
+use serde::Serialize;
+
+use crate::api::reqauth::{platform, svcauth, CallMeta};
+use crate::api::schema::encoding::{
+    handshake_encoding, request_encoding, response_encoding, HandshakeSchemaUnderConstruction,
+    ReqSchemaUnderConstruction, SchemaUnderConstruction,
+};
+use crate::api::schema::{JSONPayload, Method};
+use crate::api::{httputil, jsonschema, schema, ErrCode, Error};
+use crate::encore::parser::meta::v1::rpc;
+use crate::encore::parser::meta::v1::{self as meta, selector};
+use crate::log::LogFromRust;
+use crate::metrics::counter;
+use crate::model::StreamDirection;
+use crate::names::EndpointName;
+use crate::trace;
+use crate::{model, Hosted};
+
+use super::pvalue::{PValue, PValues};
+use super::reqauth::caller::Caller;
+
+/// Cached environment variable for whether to include error stacks in error response logs.
+static ENCORE_LOG_INCLUDE_ERROR_STACK: once_cell::sync::Lazy<bool> =
+    once_cell::sync::Lazy::new(|| {
+        std::env::var("ENCORE_LOG_INCLUDE_ERROR_STACK")
+            .map(|v| !v.is_empty() && v != "0")
+            .unwrap_or(false)
+    });
+
+#[derive(Debug)]
+pub struct SuccessResponse {
+    pub status: axum::http::StatusCode,
+    pub headers: axum::http::HeaderMap,
+    pub body: Option<PValue>,
+}
+
+/// Represents the result of calling an API endpoint.
+pub type Response = APIResult<SuccessResponse>;
+
+pub type APIResult<T> = Result<T, Error>;
+
+impl IntoResponse for SuccessResponse {
+    fn into_response(self) -> axum::http::Response<axum::body::Body> {
+        // Serialize the response body.
+        // Use a small initial capacity of 128 bytes like serde_json::to_vec
+        // https://docs.rs/serde_json/1.0.82/src/serde_json/ser.rs.html#2189
+        let bld = {
+            let mut bld = axum::http::Response::builder();
+            *(bld.headers_mut().unwrap()) = self.headers;
+            bld
+        }
+        .status(self.status);
+
+        match self.body {
+            Some(body) => {
+                let bld = bld.header(
+                    axum::http::header::CONTENT_TYPE,
+                    HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()),
+                );
+                let mut buf = BytesMut::with_capacity(128).writer();
+                match serde_json::to_writer(&mut buf, &body) {
+                    Ok(()) => bld
+                        .body(axum::body::Body::from(buf.into_inner().freeze()))
+                        .unwrap(),
+                    Err(err) => Error::internal(err).to_response(None),
+                }
+            }
+            None => bld.body(axum::body::Body::empty()).unwrap(),
+        }
+    }
+}
+
+pub trait ToResponse {
+    fn to_response(&self, caller: Option<Caller>) -> axum::response::Response;
+}
+
+impl ToResponse for Error {
+    fn to_response(&self, caller: Option<Caller>) -> axum::http::Response<axum::body::Body> {
+        // considure response to be external if caller is gateway, or if the caller is
+        // unknown
+        let internal_call = caller.map(|caller| !caller.is_gateway()).unwrap_or(false);
+
+        let mut buf = BytesMut::with_capacity(128).writer();
+
+        if internal_call {
+            serde_json::to_writer(&mut buf, &self).unwrap();
+        } else {
+            serde_json::to_writer(&mut buf, &self.as_external()).unwrap();
+        }
+
+        axum::http::Response::builder()
+            .status::<axum::http::status::StatusCode>(self.code.into())
+            .header(
+                axum::http::header::CONTENT_TYPE,
+                HeaderValue::from_static(mime::APPLICATION_JSON.as_ref()),
+            )
+            .body(axum::body::Body::from(buf.into_inner().freeze()))
+            .unwrap()
+    }
+}
+
+pub type HandlerRequest = Arc<model::Request>;
+pub type HandlerResponse = APIResult<HandlerResponseInner>;
+
+/// Computes the synthesized error and the metric `code` label for a raw
+/// endpoint that responded with the given HTTP status. Raw handlers write their
+/// own response and never return an [`Error`], so a `>= 400` status synthesizes
+/// one for observability (traces, logs, metrics). Mirrors the Go runtime's
+/// `invokeHandlerRaw` + `Code(err, httpStatus)`.
+fn raw_response_outcome(status: axum::http::StatusCode) -> (Option<Error>, String) {
+    let error = Error::from_raw_status(status);
+    let code = error
+        .as_ref()
+        .map(|e| e.code.to_string())
+        .unwrap_or_else(|| httputil::code_for_http_status(status));
+    (error, code)
+}
+
+pub struct HandlerResponseInner {
+    pub payload: JSONPayload,
+    pub extra_headers: Option<HeaderMap>,
+    pub status: Option<u16>,
+}
+
+/// A trait for handlers that accept a request and return a response.
+pub trait TypedHandler: Send + Sync + 'static {
+    fn call(
+        self: Arc<Self>,
+        req: HandlerRequest,
+    ) -> Pin<Box<dyn Future<Output = HandlerResponse> + Send + 'static>>;
+}
+
+/// A trait for handlers that accept a request and return a response.
+pub trait BoxedHandler: Send + Sync + 'static {
+    fn call(self: Arc<Self>, req: HandlerRequest) -> HandlerCall;
+}
+
+pub enum ResponseData {
+    Typed(HandlerResponse),
+    Raw(axum::http::Response<axum::body::Body>),
+}
+
+/// Represents an in-flight handler call. Can be awaited for the result.
+///
+/// The `Channel` variant exposes the receiver, allowing external code to
+/// take ownership of it on cancellation (e.g. to spawn a background task
+/// that waits for the real result). The `Inline` variant wraps a boxed
+/// future for handlers that do their work inline.
+pub struct HandlerCall {
+    inner: HandlerCallInner,
+}
+
+enum HandlerCallInner {
+    /// Result delivered via a oneshot channel. The receiver can be extracted
+    /// on cancellation to spawn a background task.
+    Channel(tokio::sync::oneshot::Receiver<ResponseData>),
+    /// Handler work runs inline in a boxed future.
+    Inline(Pin<Box<dyn Future<Output = ResponseData> + Send + 'static>>),
+    /// The call has completed or been taken for background processing.
+    Done,
+}
+
+impl HandlerCall {
+    /// Create a HandlerCall backed by a oneshot receiver.
+    pub fn from_receiver(rx: tokio::sync::oneshot::Receiver<ResponseData>) -> Self {
+        Self {
+            inner: HandlerCallInner::Channel(rx),
+        }
+    }
+
+    /// Create a HandlerCall backed by a boxed future.
+    pub fn inline(fut: Pin<Box<dyn Future<Output = ResponseData> + Send + 'static>>) -> Self {
+        Self {
+            inner: HandlerCallInner::Inline(fut),
+        }
+    }
+
+    /// Extract the inner state for use in a background task.
+    /// Returns `None` if the call has already completed.
+    pub fn take_for_background(
+        &mut self,
+    ) -> Option<Pin<Box<dyn Future<Output = ResponseData> + Send + 'static>>> {
+        match std::mem::replace(&mut self.inner, HandlerCallInner::Done) {
+            HandlerCallInner::Channel(rx) => Some(Box::pin(async move {
+                rx.await.unwrap_or_else(|_| Self::no_response_error())
+            })),
+            HandlerCallInner::Inline(fut) => Some(fut),
+            HandlerCallInner::Done => None,
+        }
+    }
+
+    fn no_response_error() -> ResponseData {
+        ResponseData::Typed(Err(Error::internal(anyhow::anyhow!(
+            "handler did not respond"
+        ))))
+    }
+}
+
+impl Future for HandlerCall {
+    type Output = ResponseData;
+
+    fn poll(
+        self: Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Self::Output> {
+        let this = self.get_mut();
+        match &mut this.inner {
+            HandlerCallInner::Channel(rx) => Pin::new(rx).poll(cx).map(|r| {
+                this.inner = HandlerCallInner::Done;
+                r.unwrap_or_else(|_| Self::no_response_error())
+            }),
+            HandlerCallInner::Inline(fut) => fut.as_mut().poll(cx).map(|r| {
+                this.inner = HandlerCallInner::Done;
+                r
+            }),
+            HandlerCallInner::Done => std::task::Poll::Ready(Self::no_response_error()),
+        }
+    }
+}
+
+/// Guard that spawns the handler into a background task on cancellation,
+/// ensuring `request_span_end` is always emitted. On the normal path (handler
+/// completes before cancellation), this is a no-op — zero overhead.
+struct CancellationGuard<'a> {
+    call: &'a mut HandlerCall,
+    info: Option<CancellationGuardInfo>,
+}
+
+struct CancellationGuardInfo {
+    tracer: trace::Tracer,
+    request: Arc<model::Request>,
+    sensitive: bool,
+    requests_total: Arc<counter::Schema<u64>>,
+}
+
+impl CancellationGuard<'_> {
+    /// Await the handler result. If this future is cancelled, the guard's Drop
+    /// impl takes over and spawns the handler into a background task.
+    async fn run(&mut self) -> ResponseData {
+        let resp = std::future::poll_fn(|cx| Pin::new(&mut *self.call).poll(cx)).await;
+        self.info = None; // disarm
+        resp
+    }
+}
+
+impl Drop for CancellationGuard<'_> {
+    fn drop(&mut self) {
+        let Some(info) = self.info.take() else {
+            return; // Normal completion, nothing to do.
+        };
+        // Handler was cancelled. Spawn a background task to wait for the
+        // handler to complete and emit the end span with the real result.
+        if let Some(bg_fut) = self.call.take_for_background() {
+            tokio::spawn(async move {
+                let resp = bg_fut.await;
+                let duration = tokio::time::Instant::now().duration_since(info.request.start);
+
+                let (status_code, resp_payload, error, code) = match resp {
+                    ResponseData::Typed(Ok(response)) => (
+                        response.status.unwrap_or(200),
+                        Some(response.payload),
+                        None,
+                        "ok".to_string(),
+                    ),
+                    ResponseData::Typed(Err(err)) => {
+                        let code = err.code.to_string();
+                        (
+                            u16::from(axum::http::StatusCode::from(err.code)),
+                            None,
+                            Some(err),
+                            code,
+                        )
+                    }
+                    ResponseData::Raw(ref r) => {
+                        let (error, code) = raw_response_outcome(r.status());
+                        (r.status().as_u16(), None, error, code)
+                    }
+                };
+
+                let model_resp = model::Response {
+                    request: info.request.clone(),
+                    duration,
+                    data: model::ResponseData::RPC(model::RPCResponseData {
+                        status_code,
+                        resp_payload,
+                        error,
+                        resp_headers: Default::default(),
+                    }),
+                };
+                info.tracer.request_span_end(&model_resp, info.sensitive);
+                info.requests_total.with([("code", code)]).increment();
+            });
+        }
+    }
+}
+
+/// Schema variations for stream handshake
+#[derive(Debug)]
+pub enum HandshakeSchema {
+    // Handshake with only a path, no parseable data
+    Path(schema::Path),
+    // Handshake with a request schema
+    Request(schema::Request),
+}
+
+impl HandshakeSchema {
+    pub fn path(&self) -> &schema::Path {
+        match self {
+            HandshakeSchema::Path(path) => path,
+            HandshakeSchema::Request(schema::Request { path, .. }) => path,
+        }
+    }
+}
+
+/// Represents a single API Endpoint.
+#[derive(Debug)]
+pub struct Endpoint {
+    pub name: EndpointName,
+    pub path: meta::Path,
+    pub handshake: Option<Arc<HandshakeSchema>>,
+    pub request: Vec<Arc<schema::Request>>,
+    pub response: Arc<schema::Response>,
+
+    /// Whether this is a raw endpoint.
+    pub raw: bool,
+
+    /// Whether the service is exposed publicly.
+    pub exposed: bool,
+
+    /// Whether the service requires authentication data.
+    pub requires_auth: bool,
+
+    /// The maximum size of the request body.
+    /// If None, no limits are applied.
+    pub body_limit: Option<u64>,
+
+    /// The static assets to serve from this endpoint.
+    /// Set only for static asset endpoints.
+    pub static_assets: Option<meta::rpc::StaticAssets>,
+
+    /// The tags for this endpoint.
+    pub tags: Vec<String>,
+
+    /// Treat endpoint as sensitive and redact details from traces.
+    pub sensitive: bool,
+}
+
+impl Endpoint {
+    pub fn methods(&self) -> impl Iterator<Item = Method> + '_ {
+        self.request
+            .iter()
+            .flat_map(|schema| schema.methods.iter().copied())
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct RequestPayload {
+    #[serde(flatten)]
+    pub path: Option<IndexMap<String, PValue>>,
+
+    #[serde(flatten)]
+    pub query: Option<PValues>,
+
+    #[serde(flatten)]
+    pub header: Option<PValues>,
+
+    #[serde(flatten)]
+    pub cookie: Option<PValues>,
+
+    #[serde(flatten, skip_serializing_if = "Body::is_raw")]
+    pub body: Body,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(untagged)]
+pub enum Body {
+    Typed(Option<PValues>),
+    #[serde(skip)]
+    Raw(Arc<std::sync::Mutex<Option<axum::body::Body>>>),
+}
+
+impl Body {
+    pub fn is_raw(&self) -> bool {
+        matches!(self, Body::Raw(_))
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ResponsePayload {
+    #[serde(flatten)]
+    pub header: Option<PValues>,
+
+    #[serde(flatten)]
+    pub cookie: Option<PValues>,
+
+    #[serde(flatten, skip_serializing_if = "Body::is_raw")]
+    pub body: Body,
+}
+
+pub type EndpointMap = HashMap<EndpointName, Arc<Endpoint>>;
+
+/// Compute a set of endpoint descriptions based on metadata
+/// and a list of which endpoints are hosted by this runtime.
+pub fn endpoints_from_meta(
+    md: &meta::Data,
+    hosted_services: &Hosted,
+) -> anyhow::Result<(Arc<EndpointMap>, Vec<EndpointName>)> {
+    let mut registry_builder = jsonschema::Builder::new(md);
+
+    struct EndpointUnderConstruction<'a> {
+        svc: &'a meta::Service,
+        ep: &'a meta::Rpc,
+        handshake_schema: Option<HandshakeSchemaUnderConstruction>,
+        request_schemas: Vec<ReqSchemaUnderConstruction>,
+        response_schema: SchemaUnderConstruction,
+    }
+
+    // Compute the schemas for each endpoint.
+    let mut endpoints = Vec::new();
+    let mut hosted_endpoints = Vec::new();
+    for svc in &md.svcs {
+        let is_hosted = hosted_services.contains(&svc.name);
+        for ep in &svc.rpcs {
+            // If this endpoint is hosted, mark it as such.
+            if is_hosted {
+                hosted_endpoints.push(EndpointName::new(&svc.name, &ep.name));
+            }
+
+            let handshake_schema = handshake_encoding(&mut registry_builder, md, ep)?;
+            let request_schemas = request_encoding(&mut registry_builder, md, ep)?;
+            let response_schema = response_encoding(&mut registry_builder, md, ep)?;
+
+            endpoints.push(EndpointUnderConstruction {
+                svc,
+                ep,
+                handshake_schema,
+                request_schemas,
+                response_schema,
+            });
+        }
+    }
+
+    let registry = registry_builder.build();
+
+    let mut endpoint_map = EndpointMap::with_capacity(endpoints.len());
+
+    for ep in endpoints {
+        let mut request_schemas = Vec::with_capacity(ep.request_schemas.len());
+        let raw = rpc::Protocol::try_from(ep.ep.proto).is_ok_and(|p| p == rpc::Protocol::Raw);
+
+        let handshake_schema = ep
+            .handshake_schema
+            .map(|schema| schema.build(&registry))
+            .transpose()?;
+
+        let handshake = handshake_schema
+            .map(|handshake_schema| -> anyhow::Result<Arc<HandshakeSchema>> {
+                let path = handshake_schema
+                    .schema
+                    .path
+                    .context("endpoint must have a path defined")?;
+
+                let handshake_schema = if handshake_schema.parse_data {
+                    let handshake_schema = schema::Request {
+                        methods: vec![],
+                        path,
+                        header: handshake_schema.schema.header,
+                        query: handshake_schema.schema.query,
+                        body: schema::RequestBody::Typed(None),
+                        cookie: handshake_schema.schema.cookie,
+                        stream: false,
+                    };
+
+                    HandshakeSchema::Request(handshake_schema)
+                } else {
+                    HandshakeSchema::Path(path)
+                };
+
+                Ok(Arc::new(handshake_schema))
+            })
+            .transpose()?;
+
+        for req_schema in ep.request_schemas {
+            let req_schema = req_schema.build(&registry)?;
+            let path = req_schema
+                .schema
+                .path
+                .or_else(|| handshake.as_ref().map(|hs| hs.path().clone()))
+                .context("endpoint must have path defined")?;
+
+            request_schemas.push(Arc::new(schema::Request {
+                methods: req_schema.methods,
+                path,
+                header: req_schema.schema.header,
+                query: req_schema.schema.query,
+                cookie: req_schema.schema.cookie,
+                body: if raw {
+                    schema::RequestBody::Raw
+                } else {
+                    schema::RequestBody::Typed(req_schema.schema.body)
+                },
+                stream: ep.ep.streaming_request,
+            }));
+        }
+        let resp_schema = ep.response_schema.build(&registry)?;
+
+        // We only support a single gateway right now.
+        let exposed = ep.ep.expose.contains_key("api-gateway");
+        let raw =
+            rpc::Protocol::try_from(ep.ep.proto).is_ok_and(|proto| proto == rpc::Protocol::Raw);
+
+        let tags = ep
+            .ep
+            .tags
+            .iter()
+            .filter(|item| item.r#type() == selector::Type::Tag)
+            .map(|item| item.value.clone())
+            .collect();
+
+        let endpoint = Endpoint {
+            name: EndpointName::new(ep.svc.name.clone(), ep.ep.name.clone()),
+            path: ep.ep.path.clone().unwrap_or_else(|| meta::Path {
+                r#type: meta::path::Type::Url as i32,
+                segments: vec![meta::PathSegment {
+                    r#type: meta::path_segment::SegmentType::Literal as i32,
+                    value_type: meta::path_segment::ParamType::String as i32,
+                    value: format!("/{}.{}", ep.ep.service_name, ep.ep.name),
+                    validation: None,
+                }],
+            }),
+            handshake,
+            request: request_schemas,
+            response: Arc::new(schema::Response {
+                header: resp_schema.header,
+                cookie: resp_schema.cookie,
+                body: resp_schema.body,
+                http_status: resp_schema.http_status,
+                stream: ep.ep.streaming_response,
+            }),
+            raw,
+            exposed,
+            requires_auth: !ep.ep.allow_unauthenticated,
+            body_limit: ep.ep.body_limit,
+            static_assets: ep.ep.static_assets.clone(),
+            tags,
+            sensitive: ep.ep.sensitive,
+        };
+
+        endpoint_map.insert(
+            EndpointName::new(&ep.svc.name, &ep.ep.name),
+            Arc::new(endpoint),
+        );
+    }
+
+    Ok((Arc::new(endpoint_map), hosted_endpoints))
+}
+
+pub(super) struct EndpointHandler {
+    pub endpoint: Arc<Endpoint>,
+    pub handler: Arc<dyn BoxedHandler>,
+    pub shared: Arc<SharedEndpointData>,
+    pub requests_total: Arc<counter::Schema<u64>>,
+}
+
+#[derive(Debug)]
+pub(super) struct SharedEndpointData {
+    pub tracer: trace::Tracer,
+    pub platform_auth: Arc<platform::RequestValidator>,
+    pub inbound_svc_auth: Vec<Arc<dyn svcauth::ServiceAuthMethod>>,
+
+    /// The schema to use when parsing auth data, if any.
+    /// NOTE: This assumes there's at most a single API Gateway.
+    /// When we support multiple this needs to be made into a map, and the
+    /// correct schema looked up based on the gateway being used.
+    pub auth_data_schemas: HashMap<String, Option<jsonschema::JSONSchema>>,
+}
+
+impl Clone for EndpointHandler {
+    fn clone(&self) -> Self {
+        Self {
+            endpoint: self.endpoint.clone(),
+            handler: self.handler.clone(),
+            shared: self.shared.clone(),
+            requests_total: self.requests_total.clone(),
+        }
+    }
+}
+
+impl EndpointHandler {
+    async fn parse_request(
+        &self,
+        axum_req: axum::extract::Request,
+    ) -> APIResult<Arc<model::Request>> {
+        let method = axum_req.method();
+        // Method conversion should never fail since we only register valid methods.
+        let api_method = Method::try_from(method.clone()).expect("invalid method");
+
+        let req_schema = self
+            .endpoint
+            .request
+            .iter()
+            .find(|schema| schema.methods.contains(&api_method))
+            .expect("request schema must exist for all endpoints");
+
+        let streaming_request = req_schema.stream;
+        let streaming_response = self.endpoint.response.stream;
+
+        let stream_direction = match (streaming_request, streaming_response) {
+            (true, true) => Some(StreamDirection::InOut),
+            (true, false) => Some(StreamDirection::In),
+            (false, true) => Some(StreamDirection::Out),
+            (false, false) => None,
+        };
+
+        let (mut parts, body) = axum_req
+            .map(|b| match self.endpoint.body_limit {
+                None => b,
+                Some(limit) => {
+                    axum::body::Body::new(http_body_util::Limited::new(b, limit as usize))
+                }
+            })
+            .into_parts();
+
+        // Authenticate the request from the platform, if applicable.
+        #[allow(clippy::manual_unwrap_or_default)]
+        let platform_seal_of_approval = match self.authenticate_platform(&parts) {
+            Ok(seal) => seal,
+            Err(_err) => None,
+        };
+
+        let meta = CallMeta::parse_with_caller(
+            &self.shared.inbound_svc_auth,
+            &parts.headers,
+            &self.shared.auth_data_schemas,
+        )?;
+
+        let parsed_payload = if let Some(handshake_schema) = &self.endpoint.handshake {
+            match handshake_schema.as_ref() {
+                HandshakeSchema::Request(req_schema) => {
+                    req_schema.extract(&mut parts, body).await?
+                }
+                HandshakeSchema::Path(_) => None,
+            }
+        } else {
+            req_schema.extract(&mut parts, body).await?
+        };
+
+        // Extract caller information.
+        let (internal_caller, auth_user_id, auth_data) = match meta.internal {
+            Some(internal) => (Some(internal.caller), internal.auth_uid, internal.auth_data),
+            None => (None, None, None),
+        };
+
+        let trace_id = meta.trace_id;
+        let span_id = meta.this_span_id.unwrap_or_else(model::SpanId::generate);
+        let span = trace_id.with_span(span_id);
+        let parent_span = meta.parent_span_id.map(|sp| trace_id.with_span(sp));
+
+        let is_cron_scheduled = parts
+            .headers
+            .get("x-encore-cron-trigger")
+            .is_some_and(|v| v == "scheduled");
+
+        let traced = if platform_seal_of_approval.is_some() && !is_cron_scheduled {
+            true
+        } else {
+            meta.trace_sampled
+                .unwrap_or_else(|| self.shared.tracer.should_sample(&self.endpoint.name))
+        };
+
+        let data = if let Some(direction) = stream_direction {
+            let websocket_upgrade = Mutex::new(Some(
+                WebSocketUpgrade::from_request_parts(&mut parts, &()).await?,
+            ));
+
+            model::RequestData::Stream(model::StreamRequestData {
+                endpoint: self.endpoint.clone(),
+                path: parts.uri.path().to_string(),
+                path_and_query: parts
+                    .uri
+                    .path_and_query()
+                    .map(|q| q.to_string())
+                    .unwrap_or_default(),
+                path_params: parsed_payload.as_ref().and_then(|p| p.path.clone()),
+                req_headers: parts.headers,
+                auth_user_id,
+                auth_data,
+                parsed_payload,
+                websocket_upgrade,
+                direction,
+            })
+        } else {
+            model::RequestData::RPC(model::RPCRequestData {
+                endpoint: self.endpoint.clone(),
+                method: api_method,
+                path: parts.uri.path().to_string(),
+                path_and_query: parts
+                    .uri
+                    .path_and_query()
+                    .map(|q| q.to_string())
+                    .unwrap_or_default(),
+                path_params: parsed_payload.as_ref().and_then(|p| p.path.clone()),
+                req_headers: parts.headers,
+                auth_user_id,
+                auth_data,
+                parsed_payload,
+            })
+        };
+
+        let request = Arc::new(model::Request {
+            span,
+            parent_trace: None,
+            parent_span,
+            caller_event_id: meta.parent_event_id,
+            ext_correlation_id: meta.ext_correlation_id,
+            start: tokio::time::Instant::now(),
+            start_time: std::time::SystemTime::now(),
+            is_platform_request: platform_seal_of_approval.is_some(),
+            internal_caller,
+            data,
+            traced,
+        });
+
+        Ok(request)
+    }
+
+    fn handle(
+        self,
+        axum_req: axum::extract::Request,
+    ) -> Pin<Box<dyn Future<Output = axum::http::Response<axum::body::Body>> + Send + 'static>>
+    {
+        Box::pin(async move {
+            let request = match self.parse_request(axum_req).await {
+                Ok(req) => req,
+                Err(err) => return err.to_response(None),
+            };
+
+            let internal_caller = request.internal_caller.clone();
+            let sensitive = self.endpoint.sensitive;
+
+            // If the endpoint isn't exposed, return a 404.
+            if !self.endpoint.exposed && !request.allows_private_endpoint_call() {
+                return Error {
+                    code: ErrCode::NotFound,
+                    message: "endpoint not found".into(),
+                    internal_message: Some("the endpoint was found, but is not exposed".into()),
+                    stack: None,
+                    details: None,
+                }
+                .to_response(internal_caller);
+            } else if self.endpoint.requires_auth && !request.has_authenticated_user() {
+                return Error {
+                    code: ErrCode::Unauthenticated,
+                    message: "endpoint requires auth but none provided".into(),
+                    internal_message: None,
+                    stack: None,
+                    details: None,
+                }
+                .to_response(internal_caller);
+            }
+
+            let logger = crate::log::root();
+            logger.info(Some(&request), "starting request", None);
+
+            self.shared.tracer.request_span_start(&request, sensitive);
+
+            // Call the handler inline. The HandlerCall is pollable in-place,
+            // and if this future is cancelled (e.g. by client disconnect),
+            // the CancellationGuard spawns the remaining work into a background
+            // task to ensure request_span_end is emitted.
+            let mut handler_call = self.handler.call(request.clone());
+            let mut cancellation_guard = CancellationGuard {
+                call: &mut handler_call,
+                info: Some(CancellationGuardInfo {
+                    tracer: self.shared.tracer.clone(),
+                    request: request.clone(),
+                    sensitive,
+                    requests_total: self.requests_total.clone(),
+                }),
+            };
+
+            let resp = cancellation_guard.run().await;
+
+            let duration = tokio::time::Instant::now().duration_since(request.start);
+
+            let (mut encoded_resp, resp_payload, extra_headers, error, code) = match resp {
+                ResponseData::Raw(resp) => {
+                    let (error, code) = raw_response_outcome(resp.status());
+                    (resp, None, None, error, code)
+                }
+                ResponseData::Typed(Ok(response)) => (
+                    self.endpoint
+                        .response
+                        .encode(&response.payload, response.status.unwrap_or(200))
+                        .unwrap_or_else(|err| err.to_response(internal_caller)),
+                    Some(response.payload),
+                    response.extra_headers,
+                    None,
+                    "ok".to_string(),
+                ),
+                ResponseData::Typed(Err(err)) => {
+                    let code = err.code.to_string();
+                    (
+                        err.as_ref().to_response(internal_caller),
+                        None,
+                        None,
+                        Some(err),
+                        code,
+                    )
+                }
+            };
+
+            // If we had a request failure, log that separately.
+            if let Some(err) = &error {
+                logger
+                    .with_error(err)
+                    .error(Some(&request), "request failed", {
+                        let mut fields = crate::log::Fields::new();
+                        fields.insert(
+                            "code".into(),
+                            serde_json::Value::String(err.code.to_string()),
+                        );
+
+                        if let Some(internal_message) = &err.internal_message {
+                            fields.insert(
+                                "internal_message".into(),
+                                serde_json::Value::String(internal_message.clone()),
+                            );
+                        }
+
+                        if *ENCORE_LOG_INCLUDE_ERROR_STACK {
+                            if let Some(stack) = &err.stack {
+                                if let Ok(value) = serde_json::to_value(stack) {
+                                    fields.insert("stack".into(), value);
+                                }
+                            }
+                        }
+
+                        Some(fields)
+                    });
+            }
+
+            logger.info(Some(&request), "request completed", {
+                let mut fields = crate::log::Fields::new();
+                let dur_ms = (duration.as_secs() as f64 * 1000f64)
+                    + (duration.subsec_nanos() as f64 / 1_000_000f64);
+
+                fields.insert(
+                    "duration".into(),
+                    serde_json::Value::Number(serde_json::Number::from_f64(dur_ms).unwrap_or_else(
+                        || {
+                            // Fall back to integer if the f64 conversion fails
+                            serde_json::Number::from(duration.as_millis() as u64)
+                        },
+                    )),
+                );
+
+                fields.insert("code".into(), serde_json::Value::String(code.clone()));
+                Some(fields)
+            });
+
+            {
+                let model_resp = model::Response {
+                    request: request.clone(),
+                    duration,
+                    data: model::ResponseData::RPC(model::RPCResponseData {
+                        status_code: encoded_resp.status().as_u16(),
+                        resp_payload,
+                        error,
+                        resp_headers: encoded_resp.headers().clone(),
+                    }),
+                };
+                self.shared.tracer.request_span_end(&model_resp, sensitive);
+                self.requests_total.with([("code", code)]).increment();
+            }
+
+            if let Ok(val) = HeaderValue::from_str(request.span.0.serialize_encore().as_str()) {
+                encoded_resp.headers_mut().insert("x-encore-trace-id", val);
+            }
+
+            if let Some(extra_headers) = extra_headers {
+                encoded_resp.headers_mut().extend(extra_headers)
+            }
+
+            encoded_resp
+        })
+    }
+
+    fn authenticate_platform(
+        &self,
+        req: &axum::http::request::Parts,
+    ) -> Result<Option<platform::SealOfApproval>, platform::ValidationError> {
+        let Some(x_encore_auth_header) = req.headers.get("x-encore-auth") else {
+            return Ok(None);
+        };
+        let x_encore_auth_header = x_encore_auth_header
+            .to_str()
+            .map_err(|_| platform::ValidationError::InvalidMac)?;
+
+        let Some(date_header) = req.headers.get("Date") else {
+            return Err(platform::ValidationError::InvalidDateHeader);
+        };
+        let date_header = date_header
+            .to_str()
+            .map_err(|_| platform::ValidationError::InvalidDateHeader)?;
+
+        let request_path = percent_decode_str(req.uri.path()).decode_utf8_lossy();
+        let req = platform::ValidationData {
+            request_path: &request_path,
+            date_header,
+            x_encore_auth_header,
+        };
+
+        self.shared
+            .platform_auth
+            .validate_platform_request(&req)
+            .map(Some)
+    }
+}
+
+impl axum::handler::Handler<(), ()> for EndpointHandler {
+    type Future =
+        Pin<Box<dyn Future<Output = axum::http::Response<axum::body::Body>> + Send + 'static>>;
+
+    fn call(self, axum_req: axum::extract::Request, _state: ()) -> Self::Future {
+        self.handle(axum_req)
+    }
+}
+
+pub fn path_supports_tsr(path: &str) -> bool {
+    path != "/" && !path.ends_with('/') && !path.contains("/*")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::StatusCode;
+
+    #[test]
+    fn raw_response_outcome_success_statuses_have_no_error() {
+        let (error, code) = raw_response_outcome(StatusCode::OK);
+        assert!(error.is_none());
+        assert_eq!(code, "ok");
+
+        // Non-error status: the code falls back to the HTTP status.
+        let (error, code) = raw_response_outcome(StatusCode::CREATED); // 201
+        assert!(error.is_none());
+        assert_eq!(code, "http_201");
+    }
+
+    #[test]
+    fn raw_response_outcome_error_statuses_synthesize_error_and_code() {
+        let (error, code) = raw_response_outcome(StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(error.unwrap().code, ErrCode::Internal);
+        assert_eq!(code, "internal");
+
+        let (error, code) = raw_response_outcome(StatusCode::NOT_FOUND);
+        assert_eq!(error.unwrap().code, ErrCode::NotFound);
+        assert_eq!(code, "not_found");
+
+        // Unmapped >= 400: the code follows the synthesized error ("unknown"),
+        // not "http_418" — matching Go's Code(err, status).
+        let (error, code) = raw_response_outcome(StatusCode::IM_A_TEAPOT); // 418
+        assert_eq!(error.unwrap().code, ErrCode::Unknown);
+        assert_eq!(code, "unknown");
+    }
+}
