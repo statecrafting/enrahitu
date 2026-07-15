@@ -40,9 +40,12 @@ especially before stamped apps put this flow in front of customers.
 
 ## 3. Behavior
 
-- Setup: `npm run dev:idp` (compose rauthy + secret sync, spec 005),
-  `npm run dev` (the app on :4000), both managed by Playwright's
-  webServer config or a small globalSetup that starts and tears down.
+- Setup: `npm run generate-keys` (RS256 JWT dev keypairs into keys/,
+  which the app signs sessions with: a clean CI checkout has none, and
+  their absence 500s the OIDC callback at token mint), `npm run dev:idp`
+  (compose rauthy + secret sync, spec 005), and `npm run dev` (the app on
+  :4000), all managed by Playwright's webServer config or a small
+  globalSetup that starts and tears down.
 - A test user is provisioned via rauthy's bootstrap/admin API (the dev
   compose already seeds an admin; the test creates or reuses a
   dedicated user with a known password; document the exact env keys the

@@ -30,6 +30,6 @@
     "summary": "The rauthy driver's full browser round-trip (SPA -> same-origin /auth proxy -> rauthy login UI -> OIDC callback -> app session cookie) has been exercised by hand but never by an automated end-to-end test; this was the standing owed item from the enrahi phase close-out. This spec adds a Playwright-driven e2e that boots the app plus the dev rauthy (docker compose, spec 005), completes a real password login in a real browser engine, and asserts the session, profile, and logout behavior. Kept out of the default verify verb; runs as its own npm script and an optional scheduled CI job.\n",
     "title": "End-to-end rauthy login validation (browser-real)"
   },
-  "shardHash": "49d581618043632c70348f88d76ccc76c91ddf38461a2307ac996607b599b42d",
+  "shardHash": "2a502f52e62884296153db6370333ade6ba4522bc4a4a4e6a7e5a65307001d0c",
   "specVersion": "1.1.0"
 }
