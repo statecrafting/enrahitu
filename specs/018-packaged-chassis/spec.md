@@ -156,7 +156,18 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
 ## 6. Status (2026-07-14)
 
 `implementation: in-progress`. The in-repo structure landed and this repo
-stays green from source; publishing to the registry is external and remains.
+stays green from source.
+
+**v0.1.0 published (2026-07-15).** All eight `@enrahitu/*` packages (the
+`@enrahitu/toolchain` and `@enrahitu/hiqlite-native` meta packages plus their
+three platform packages each) are live on npm at `0.1.0`, cut from the
+`v0.1.0` tag by `publish.yml` with signed GitHub Actions provenance. Two
+prerequisites had to hold for the provenance publish to pass: `NPM_TOKEN` must
+be an npm automation token (a 2FA-gated token fails the CI publish with
+`EOTP`), and every published manifest must carry a `repository` field matching
+the GitHub source (a missing one fails with a 422 provenance mismatch). What
+remains before `complete` is the clean-clone verification of the slimmed tree
+resolving binaries from `node_modules` (below).
 
 **Implementation decisions** (refine §2/§3, do not contradict them):
 
@@ -197,14 +208,13 @@ three `@enrahitu/toolchain-<platform>` manifests, addon publish wiring,
 gates green: `npm ci`, `npm run build:app`, `npm run typecheck`, `npm test`
 (the toolchain resolves the in-repo runtime via resolution layer 3).
 
-**Remaining (external, blocks `complete`):**
+**Remaining (blocks `complete`):**
 
-- The `@enrahitu` npm scope is unclaimed: `@enrahitu/toolchain` and
-  `@enrahitu/hiqlite-native` both return 404 on the public registry as of
-  2026-07-14, and no npm auth is configured here. Claiming the org scope and
-  running `publish.yml` with an `NPM_TOKEN` secret is out-of-band.
-- Acceptance items that need the published packages + CI matrix: the
-  clean-clone build of the SLIMMED tree on macOS arm64 + linux x64 with
-  binaries resolved from `node_modules` (resolution layer 2); `verify.yml`
-  getting faster once consumers drop the cargo build; and the publish workflow
-  reproducing bit-compatible binaries from a tag.
+- The clean-clone build of the SLIMMED tree on macOS arm64 + linux x64 with
+  binaries resolved from `node_modules` (resolution layer 2), and `verify.yml`
+  getting faster once consumers drop the cargo build. Both need a stamped or
+  slimmed consumer, not this source repo; the published `v0.1.0` packages now
+  make that test possible.
+
+The `@enrahitu` scope + `NPM_TOKEN` prerequisite and the publish workflow
+reproducing binaries from a tag are done (see the v0.1.0 note above).
