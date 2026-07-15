@@ -71,8 +71,10 @@ cp "$RUNTIME_SO" "$WORKTREE/docker/encore-runtime.node"
 # The SPA source is not part of the image (backend/web/dist is prebuilt) and
 # its devDependencies are not installed in the worktree; drop every frontend
 # flavor directory (the template carries them all, spec 015) so the tsparser
-# app walk never sees their unresolvable imports.
-rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-react"
+# app walk never sees their unresolvable imports. The e2e/ suite (spec 017)
+# is dropped for the same reason: its @playwright/test import is a devDep,
+# absent under `npm ci --omit=dev`.
+rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-react" "$WORKTREE/e2e"
 
 echo "==> production node_modules"
 (cd "$WORKTREE" && npm ci --omit=dev --no-fund --no-audit >/dev/null)

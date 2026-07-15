@@ -47,8 +47,9 @@ prerequisites.
   runtime (`docker/encore-runtime.node`). The app bundle + metadata are
   produced inside the worktree by the host `tsparser-encore`; every SPA
   flavor source directory (`frontend/`, `frontend-react/`; the template
-  carries them all, spec 015) is dropped from the worktree since their
-  devDependencies are not installed there. Local secrets (.env, keys/,
+  carries them all, spec 015) plus the `e2e/` suite (spec 017) is dropped
+  from the worktree since their devDependencies are not installed there.
+  Local secrets (.env, keys/,
   .data/) are never in the image. The script asserts the base image's
   entrypoint verbatim so `docker/entrypoint.sh` and the image layout move
   together.

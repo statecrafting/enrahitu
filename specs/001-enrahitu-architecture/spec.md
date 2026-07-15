@@ -76,7 +76,9 @@ decisions 1 and 2):
    spec 015) have their own `package.json`s but are not workspace members. The
    root `tsconfig.json` and `vitest.config.ts` exclude every frontend flavor
    directory: the SPA flavors typecheck and test under their own manifests, not
-   the backend's.
+   the backend's. They also exclude `e2e/`, the browser login suite (spec 017),
+   which runs under its own Playwright runner (`test:e2e`, `@playwright/test`
+   devDep) rather than vitest.
 2. **No Encore `SQLDatabase` anywhere.** `encore run` must not want Docker
    Postgres; `encore build docker` must not require database infra config.
    Durable state is CoreLedger's job (spec 003).

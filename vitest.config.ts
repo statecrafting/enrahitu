@@ -68,7 +68,15 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.test.ts"],
-    exclude: ["node_modules/**", "addon/**", "frontend/**", "frontend-react/**", "encore.gen/**"],
+    exclude: [
+      "node_modules/**",
+      "addon/**",
+      "frontend/**",
+      "frontend-react/**",
+      "encore.gen/**",
+      // The Playwright login e2e (spec 017) runs under its own runner, never vitest.
+      "e2e/**",
+    ],
     env: {
       ...(runtimeLib ? { ENCORE_RUNTIME_LIB: runtimeLib } : {}),
       ...encoreTestEnv(),
