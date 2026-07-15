@@ -58,6 +58,9 @@ fails the build.
   bookworm's glibc, not the newer glibc of the CI runner. A native runner
   build (glibc 2.39) requires `GLIBC_2.38`, which the `node:24-slim`
   (bookworm, glibc 2.36) image lacks, and the app crashes on first load.
+  The arch-independent JS loader (`addon/index.js`, `index.d.ts`) that
+  docker-build.sh injects is still emitted by the host `npm run
+  build:addon`; the bookworm cross-build only replaces the `.node`.
 - Smoke: `docker run --platform linux/amd64` (under emulation locally,
   natively in CI) boots, `/health` and `/hiq/health` return 200, and
   first-boot secret provisioning (spec 007) completes.
