@@ -33,6 +33,12 @@ async function waitForRauthy(timeoutMs: number): Promise<void> {
 }
 
 export default async function globalSetup(): Promise<void> {
+  // The app signs session tokens at the OIDC callback with keys/*.pem; without
+  // them finalizeLogin throws and the callback 500s. Locally these usually
+  // pre-exist; a clean CI checkout has none, so generate them here.
+  // eslint-disable-next-line no-console
+  console.log("[e2e] generating JWT dev keypairs (keys/*.pem)");
+  execSync("npm run generate-keys", { cwd: repoRoot, stdio: "inherit" });
   // eslint-disable-next-line no-console
   console.log("[e2e] starting dev rauthy (docker compose) + syncing client secret");
   execSync("npm run dev:idp", { cwd: repoRoot, stdio: "inherit" });
