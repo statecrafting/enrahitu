@@ -64,9 +64,13 @@ The addon keeps its package name `@enrahitu/hiqlite-native` and gains a
 registry publish path so a stamped app installs a prebuilt binary instead of
 copying the crate. The napi loader (`index.js`) already falls back to
 per-platform packages `@enrahitu/hiqlite-native-<triple>`, so the manifest
-drops `private`, declares those three platform packages
-(`darwin-arm64`, `linux-x64-gnu`, `linux-arm64-gnu`) as `optionalDependencies`,
-and the spec 018 publish workflow (`.github/workflows/publish.yml`) builds and
-publishes them via `napi create-npm-dirs`/`artifacts`. This repo still resolves
-the addon through the `file:./addon` dependency and the locally built (gitignored)
-`.node`; publishing is additive, not a replacement for the in-tree dev path.
+drops `private`, and the spec 018 publish workflow
+(`.github/workflows/publish.yml`) builds the three platform packages
+(`darwin-arm64`, `linux-x64-gnu`, `linux-arm64-gnu`) via
+`napi create-npm-dirs`/`artifacts` and injects them into the published meta
+manifest as `optionalDependencies` at publish time. They are NOT committed to
+`addon/package.json`: declaring them there churns `addon/package-lock.json`
+across platforms (the transitive emnapi optional tree), which would break
+`npm ci` in `verify.yml`. This repo still resolves the addon through the
+`file:./addon` dependency and the locally built (gitignored) `.node`;
+publishing is additive, not a replacement for the in-tree dev path.

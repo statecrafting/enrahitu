@@ -95,6 +95,14 @@ jobs:
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # The addon's platform optionalDependencies are injected here at publish
+      # time, not committed to addon/package.json: declaring them in the
+      # manifest churns addon/package-lock.json across platforms (the emnapi
+      # optional tree), which would break `npm ci` in verify.yml.
+      - name: Inject platform optionalDependencies into the addon meta manifest
+        if: matrix.publish_meta
+        run: |
+          node -e "const fs=require('fs');const f='addon/package.json';const p=JSON.parse(fs.readFileSync(f));const v=p.version;p.optionalDependencies={'@enrahitu/hiqlite-native-darwin-arm64':v,'@enrahitu/hiqlite-native-linux-x64-gnu':v,'@enrahitu/hiqlite-native-linux-arm64-gnu':v};fs.writeFileSync(f,JSON.stringify(p,null,2)+'\n')"
       - name: Publish @enrahitu/hiqlite-native (meta)
         if: matrix.publish_meta
         working-directory: addon

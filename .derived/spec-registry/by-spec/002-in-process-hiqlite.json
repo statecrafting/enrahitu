@@ -32,6 +32,6 @@
     "summary": "The hiqlite runtime embedded in the Node process: a napi-rs cdylib (@enrahitu/hiqlite-native) exposing init/health, TTL'd KV, and counters, plus the thin `hiq` Encore service that starts the node at service load and fronts the addon over HTTP. Replaces Redis for cache and rate-limit state with zero extra processes.\n",
     "title": "In-process hiqlite via a napi-rs native addon"
   },
-  "shardHash": "c8315cda744293a585672999e65c71dd2cf4d14212039322fa3a9180b45df430",
+  "shardHash": "7b940c555cea0f388902010fe495943286cfdd6861fa8028fe1f85d31d203057",
   "specVersion": "1.1.0"
 }

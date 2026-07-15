@@ -146,9 +146,12 @@ stays green from source; publishing to the registry is external and remains.
   and uses the registry `encore.dev@1.57.9` (same pinned version).
 - **hiqlite-native** keeps its package name and gains prebuild publish wiring:
   the napi loader already falls back to `@enrahitu/hiqlite-native-<triple>`
-  platform packages, so the addon manifest drops `private`, declares the three
-  platform packages as `optionalDependencies`, and the publish workflow builds
-  and publishes them.
+  platform packages, so the addon manifest drops `private` and the publish
+  workflow builds the three platform packages and injects them as
+  `optionalDependencies` into the published meta manifest. They are injected at
+  publish time rather than committed to `addon/package.json`, because declaring
+  them there re-resolves and churns `addon/package-lock.json` across platforms
+  (the transitive emnapi optional tree) and breaks `npm ci` in `verify.yml`.
 
 **Landed:** `packages/toolchain/` (drivers as bins + resolver + README), the
 three `@enrahitu/toolchain-<platform>` manifests, addon publish wiring,
