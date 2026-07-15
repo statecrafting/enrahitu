@@ -93,6 +93,37 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
   and from @enrahitu/toolchain. It becomes relevant only if a future
   spec splits services into separate processes; that spec would add it
   consciously, not by default.
+  - **What is NOT dropped: the reverse proxy.** The real gateway
+    (pingora-based router, auth handshake, CORS, healthz) lives in
+    `runtimes/core/src/api/gateway/` and stays vendored and active:
+    in the combined bundle it listens on the exposed port in-process
+    and proxies to the process's own API listener over loopback
+    (`own_api_address`). Verified against upstream v1.57.9: the
+    supervisor crate is only a process foreman (spawn children with
+    env_clear, restart policy, SIGINT/SIGTERM shutdown) plus a
+    single-upstream port forwarder with a healthz fan-out; every
+    piece of routing intelligence is in the runtime-core gateway,
+    which we keep. Rust multithreading is likewise unaffected: the
+    runtime core builds a multi-thread tokio runtime inside whatever
+    process loads encore-runtime.node (`runtimes/core/src/lib.rs`),
+    supervisor or not.
+  - **Pub/sub is orthogonal to the supervisor.** Delivery is
+    broker-backed via the infra config (no broker is declared today
+    and no service uses topics); the gateway's push-subscription
+    proxying exists to route push callbacks between service processes
+    in the split topology and is trivial in the combined one. Adding
+    pub/sub later is an infra-config + broker decision, not a
+    supervisor decision.
+  - **Event-loop pressure ladder** (mitigations before any process
+    split): the runtime config carries a per-service worker_threads
+    knob that runs JS handlers on Node worker threads (merged to the
+    minimum across co-hosted services in a combined process; a value
+    of 1 disables); CPU-heavy work can move to app-level worker
+    threads; and if per-service isolation is ever truly needed, the
+    shape is per-service images behind service discovery, which does
+    not use the supervisor either. Whether worker_threads is
+    reachable through infra.config.json in combined mode must be
+    verified at implementation time, not assumed.
 - **Versioning**: toolchain package version tracks its own semver;
   the pinned upstream Encore version (v1.57.9) is recorded in the
   package README and a `--version` output. template.toml `[requires]`
