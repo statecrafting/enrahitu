@@ -1,0 +1,98 @@
+# Multi-arch single-container image build + smoke (spec 016). NOT on push:
+# the full image build (two Rust builds + docker assembly) is long, so this
+# runs on demand (workflow_dispatch) and weekly, catching drift before the
+# fleet milestone (M3) without gating every push.
+#
+# Each arch builds NATIVELY on its own runner (amd64 on ubuntu-24.04, arm64 on
+# ubuntu-24.04-arm), so no QEMU emulation is involved: `npm run build:addon`
+# emits this arch's linux .node, build-runtime-linux.sh builds the linux .so,
+# and scripts/docker-build.sh assembles a linux/<arch> image and smokes it.
+# This is the "real x86-64 host" acceptance in spec 016 section 4.
+name: image
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays 05:00 UTC.
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            addon/package-lock.json
+            frontend/package-lock.json
+      - name: Install protoc + cmake
+        run: sudo apt-get update -q && sudo apt-get install -y -q protobuf-compiler cmake
+      - name: Cache cargo (host + linux targets)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            vendor/encore/target
+            vendor/encore/target-linux
+            addon/target
+          key: image-cargo-${{ matrix.arch }}-${{ hashFiles('vendor/encore/Cargo.lock', 'addon/Cargo.lock') }}
+          restore-keys: |
+            image-cargo-${{ matrix.arch }}-
+      - run: npm ci
+      - run: npm --prefix addon ci
+      # build:web (run inside docker-build.sh) needs the Vue flavor's deps; the
+      # image worktree drops every flavor + e2e/ before its own parse walk, so
+      # the other flavors are not needed here.
+      - run: npm --prefix frontend ci
+      - name: Build hiqlite-native addon (native linux .node for this arch)
+        run: npm run build:addon
+      - name: Build the host Encore toolchain (tsparser-encore for the app build)
+        run: npm run build:runtime
+      - name: Cross-build the linux Encore runtime (.so injected into the image)
+        run: packages/toolchain/scripts/build-runtime-linux.sh ${{ matrix.arch }}
+      - name: Build the ${{ matrix.arch }} image
+        run: scripts/docker-build.sh ${{ matrix.arch }}
+      - name: Smoke the image (/health, /hiq/health, first-boot)
+        run: |
+          set -euo pipefail
+          docker run -d --name enrahitu-smoke -p 8080:8080 enrahitu:latest
+          echo "waiting for the app to become healthy (first boot provisions secrets)..."
+          ok=
+          for _ in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/health >/dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          if [ "$ok" != "1" ]; then
+            echo "app did not become healthy within timeout" >&2
+            docker logs enrahitu-smoke || true
+            docker rm -f enrahitu-smoke || true
+            exit 1
+          fi
+          echo "== GET /health ==";     curl -fsS http://localhost:8080/health; echo
+          echo "== GET /hiq/health =="; curl -fsS http://localhost:8080/hiq/health; echo
+          echo "== first-boot log evidence =="
+          docker logs enrahitu-smoke 2>&1 | grep -iE "first.?boot|provision|secret|listening" | head -20 || true
+          docker rm -f enrahitu-smoke
+      - name: Report built image arch
+        run: docker image inspect enrahitu:latest --format 'built enrahitu:latest ({{.Architecture}})'

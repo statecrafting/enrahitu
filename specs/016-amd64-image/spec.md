@@ -3,7 +3,7 @@ id: "016-amd64-image"
 title: "linux/amd64 image support (multi-arch packaging)"
 status: approved
 created: "2026-07-14"
-implementation: pending
+implementation: complete
 depends_on:
   - "007-single-container-packaging"
   - "008-vendored-encore-toolchain"
@@ -31,12 +31,16 @@ milestone (M3), not a nice-to-have.
 
 ## 2. Territory
 
-`.github/workflows/image.yml` (claimed ahead of the code; the path is
-reserved for the image-build workflow described in §3). The remaining
-work amends `scripts/encore/build-runtime-linux.sh`,
-`scripts/docker-build.sh`, and `docker/` files, all owned by specs 007
-and 008 (edit the owning spec's §Behavior alongside any behavioral
-change).
+`.github/workflows/image.yml` (this spec's own surface): the image-build
+workflow described in §3. The cross-build driver
+`build-runtime-linux.sh` already takes the arch argument and relocated to
+`packages/toolchain/scripts/` under spec 018, so it needed no change. The
+one behavioral change lands in `scripts/docker-build.sh` (owned by spec
+007, its §Behavior amended): the `[arch]` argument now drives
+`docker build --platform linux/<arch>` (previously it only selected the
+injected artifacts, silently building a host-arch image), and the
+injected addon `.node` + runtime `.so` are ELF-arch-checked so a mismatch
+fails the build.
 
 ## 3. Behavior
 
