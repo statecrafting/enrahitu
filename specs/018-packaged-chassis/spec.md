@@ -80,6 +80,20 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
   keeps working against vendor/encore for toolchain development; the
   packages are how CONSUMERS get binaries, not a replacement for the
   source of truth.
+- **The vendored source leaves the stamped tree via `export-ignore`.**
+  `.gitattributes` marks the heavy `vendor/encore` build-source subtrees
+  (`tsparser`, `miniredis`, `proto`, `runtimes/core`,
+  `runtimes/js/{src,build.rs}`, and the workspace Cargo manifests)
+  `export-ignore`, mirroring the `.dockerignore` exclusions. `git archive`
+  (what the Stagecraft factory uses to export a stamp, stagecraft spec
+  005) honours it, so a stamp carries the packaged toolchain, not its
+  source: the export drops from 861 to 441 tracked files. The
+  `runtimes/js/encore.dev` JS runtime (195 files) is deliberately kept,
+  because a stamped app resolves it through the `node_modules` symlink
+  (the same reason `.dockerignore` keeps it). This realizes the "vendor
+  leaves the stamped tree" claim of §1/§2 for the archive path; slimming
+  `addon/` Rust source toward the full "no vendor/, no addon/ source"
+  target (§4) is a follow-on on the same mechanism.
 - **Platform matrix**: darwin-arm64, linux-x64, linux-arm64. This is
   the same matrix spec 016 (amd64 image) needs; implement the shared
   cross-build once, in the publish workflow, and let 016's image build
@@ -141,6 +155,11 @@ In-repo (satisfied in this source tree):
 - Both packages published under the @enrahitu scope (done: all eight
   `@enrahitu/*` packages are live at v0.1.0; see §6).
 - The publish workflow reproduces bit-compatible binaries from a tag.
+- `git archive` of a template SHA excludes the vendored build-source
+  (`vendor/encore/{tsparser,miniredis,proto,runtimes/core,runtimes/js/src,...}`)
+  while keeping `runtimes/js/encore.dev`, so a stamp carries no toolchain
+  build-source. Verifiable in-repo: the `vendor/` count in
+  `git archive HEAD | tar -t` drops from 625 to 197.
 - Spine gates green; spec 008 amended coherently.
 
 Consumer-side (delegated, verified outside this repo): these require a
@@ -182,6 +201,16 @@ be an npm automation token (a 2FA-gated token fails the CI publish with
 the GitHub source (a missing one fails with a 422 provenance mismatch). What
 remains before `complete` is the clean-clone verification of the slimmed tree
 resolving binaries from `node_modules` (below).
+
+**2026-07-15 (export-ignore).** The "vendor leaves the stamped tree" claim
+(§1/§2) is now realized on the archive path: `.gitattributes` marks the
+`vendor/encore` build-source `export-ignore`, mirroring `.dockerignore`, so a
+`git archive` stamp drops from 861 to 441 tracked files (`vendor/` 625 -> 197,
+keeping the `encore.dev` JS runtime). Found via a dry-run of the Stagecraft
+factory's stamp export against a real target, which had been carrying all 625
+vendor files into every stamp because no `export-ignore` existed. This closes
+the `vendor/` half of the slimmed-tree target; the `addon/` Rust-source half
+remains, on the same mechanism.
 
 **Implementation decisions** (refine §2/§3, do not contradict them):
 

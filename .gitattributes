@@ -64,3 +64,23 @@ Dockerfile* text eol=lf
 # Binary test fixtures in the vendored Encore workspace must never be
 # line-ending normalized.
 *.bin binary
+
+# --- Stamped-tree slimming (spec 018) ---
+# The vendored Encore toolchain leaves the STAMPED tree but stays in this
+# repo to build the @enrahitu/toolchain packages. `git archive` (what the
+# Stagecraft factory uses to export a stamp, spec 005) honours export-ignore,
+# so these heavy build-source subtrees are excluded from every stamp. This
+# mirrors the docker build-context exclusions in .dockerignore. The encore.dev
+# JS runtime (vendor/encore/runtimes/js/encore.dev) is deliberately NOT
+# ignored: a stamped app resolves it through the node_modules symlink.
+vendor/encore/target                 export-ignore
+vendor/encore/target-linux           export-ignore
+vendor/encore/tsparser               export-ignore
+vendor/encore/miniredis              export-ignore
+vendor/encore/proto                  export-ignore
+vendor/encore/runtimes/core          export-ignore
+vendor/encore/runtimes/js/src        export-ignore
+vendor/encore/runtimes/js/build.rs   export-ignore
+vendor/encore/runtimes/js/Cargo.toml export-ignore
+vendor/encore/Cargo.toml             export-ignore
+vendor/encore/Cargo.lock             export-ignore
