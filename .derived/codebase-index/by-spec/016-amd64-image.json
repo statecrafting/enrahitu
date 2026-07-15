@@ -1,23 +1,22 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '016-amd64-image' file unit '.github/workflows/image.yml' does not exist",
-        "path": ".github/workflows/image.yml"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "007-single-container-packaging",
       "008-vendored-encore-toolchain"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": ".github/workflows/image.yml",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": ".github/workflows/image.yml"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -30,5 +29,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "68340e1f570840312c84e7e6e21d59e08e86286e9acdf10dcddda00d6f8a9374"
+  "shardHash": "1a989f7ec1b67b2c636a4b23aa1666808ab5fe8fadb2cf187f2f602d3c3c2f96"
 }

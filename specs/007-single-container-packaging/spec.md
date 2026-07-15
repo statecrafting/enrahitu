@@ -52,7 +52,11 @@ prerequisites.
   Local secrets (.env, keys/,
   .data/) are never in the image. The script asserts the base image's
   entrypoint verbatim so `docker/entrypoint.sh` and the image layout move
-  together.
+  together. The `[arch]` argument (arm64 default, amd64) drives both the
+  injected native artifacts and the `docker build --platform linux/<arch>`
+  target, so the image arch and its addon `.node` + runtime `.so` always
+  agree; a native artifact whose ELF arch does not match fails the build,
+  not the first request (spec 016).
 - `docker/Dockerfile`: layers the rauthy binary (from
   `ghcr.io/sebadob/rauthy`, single dynamically-linked binary, same Debian
   family as `node:24-slim`), the prod rauthy config (spec 005), first-boot,

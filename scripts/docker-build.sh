@@ -20,8 +20,8 @@ set -euo pipefail
 
 ARCH="${1:-arm64}"
 case "$ARCH" in
-  arm64) NAPI_TRIPLE=linux-arm64-gnu; LIBSQL_PKG=@libsql/linux-arm64-gnu ;;
-  amd64) NAPI_TRIPLE=linux-x64-gnu; LIBSQL_PKG=@libsql/linux-x64-gnu ;;
+  arm64) NAPI_TRIPLE=linux-arm64-gnu; LIBSQL_PKG=@libsql/linux-arm64-gnu; PLATFORM=linux/arm64; ELF_ARCH="ARM aarch64" ;;
+  amd64) NAPI_TRIPLE=linux-x64-gnu; LIBSQL_PKG=@libsql/linux-x64-gnu; PLATFORM=linux/amd64; ELF_ARCH="x86-64" ;;
   *) echo "unsupported arch: $ARCH (arm64|amd64)" >&2; exit 1 ;;
 esac
 
@@ -49,6 +49,16 @@ if [ ! -f "$RUNTIME_SO" ]; then
   echo "cross-build the Encore runtime first: packages/toolchain/scripts/build-runtime-linux.sh $ARCH" >&2
   exit 1
 fi
+
+# A mismatched native artifact must fail the build, not the first request
+# (spec 016): both the addon .node and the runtime .so must be this arch's ELF.
+for artifact in "$ADDON_NODE" "$RUNTIME_SO"; do
+  if ! file -b "$artifact" | grep -q "$ELF_ARCH"; then
+    echo "arch mismatch: $artifact is not a $ELF_ARCH ELF (expected for $ARCH)" >&2
+    file "$artifact" >&2 || true
+    exit 1
+  fi
+done
 
 echo "==> building SPA"
 npm run build:web
@@ -106,8 +116,8 @@ if [ ! -d "$BINDING_DIR" ]; then
   exit 1
 fi
 
-echo "==> base image (app + vendored runtime)"
-docker build -f "$WORKTREE/docker/Dockerfile.base" -t enrahitu-api:latest "$WORKTREE"
+echo "==> base image (app + vendored runtime), $PLATFORM"
+docker build --platform "$PLATFORM" -f "$WORKTREE/docker/Dockerfile.base" -t enrahitu-api:latest "$WORKTREE"
 
 # The final entrypoint script hardcodes the app start command; fail loudly if
 # the base image layout ever drifts from it.
@@ -121,7 +131,7 @@ if [ "$ACTUAL" != "$EXPECTED" ]; then
   exit 1
 fi
 
-echo "==> final image (app + rauthy)"
-docker build -f docker/Dockerfile -t enrahitu:latest "$ROOT"
+echo "==> final image (app + rauthy), $PLATFORM"
+docker build --platform "$PLATFORM" -f docker/Dockerfile -t enrahitu:latest "$ROOT"
 
 docker image inspect enrahitu:latest --format 'built enrahitu:latest ({{.Architecture}})'
