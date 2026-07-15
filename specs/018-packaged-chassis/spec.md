@@ -183,6 +183,12 @@ stays green from source; publishing to the registry is external and remains.
   publish time rather than committed to `addon/package.json`, because declaring
   them there re-resolves and churns `addon/package-lock.json` across platforms
   (the transitive emnapi optional tree) and breaks `npm ci` in `verify.yml`.
+- **Provenance needs `repository`.** `publish.yml` publishes with
+  `npm publish --provenance`, which rejects any package whose
+  `repository.url` does not match the GitHub source recorded in the signed
+  provenance bundle. Every published `@enrahitu/*` manifest therefore carries
+  a `repository` field pointing at this repo; the addon platform packages
+  inherit it from `addon/package.json` via `napi create-npm-dirs`.
 
 **Landed:** `packages/toolchain/` (drivers as bins + resolver + README), the
 three `@enrahitu/toolchain-<platform>` manifests, addon publish wiring,

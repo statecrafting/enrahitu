@@ -2,6 +2,11 @@
   "name": "@enrahitu/toolchain-darwin-arm64",
   "version": "0.1.0",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stagecraft-ing/enrahitu.git",
+    "directory": "packages/toolchain-darwin-arm64"
+  },
   "spec-spine": { "spec": "018-packaged-chassis" },
   "description": "EnRaHiTu toolchain native binaries for macOS arm64: encore-runtime.node + tsparser-encore (encoredev/encore v1.57.9, MPL-2.0). Installed as an optional dependency of @enrahitu/toolchain on matching hosts.",
   "os": ["darwin"],

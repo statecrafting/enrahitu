@@ -36,6 +36,6 @@
     "summary": "The heavy invariants leave the template tree and become versioned npm packages with prebuilt binaries: @enrahitu/toolchain (the vendored Encore build drivers + encore-runtime.node + tsparser, per-platform) and @enrahitu/hiqlite-native (the addon, prebuilt). The template drops from ~780 tracked files to a surface a developer can read in one sitting, and a chassis upgrade becomes a devDependency bump instead of a tree re-import. Decided 2026-07-14 to land BEFORE stagecraft's app-shell import (stagecraft spec 002), so the first template consumer never duplicates the fat tree. The build contract is unchanged where it matters: a stamped app still builds with npm + cargo-free installs and NO proprietary tool; the Stagecraft CLI never becomes a build daemon.\n",
     "title": "Package-distributed chassis: the toolchain leaves the tree"
   },
-  "shardHash": "8ea9c244360f6e65a854314b933ac05b602b7adc00ff0c1372d2d00ee4f7e00f",
+  "shardHash": "39e2cba20d02e09793c6dab65bea98530c4376a11693acbb2d0e0475e1c0a661",
   "specVersion": "1.1.0"
 }

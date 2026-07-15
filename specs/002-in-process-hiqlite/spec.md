@@ -76,3 +76,11 @@ across platforms (the transitive emnapi optional tree), which would break
 `npm ci` in `verify.yml`. This repo still resolves the addon through the
 `file:./addon` dependency and the locally built (gitignored) `.node`;
 publishing is additive, not a replacement for the in-tree dev path.
+
+The addon meta manifest carries a `repository` field pointing at this repo
+(`github.com/stagecraft-ing/enrahitu`): `npm publish --provenance` rejects a
+package whose `repository.url` does not match the GitHub source recorded in
+the signed provenance bundle. `napi create-npm-dirs` copies `repository` into
+each generated `@enrahitu/hiqlite-native-<triple>` manifest, so it is declared
+once in `addon/package.json`; the generated `addon/npm/` tree is a build
+artifact and gitignored.
