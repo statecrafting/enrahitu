@@ -1,0 +1,11 @@
+{
+  "package": {
+    "kind": "npm-package",
+    "name": "@enrahitu/toolchain-linux-x64",
+    "path": "packages/toolchain-linux-x64",
+    "specRef": "018-packaged-chassis",
+    "version": "0.1.0"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "e6420e8d23da00a32ccabfc35d074d2ddfb194980e8d18d3ffac913abe9d312a"
+}

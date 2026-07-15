@@ -3,13 +3,15 @@
  * Expose the built napi runtime under the name Node can require().
  * cargo emits libencore_js_runtime.{dylib,so}; the encore.dev JS runtime
  * loads ENCORE_RUNTIME_LIB via require(), which needs a .node extension.
+ *
+ * Toolchain-developer tool: run from THIS repo's root after
+ * `npm run build:runtime`; the app root is the invoking process's cwd.
  */
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const repoRoot = process.cwd();
 const releaseDir = join(repoRoot, "vendor/encore/target/release");
 
 // CMake (libz-ng-sys) writes dependency-tracking files with a .ts extension

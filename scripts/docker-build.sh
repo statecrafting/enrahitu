@@ -12,9 +12,9 @@
 #   3. production node_modules (npm ci --omit=dev + the linux libsql binding,
 #      which npm on macOS never installs by itself)
 #   4. the cross-built Encore napi runtime (encore-runtime.node, from
-#      scripts/encore/build-runtime-linux.sh)
+#      packages/toolchain/scripts/build-runtime-linux.sh)
 # The app bundle + metadata are produced INSIDE the worktree by the host
-# tsparser-encore (scripts/encore/build.mjs), then docker/Dockerfile.base
+# tsparser-encore (packages/toolchain/bin/build.mjs), then docker/Dockerfile.base
 # assembles the base image and docker/Dockerfile layers rauthy on top.
 set -euo pipefail
 
@@ -46,7 +46,7 @@ fi
 RUNTIME_SO="$ROOT/vendor/encore/target-linux/release/libencore_js_runtime.so"
 if [ ! -f "$RUNTIME_SO" ]; then
   echo "missing $RUNTIME_SO" >&2
-  echo "cross-build the Encore runtime first: scripts/encore/build-runtime-linux.sh $ARCH" >&2
+  echo "cross-build the Encore runtime first: packages/toolchain/scripts/build-runtime-linux.sh $ARCH" >&2
   exit 1
 fi
 
@@ -79,9 +79,9 @@ echo "==> production node_modules"
 echo "==> app bundle + metadata (vendored toolchain)"
 (cd "$WORKTREE" && \
   ENCORE_TSPARSER_BIN="$TSPARSER" \
-  ENCORE_TSBUNDLER_PATH="$ROOT/scripts/encore/tsbundler.mjs" \
-  node scripts/encore/build.mjs)
-(cd "$WORKTREE" && node scripts/encore/augment-infra.mjs \
+  ENCORE_TSBUNDLER_PATH="$ROOT/packages/toolchain/lib/tsbundler.mjs" \
+  node packages/toolchain/bin/build.mjs)
+(cd "$WORKTREE" && node packages/toolchain/lib/augment-infra.mjs \
   infra.config.json .encore/build/compile-result.json infra.config.docker.json)
 
 # LAST tree mutation on purpose: the linux binding is extraneous to the lock,

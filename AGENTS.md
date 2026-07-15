@@ -36,7 +36,7 @@ picked up on the next init.
    - `spec-spine index check`: staleness gate for the codebase index (non-fatal)
    - `spec-spine registry status-report --json --nonzero-only`: lifecycle counts
    - `spec-spine registry list --ids-only`: spec inventory (for latest-spec detection)
-   - `ls addon core hiq auth idp lib web webapp health docker scripts/encore vendor/encore`: application surface discovery
+   - `ls addon core hiq auth idp lib web webapp health docker packages vendor/encore`: application surface discovery
    - `ls docs/`: docs surface
    - `git log --oneline -10`: recent history
    - `git diff --stat HEAD~1`: last change summary

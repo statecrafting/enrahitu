@@ -1,0 +1,11 @@
+{
+  "package": {
+    "kind": "npm-package",
+    "name": "@enrahitu/toolchain",
+    "path": "packages/toolchain",
+    "specRef": "018-packaged-chassis",
+    "version": "0.1.0"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "afe8c2bcdbd2e7d1b3f953f591afe2ec4a9f362164c962cf82b1bf9bef00e484"
+}

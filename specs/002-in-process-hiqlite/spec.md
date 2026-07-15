@@ -57,6 +57,16 @@ its own embedded hiqlite, so the entire stack stays in the SQLite family.
 
 - dlock and listen/notify: added to the addon only when a consumer exists.
 - Clustering (StatefulSet raft) is out of scope for v0.
-- Publishing the addon to a registry: the `file:` dependency resolves
-  in-image only because `bundle_source: true` copies the tree; acceptable in
-  this single-package repo, revisit if the addon is ever published.
+
+## 5. Publishing (amended by spec 018, 2026-07-14)
+
+The addon keeps its package name `@enrahitu/hiqlite-native` and gains a
+registry publish path so a stamped app installs a prebuilt binary instead of
+copying the crate. The napi loader (`index.js`) already falls back to
+per-platform packages `@enrahitu/hiqlite-native-<triple>`, so the manifest
+drops `private`, declares those three platform packages
+(`darwin-arm64`, `linux-x64-gnu`, `linux-arm64-gnu`) as `optionalDependencies`,
+and the spec 018 publish workflow (`.github/workflows/publish.yml`) builds and
+publishes them via `napi create-npm-dirs`/`artifacts`. This repo still resolves
+the addon through the `file:./addon` dependency and the locally built (gitignored)
+`.node`; publishing is additive, not a replacement for the in-tree dev path.

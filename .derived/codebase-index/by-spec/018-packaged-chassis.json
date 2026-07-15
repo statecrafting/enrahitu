@@ -1,28 +1,65 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '018-packaged-chassis' directory unit 'packages/' is not a directory",
-        "path": "packages/"
-      }
-    ]
-  },
   "mapping": {
+    "amends": [
+      "002-in-process-hiqlite",
+      "008-vendored-encore-toolchain",
+      "009-template-contract"
+    ],
     "dependsOn": [
       "008-vendored-encore-toolchain",
       "009-template-contract"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": ".github/workflows/publish.yml",
+        "source": "spec-edge"
+      },
+      {
+        "path": "packages/",
+        "source": "spec-edge"
+      },
+      {
+        "path": "packages/toolchain",
+        "source": "manifest-metadata"
+      },
+      {
+        "path": "packages/toolchain-darwin-arm64",
+        "source": "manifest-metadata"
+      },
+      {
+        "path": "packages/toolchain-linux-arm64",
+        "source": "manifest-metadata"
+      },
+      {
+        "path": "packages/toolchain-linux-x64",
+        "source": "manifest-metadata"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "packages/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
           "path": "packages/"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": ".github/workflows/publish.yml"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": ".github/workflows/publish.yml"
         }
       }
     ],
@@ -30,5 +67,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "2af9db85d2bffa8bd19d00319a4fb58e4a5e681be27a988ffc1d868420f4d587"
+  "shardHash": "de5bee336b1724d4eae304cdc24b5471c58301e00a8d6209bc3c289a9e81fde4"
 }

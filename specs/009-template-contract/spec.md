@@ -59,9 +59,12 @@ commands to contract verbs, not the commands themselves.
 - `[contract].version`: semver for the *schema of this file*. The factory
   pins a compatible range (`^0.1`). Adding an optional key is a minor bump;
   changing or removing a key, or changing a verb's meaning, is a major bump.
-- `[requires]`: runtime requirements of a stamped app (node >= 24). Rust
-  and protoc are template-development requirements only and are
-  deliberately absent.
+- `[requires]`: runtime requirements of a stamped app. `node >= 24`, and
+  (contract v0.2, spec 018) `toolchain = "^0.1"`: the `@enrahitu/toolchain`
+  chassis package a stamped app devDepends on for its build drivers and
+  prebuilt native binaries. Adding this optional key was a minor contract
+  bump (0.1 to 0.2), the worked example of the rule below. Rust and protoc
+  remain template-development requirements only and are deliberately absent.
 - `[slots]`: the values the factory substitutes at stamp time. v0: app
   name, org, and the `frontend` flavor knob. The knob exists so frontend
   variants are a slot, not a fork: `vue` is the only allowed value today;

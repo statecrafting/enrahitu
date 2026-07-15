@@ -19,9 +19,17 @@ standards_dir = "standards/spec"
 # Single npm package at the root (no workspaces; key decision 1 in spec 001).
 # The napi addon and the Vue SPA carry their own manifests outside any
 # workspace, so they are declared standalone. The addon is also a standalone
-# Rust crate (no root Cargo workspace exists).
+# Rust crate (no root Cargo workspace exists). The chassis toolchain and its
+# per-platform binary carriers (spec 018) are file:-linked, not workspaced.
 standalone_rust_workspaces = ["addon"]
-standalone_npm_packages    = ["addon", "webapp"]
+standalone_npm_packages = [
+  "addon",
+  "webapp",
+  "packages/toolchain",
+  "packages/toolchain-darwin-arm64",
+  "packages/toolchain-linux-x64",
+  "packages/toolchain-linux-arm64",
+]
 
 [index]
 # Governance surfaces beyond the always-hashed core: standards, CI workflows,

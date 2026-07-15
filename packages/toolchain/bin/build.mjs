@@ -1,15 +1,21 @@
 #!/usr/bin/env node
 /**
  * Build the app with the vendored Encore toolchain: no `encore` CLI.
+ * Distributed as the `enrahitu-build` bin of @enrahitu/toolchain (spec 018).
  *
- * Drives `tsparser-encore` (vendor/encore, built by `npm run build:runtime`)
- * over its stdin/stdout protocol:
+ * The app root is the invoking process's cwd (a stamped app or this template
+ * repo); the tsparser binary and the encore.dev runtime override are resolved
+ * per spec 018 §3 (env override, node_modules platform package, in-repo vendor
+ * build). A stamped tree has no vendor/, so the encore.dev source override is
+ * applied only when the vendored runtime is present; otherwise the registry
+ * `encore.dev@1.57.9` dependency stands in (same pinned version).
  *
- *   prepare  -> pins the encore.dev dep to the vendored JS runtime and
- *               ensures node_modules is installed
+ * Drives `tsparser-encore` over its stdin/stdout protocol:
+ *   prepare  -> pins the encore.dev dep (to the vendored JS runtime when it
+ *               exists) and ensures node_modules is installed
  *   parse    -> emits the app metadata protobuf   -> .encore/build/meta
  *   compile  -> regenerates encore.gen and bundles the combined entrypoint
- *               (via scripts/encore/tsbundler.mjs) -> .encore/build/combined/
+ *               (via lib/tsbundler.mjs)            -> .encore/build/combined/
  *
  * Protocol framing (tsparser/src/bin/tsparser-encore.rs): each request is a
  * command line ("prepare\n") immediately followed by its JSON payload with
@@ -19,34 +25,37 @@
  */
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+import { tsparserBin } from "../lib/resolve.mjs";
+
+const repoRoot = process.cwd();
+const pkgRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const vendorDir = join(repoRoot, "vendor/encore");
-// Overridable for worktree builds (scripts/docker-build.sh): the toolchain
-// binaries live in the main checkout's gitignored target/ and node_modules.
-const tsparserBin =
-  process.env.ENCORE_TSPARSER_BIN ?? join(vendorDir, "target/release/tsparser-encore");
-const tsbundler = process.env.ENCORE_TSBUNDLER_PATH ?? join(repoRoot, "scripts/encore/tsbundler.mjs");
+const vendorRuntimeJs = join(vendorDir, "runtimes/js");
+const tsparser = tsparserBin({ cwd: repoRoot });
+const tsbundler = process.env.ENCORE_TSBUNDLER_PATH ?? join(pkgRoot, "lib/tsbundler.mjs");
 const buildDir = join(repoRoot, ".encore/build");
 const RUNTIME_VERSION = "v1.57.9";
 
-if (!existsSync(tsparserBin)) {
-  console.error(`tsparser-encore not found at ${tsparserBin}`);
-  console.error("build the vendored toolchain first: npm run build:runtime");
+if (!tsparser) {
+  console.error("tsparser-encore not found (env override, node_modules platform");
+  console.error("package, or in-repo vendor build all missing).");
+  console.error("toolchain developers: npm run build:runtime");
   process.exit(1);
 }
 
 // Guard against stray CMake *.ts artifacts in the cargo target trees (see
-// link-runtime.mjs); the parse walk would otherwise fail on them.
+// link-runtime.mjs); the parse walk would otherwise fail on them. Only the
+// in-repo vendor build has these; a stamped tree has no vendor/.
 for (const t of ["target", "target-linux"]) {
   if (existsSync(join(vendorDir, t))) {
     spawnSync("find", [join(vendorDir, t), "-name", "*.ts", "-type", "f", "-delete"]);
   }
 }
 
-const child = spawn(tsparserBin, [], {
+const child = spawn(tsparser, [], {
   cwd: repoRoot,
   env: { ...process.env, ENCORE_TSBUNDLER_PATH: tsbundler },
   stdio: ["pipe", "pipe", "inherit"],
@@ -85,7 +94,9 @@ try {
   const prepared = await request("prepare", {
     app_root: repoRoot,
     runtime_version: RUNTIME_VERSION,
-    local_runtime_override: join(vendorDir, "runtimes/js"),
+    // Toolchain-dev tree only: pin encore.dev to the vendored JS runtime
+    // source. Absent in a stamped tree, which uses the registry package.
+    ...(existsSync(vendorRuntimeJs) ? { local_runtime_override: vendorRuntimeJs } : {}),
   });
   console.log(`[encore-build] prepared (${prepared.length} bytes of package state)`);
 

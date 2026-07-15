@@ -10,11 +10,17 @@ license = "Apache-2.0"
 
 [contract]
 # Contract schema version (semver). The factory pins a compatible range;
-# a breaking change to this file's shape bumps the major.
-version = "0.1.0"
+# a breaking change to this file's shape bumps the major. v0.2 adds the
+# optional [requires].toolchain key (spec 018; minor bump per spec 009 §3.1).
+version = "0.2.0"
 
 [requires]
 node = ">=24"
+# The packaged build toolchain (spec 018), consumed by a stamped app as a
+# devDependency (@enrahitu/toolchain): the vendored Encore build drivers plus
+# prebuilt per-platform encore-runtime.node / tsparser-encore binaries. Its
+# @enrahitu/hiqlite-native companion carries the prebuilt addon.
+toolchain = "^0.1"
 # Rust + protoc are template-development requirements only; stamped apps
 # consume the prebuilt addon and vendored-runtime artifacts (specs 002/008).
 

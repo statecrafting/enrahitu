@@ -3,12 +3,17 @@ id: "018-packaged-chassis"
 title: "Package-distributed chassis: the toolchain leaves the tree"
 status: approved
 created: "2026-07-14"
-implementation: pending
+implementation: in-progress
 depends_on:
+  - "008-vendored-encore-toolchain"
+  - "009-template-contract"
+amends:
+  - "002-in-process-hiqlite"
   - "008-vendored-encore-toolchain"
   - "009-template-contract"
 establishes:
   - { kind: directory, path: "packages/" }
+  - { kind: file, path: ".github/workflows/publish.yml" }
 summary: >
   The heavy invariants leave the template tree and become versioned npm
   packages with prebuilt binaries: @enrahitu/toolchain (the vendored
@@ -116,3 +121,50 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
 - CoreLedger as a package (`@enrahitu/coreledger` is plausible later;
   it is user-extended app code today and stays in-tree).
 - Windows binaries.
+
+## 6. Status (2026-07-14)
+
+`implementation: in-progress`. The in-repo structure landed and this repo
+stays green from source; publishing to the registry is external and remains.
+
+**Implementation decisions** (refine §2/§3, do not contradict them):
+
+- **`file:` bootstrap.** This repo is the template *source*, so its root
+  `devDependencies` reference `@enrahitu/toolchain` via `file:./packages/toolchain`
+  (the same pattern as `@enrahitu/hiqlite-native": "file:./addon"`). A *stamped*
+  app pins published exact versions instead. The platform packages are the
+  toolchain's own `optionalDependencies` (with `os`/`cpu` guards); in this
+  unpublished repo they 404 and are skipped, so the in-repo cargo fallback
+  (resolution layer 3) is what serves local dev, exactly as intended.
+- **cwd-based app root.** The drivers run as package bins and resolve the app
+  root from `process.cwd()`, never their own file location. `packages/toolchain/lib/resolve.mjs`
+  is the single layered resolver (env override, node_modules platform package,
+  in-repo `vendor/encore/target/release`) with a unit test covering every branch.
+- **Conditional runtime override.** `enrahitu-build` applies the
+  `local_runtime_override` (pinning `encore.dev` to the vendored JS source)
+  only when `vendor/encore/runtimes/js` exists; a stamped tree has no vendor/
+  and uses the registry `encore.dev@1.57.9` (same pinned version).
+- **hiqlite-native** keeps its package name and gains prebuild publish wiring:
+  the napi loader already falls back to `@enrahitu/hiqlite-native-<triple>`
+  platform packages, so the addon manifest drops `private`, declares the three
+  platform packages as `optionalDependencies`, and the publish workflow builds
+  and publishes them.
+
+**Landed:** `packages/toolchain/` (drivers as bins + resolver + README), the
+three `@enrahitu/toolchain-<platform>` manifests, addon publish wiring,
+`.github/workflows/publish.yml`, the root/vitest/docker rewiring to the bins,
+`template.toml` contract bump, and the spec amendments (002/008/009). Local
+gates green: `npm ci`, `npm run build:app`, `npm run typecheck`, `npm test`
+(the toolchain resolves the in-repo runtime via resolution layer 3).
+
+**Remaining (external, blocks `complete`):**
+
+- The `@enrahitu` npm scope is unclaimed: `@enrahitu/toolchain` and
+  `@enrahitu/hiqlite-native` both return 404 on the public registry as of
+  2026-07-14, and no npm auth is configured here. Claiming the org scope and
+  running `publish.yml` with an `NPM_TOKEN` secret is out-of-band.
+- Acceptance items that need the published packages + CI matrix: the
+  clean-clone build of the SLIMMED tree on macOS arm64 + linux x64 with
+  binaries resolved from `node_modules` (resolution layer 2); `verify.yml`
+  getting faster once consumers drop the cargo build; and the publish workflow
+  reproducing bit-compatible binaries from a tag.

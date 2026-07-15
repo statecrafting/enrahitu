@@ -11,7 +11,8 @@
 > (spec 008): `vendor/encore/` carries upstream encoredev/encore @ v1.57.9
 > (the rust runtime core, the napi-rs JS bindings built into
 > `encore-runtime.node`, the `tsparser-encore` parser/compiler, and the
-> published `encore.dev` JS runtime), and `scripts/encore/` drives it. Dev
+> published `encore.dev` JS runtime), and `@enrahitu/toolchain`
+> (`packages/toolchain/`, spec 018) drives it. Dev
 > runs, typechecking, tests, and image builds work without the `encore`
 > CLI; every phase-0-through-5 behavior below is otherwise unchanged.
 

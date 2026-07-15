@@ -20,7 +20,7 @@ export function augmentInfraConfig(baseInfraPath, compileResultPath, outPath) {
 }
 
 // CLI form (used by scripts/docker-build.sh inside the image worktree):
-//   node scripts/encore/augment-infra.mjs <base-infra.json> <compile-result.json> <out.json>
+//   node augment-infra.mjs <base-infra.json> <compile-result.json> <out.json>
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const [base, compileResult, out] = process.argv.slice(2);
   if (!base || !compileResult || !out) {

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { transformWithEsbuild, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
-import { augmentInfraConfig } from "./scripts/encore/augment-infra.mjs";
+import { augmentInfraConfig } from "@enrahitu/toolchain/augment-infra";
 
 /**
  * Vitest 4 transforms TS via oxc (rolldown-vite), which cannot lower stage-3
@@ -48,8 +48,8 @@ const runtimeLib = encoreRuntimeLib();
  * ENCORE_APP_META_PATH is set; otherwise it shells out to `encore`, which
  * the kit does not require (and CI does not have). When the app has been
  * built (npm run build:app), point every test worker at the compiled app
- * meta and the augmented infra config, exactly as scripts/encore/dev.mjs
- * does for `encore run`. Without a prior build this returns {} so pure
+ * meta and the augmented infra config, exactly as the enrahitu-dev runner
+ * (@enrahitu/toolchain) does for `encore run`. Without a prior build this returns {} so pure
  * tests still run; runtime-touching tests then need the CLI daemon.
  */
 function encoreTestEnv(): Record<string, string> {

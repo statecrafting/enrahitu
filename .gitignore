@@ -323,3 +323,10 @@ encore.gen.cue
 # JWT dev keypairs (npm run generate-keys)
 keys/
 *.pem
+
+### enrahitu
+# Toolchain platform-package native payloads (spec 018): built by the publish
+# workflow and injected into @enrahitu/toolchain-<platform> at pack time. Only
+# the manifests + READMEs are tracked; the binaries never enter git.
+packages/toolchain-*/encore-runtime.node
+packages/toolchain-*/tsparser-encore

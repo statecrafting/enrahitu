@@ -1,0 +1,36 @@
+{
+  "name": "@enrahitu/toolchain",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "spec-spine": { "spec": "018-packaged-chassis" },
+  "description": "EnRaHiTu build toolchain: the vendored Encore build drivers (dev/build/bundle) plus the encore-runtime.node and tsparser-encore binaries delivered as per-platform packages. Pins upstream encoredev/encore v1.57.9. No encore CLI.",
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "bin": {
+    "enrahitu-dev": "bin/dev.mjs",
+    "enrahitu-build": "bin/build.mjs",
+    "enrahitu-toolchain": "bin/version.mjs"
+  },
+  "exports": {
+    "./augment-infra": {
+      "types": "./lib/augment-infra.d.mts",
+      "default": "./lib/augment-infra.mjs"
+    },
+    "./resolve": "./lib/resolve.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "scripts",
+    "README.md"
+  ],
+  "dependencies": {
+    "esbuild": "^0.27.3"
+  },
+  "optionalDependencies": {
+    "@enrahitu/toolchain-darwin-arm64": "0.1.0",
+    "@enrahitu/toolchain-linux-x64": "0.1.0",
+    "@enrahitu/toolchain-linux-arm64": "0.1.0"
+  }
+}

@@ -16,28 +16,11 @@
         "source": "spec-edge"
       },
       {
-        "path": "scripts/encore/",
-        "source": "spec-edge"
-      },
-      {
         "path": "vendor/encore/",
         "source": "spec-edge"
       }
     ],
     "resolvedUnits": [
-      {
-        "locations": [
-          {
-            "file": "scripts/encore/"
-          }
-        ],
-        "ownership": true,
-        "sourceField": "establishes",
-        "unit": {
-          "kind": "directory",
-          "path": "scripts/encore/"
-        }
-      },
       {
         "locations": [
           {
@@ -82,5 +65,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "c6df0671832d6d518cf47d682008428f09a7962b4ffc8e8b2cad164dcd831b75"
+  "shardHash": "eeb7461be866f18643767b5208643e163afae8466fd1952cd5b99446d4b5ab86"
 }

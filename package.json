@@ -12,9 +12,9 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "node scripts/encore/dev.mjs",
-    "build:app": "node scripts/encore/build.mjs",
-    "build:runtime": "ENCORE_VERSION=v1.57.9 cargo build --release --manifest-path vendor/encore/Cargo.toml -p encore-js-runtime -p encore-tsparser && node scripts/encore/link-runtime.mjs",
+    "dev": "enrahitu-dev",
+    "build:app": "enrahitu-build",
+    "build:runtime": "ENCORE_VERSION=v1.57.9 cargo build --release --manifest-path vendor/encore/Cargo.toml -p encore-js-runtime -p encore-tsparser && node packages/toolchain/scripts/link-runtime.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "generate-keys": "tsx scripts/generate-keys.ts",
@@ -32,9 +32,9 @@
     "openid-client": "^6.8.4"
   },
   "devDependencies": {
+    "@enrahitu/toolchain": "file:./packages/toolchain",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.0.1",
-    "esbuild": "^0.27.3",
     "tsx": "^4.19.2",
     "typescript": "^6.0.3",
     "vitest": "^4.0.18"

@@ -10,7 +10,6 @@ amends:
   - "007-single-container-packaging"
 establishes:
   - { kind: directory, path: "vendor/encore/" }
-  - { kind: directory, path: "scripts/encore/" }
   - "infra.config.dev.json"
   - "docker/Dockerfile.base"
 summary: >
@@ -21,8 +20,10 @@ summary: >
   encore-runtime.node), the TS parser/compiler (tsparser, the
   tsparser-encore binary), miniredis (a core path dependency), and the
   published encore.dev JS runtime package (the app's encore.dev dep is a
-  file: link into it). scripts/encore/ drives the toolchain: build, dev run,
-  esbuild bundling, infra-config augmentation, and the linux cross-build.
+  file: link into it). The build drivers (build, dev run, esbuild bundling,
+  infra-config augmentation, linux cross-build) were relocated to
+  @enrahitu/toolchain (packages/toolchain/, spec 018); this spec retains the
+  vendored source of record they build from.
 ---
 
 # 008: Vendored Encore toolchain
@@ -46,23 +47,17 @@ version skew, no dependence on Encore's release pipeline.
   (sources + built dist/), linked into node_modules via the root
   package.json `file:` dependency. The release profile is relaxed to thin
   LTO for tolerable local builds.
-- `scripts/encore/build.mjs`: drives `tsparser-encore` over its framed
-  stdin/stdout protocol (prepare, parse, compile), emitting
-  `.encore/build/meta` (the app metadata protobuf) and the combined bundle.
-- `scripts/encore/tsbundler.mjs`: drop-in esbuild shim for Encore's
-  `tsbundler-encore` Go wrapper, injected via `ENCORE_TSBUNDLER_PATH`.
-- `scripts/encore/dev.mjs`: the `encore run` replacement: build, augment the
-  dev infra config, run the bundle under plain node with
-  `ENCORE_RUNTIME_LIB` / `ENCORE_APP_META_PATH` / `ENCORE_INFRA_CONFIG_PATH`
-  / `PORT`.
-- `scripts/encore/augment-infra.mjs`: fills `hosted_services` /
-  `hosted_gateways` / `cors` into a base infra config from the compile
-  result, as `encore build docker` did for the image config.
-- `scripts/encore/link-runtime.mjs`: exposes the cargo-built cdylib as
-  `encore-runtime.node` and prunes CMake's `*.ts` dependency-tracking files
-  from the target trees (the tsparser app walk would parse them).
-- `scripts/encore/build-runtime-linux.sh`: containerized (rust:1-bookworm)
-  cross-build of the napi runtime for the image.
+- **Build drivers (relocated to spec 018).** The drivers that drive this
+  vendored source, formerly `scripts/encore/`, moved to
+  `@enrahitu/toolchain` (`packages/toolchain/`, spec 018) so a stamped app
+  carries them as a package instead of a copied tree: `build.mjs`
+  (`enrahitu-build`; the `tsparser-encore` prepare/parse/compile protocol),
+  `tsbundler.mjs` (the esbuild shim injected via `ENCORE_TSBUNDLER_PATH`),
+  `dev.mjs` (`enrahitu-dev`; the `encore run` replacement), `augment-infra.mjs`
+  (`hosted_services`/`hosted_gateways`/`cors` merge), `link-runtime.mjs` (cdylib
+  to `encore-runtime.node` + `*.ts` pruning), and `build-runtime-linux.sh` (the
+  containerized cross-build). This spec keeps the `vendor/encore/` source they
+  build from; the "no encore CLI" behavior contract below is unchanged.
 - `infra.config.dev.json`: dev-mode base infra config (no secrets section,
   so `secret()` yields empty and the keys/ file fallbacks apply, matching
   CLI dev behavior).

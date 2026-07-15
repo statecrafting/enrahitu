@@ -32,8 +32,8 @@ web/         Encore static service serving the built SPA (spec 006)
 health/      Liveness + decorator canary (spec 001)
 docker/      Single-container packaging: Dockerfiles, entrypoint, first-boot (specs 007/008)
 scripts/     docker-build.sh (007), generate-keys.ts (004), sync-dev-rauthy-secret.mjs (005)
-scripts/encore/  Vendored-toolchain drivers: build, dev, bundler shim, cross-build (spec 008)
-vendor/encore/   Encore @ v1.57.9: rust core, napi bindings, tsparser, encore.dev (spec 008)
+packages/    @enrahitu/toolchain (relocated build drivers + binary resolver) and its per-platform binary carrier packages (spec 018)
+vendor/encore/   Encore @ v1.57.9: rust core, napi bindings, tsparser, encore.dev; source of record the toolchain packages build from (specs 008/018)
 .derived/    Compiler output (committed shards; build-meta.json gitignored)
 ```
 
@@ -67,7 +67,7 @@ npm run typecheck      # tsc --noEmit
 npm test               # vitest (uses the vendored encore-runtime.node)
 npm run dev:idp        # dev rauthy via docker compose (spec 005)
 npm run build:web      # build the SPA into web/dist
-scripts/encore/build-runtime-linux.sh arm64   # cross-build the runtime for the image
+packages/toolchain/scripts/build-runtime-linux.sh arm64   # cross-build the runtime for the image
 scripts/docker-build.sh arm64                 # the full single-container image (specs 007/008)
 
 spec-spine compile    # specs -> .derived/spec-registry/by-spec/

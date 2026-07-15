@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Cross-build the vendored Encore napi runtime for the container image.
+# Cross-build the vendored Encore napi runtime for the container image and the
+# linux toolchain platform packages (spec 018).
 #
-#   scripts/encore/build-runtime-linux.sh [arch]   arch: arm64 (default) | amd64
+#   packages/toolchain/scripts/build-runtime-linux.sh [arch]   arch: arm64 (default) | amd64
 #
 # Runs cargo inside rust:1-bookworm (same family as the addon's linux
 # cross-build and the node:24-slim runtime image), writing to
 # vendor/encore/target-linux/<triple>/release/libencore_js_runtime.so.
-# Named docker volumes cache the cargo registry/git across runs.
+# Named docker volumes cache the cargo registry/git across runs. Operates on
+# the vendored source in THIS repo (toolchain-dev + CI only).
 set -euo pipefail
 
 ARCH="${1:-arm64}"
@@ -16,7 +18,7 @@ case "$ARCH" in
   *) echo "unsupported arch: $ARCH (arm64|amd64)" >&2; exit 1 ;;
 esac
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 
 docker run --rm --platform "$PLATFORM" \
   -v "$ROOT/vendor/encore":/src \
