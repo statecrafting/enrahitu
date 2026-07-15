@@ -67,13 +67,24 @@ test("rauthy password login round-trip stays on the app origin", async ({
   await signIn.click();
 
   // 2. rauthy's login form, served same-origin under /auth/v1/oidc/authorize.
-  //    It is a deliberate TWO-STEP form (anti-autofill): submit email first,
-  //    the password field then appears, submit again. A one-shot fill-both
-  //    would silently no-op on the first submit.
-  await page.locator('input[name="email"]').fill(RAUTHY_USER);
+  //    Wait for its SPA to load AND hydrate before touching it: the submit is
+  //    a client-side JSON fetch, and clicking before the onsubmit handler is
+  //    attached fires a NATIVE urlencoded form POST that rauthy rejects with
+  //    "Content type error" (observed on slower CI runners). networkidle is
+  //    the practical hydration signal: the JS bundle has loaded and its
+  //    initial fetches (incl. the proof-of-work challenge) have settled.
+  await page.waitForURL(/\/auth\/v1\/oidc\/authorize/);
+  await page.waitForLoadState("networkidle");
+  const email = page.locator('input[name="email"]');
+  await expect(email).toBeVisible();
+  await email.fill(RAUTHY_USER);
+
+  //    Deliberate TWO-STEP form (anti-autofill): submit email first, the
+  //    password field then appears (via a fetch round-trip, no navigation),
+  //    submit again. A one-shot fill-both would no-op on the first submit.
   await page.getByRole("button", { name: "Login" }).click();
   const password = page.locator('input[name="password"]');
-  await expect(password).toBeVisible();
+  await expect(password).toBeVisible({ timeout: 20_000 });
   await password.fill(RAUTHY_PASS);
   await page.getByRole("button", { name: "Login" }).click();
 

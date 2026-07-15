@@ -52,6 +52,9 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   timeout: 90_000,
+  // Slower CI runners need more headroom than the 5s default for each
+  // web-first assertion (rauthy's login page hydrates + proof-of-works).
+  expect: { timeout: 15_000 },
   reporter: [["list"], ["html", { outputFolder: "./artifacts/report", open: "never" }]],
   // Bring up dev rauthy (compose + secret sync) before any test; tear it down
   // after (in CI only, so local reruns reuse the warm container).
