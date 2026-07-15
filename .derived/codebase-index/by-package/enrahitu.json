@@ -4,8 +4,8 @@
     "name": "enrahitu",
     "path": "",
     "specRef": "001-enrahitu-architecture",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "6d809a2a314047031adbeac3136e7801d02bfbe73e300d1e86cb7ae8a885fc51"
+  "shardHash": "6ca7776d6e7619e54f018802a416862ba02265843ffe9c63eab8537613b61613"
 }
