@@ -51,7 +51,13 @@ fails the build.
   script expects; buildx for the image assembly).
 - The addon (hiqlite-native) and the vendored runtime
   (encore-runtime.node) must both be arch-correct in the image; a
-  mismatched .node file must fail the build, not the first request.
+  mismatched .node file must fail the build, not the first request
+  (docker-build.sh ELF-checks both). They must also match the image's
+  glibc: both are cross-built in `rust:1-bookworm`
+  (`build-addon-linux.sh`, `build-runtime-linux.sh`) so they link against
+  bookworm's glibc, not the newer glibc of the CI runner. A native runner
+  build (glibc 2.39) requires `GLIBC_2.38`, which the `node:24-slim`
+  (bookworm, glibc 2.36) image lacks, and the app crashes on first load.
 - Smoke: `docker run --platform linux/amd64` (under emulation locally,
   natively in CI) boots, `/health` and `/hiq/health` return 200, and
   first-boot secret provisioning (spec 007) completes.

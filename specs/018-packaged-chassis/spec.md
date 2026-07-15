@@ -46,7 +46,7 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
 - `packages/toolchain/`: the source of the published
   `@enrahitu/toolchain` package. Contents: the build drivers now in
   `scripts/encore/` (dev, build, tsbundler, link-runtime,
-  build-runtime-linux), exposed as bin entries (`enrahitu-dev`,
+  build-runtime-linux, build-addon-linux), exposed as bin entries (`enrahitu-dev`,
   `enrahitu-build`); the vendored Encore Rust source stays in THIS
   repo (vendor/encore does not leave the repo, it leaves the *stamped
   tree*); platform binary subpackages
