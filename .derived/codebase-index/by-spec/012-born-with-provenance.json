@@ -1,27 +1,33 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '012-born-with-provenance' file unit '.stagecraft/born-with.schema.json' does not exist",
-        "path": ".stagecraft/born-with.schema.json"
-      },
-      {
-        "code": "W-001",
-        "message": "spec '012-born-with-provenance' file unit 'scripts/verify-born-with.mjs' does not exist",
-        "path": "scripts/verify-born-with.mjs"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "009-template-contract"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": ".stagecraft/born-with.schema.json",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/fixtures/born-with.example.json",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/verify-born-with.mjs",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/verify-born-with.test.ts",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": ".stagecraft/born-with.schema.json"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -30,12 +36,42 @@
         }
       },
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "scripts/fixtures/born-with.example.json"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/fixtures/born-with.example.json"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/verify-born-with.mjs"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "file",
           "path": "scripts/verify-born-with.mjs"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/verify-born-with.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/verify-born-with.test.ts"
         }
       }
     ],
@@ -43,5 +79,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "32ee3ff2c5fd46c4b270d8455e25f3181dff4b5c660654a7e633494af03b6fa5"
+  "shardHash": "2e0d3eeeb3416607606f38db2a78951b49c6dd9577d4630d116c92a7d3c9bbdc"
 }

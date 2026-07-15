@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stagecraft.ing/enrahitu/born-with.schema.json",
+  "title": "Born-with provenance certificate (v1)",
+  "description": "The certificate a stamped app is born with: what it was stamped from and the agentic posture it was born under. Owned by the enrahitu template (spec 012); the factory emits the instance at stamp time. The template repo carries this schema but never a cert instance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "certVersion",
+    "app",
+    "template",
+    "agenticPostureBinding",
+    "stampedAt",
+    "stampedBy"
+  ],
+  "properties": {
+    "certVersion": {
+      "description": "Certificate schema version. v1 is hash-anchored via the platform ledger; signing is reserved for certVersion 2 (spec 012 §7).",
+      "const": "1"
+    },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "org"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "org": { "type": "string", "minLength": 1 }
+      }
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "contractVersion", "commit"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "contractVersion": { "type": "string", "minLength": 1 },
+        "commit": {
+          "description": "Full 40-hex SHA of the template commit stamped from.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "agenticPostureBinding": {
+      "description": "Always explicit. A cert that omits the posture or admits a defaulted one is invalid by schema: a silently defaulted posture is the failure mode this design exists to kill.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["posture", "defaulted"],
+      "properties": {
+        "posture": { "enum": ["none", "assisted", "autonomous"] },
+        "defaulted": { "const": false }
+      }
+    },
+    "stampedAt": {
+      "description": "ISO 8601 instant in UTC (trailing Z required).",
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    },
+    "stampedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": { "enum": ["factory", "manual"] },
+        "id": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

@@ -10,9 +10,10 @@ license = "Apache-2.0"
 
 [contract]
 # Contract schema version (semver). The factory pins a compatible range;
-# a breaking change to this file's shape bumps the major. v0.2 adds the
-# optional [requires].toolchain key (spec 018; minor bump per spec 009 §3.1).
-version = "0.2.0"
+# a breaking change to this file's shape bumps the major. v0.2 added the
+# optional [requires].toolchain key (spec 018); v0.3 added the [provenance]
+# table (spec 012). Each is a minor bump per spec 009 §3.1.
+version = "0.3.0"
 
 [requires]
 node = ">=24"
@@ -37,3 +38,15 @@ package = "scripts/docker-build.sh"
 # scaffold: v0 stamping is factory-side (clone + slot substitution); an
 #   in-template scaffold verb arrives with the repoInit absorption (spec 010).
 # deploy: owned by the Stagecraft fleet service, never by the template.
+
+[provenance]
+# Born-with certificate + agentic-posture binding (spec 012, contract v0.3).
+# The template owns the cert schema and its validator; the factory emits the
+# instance at stamp time. cert_path exists only in stamped repos, never in the
+# template itself. Kept out of the verify verb on purpose: cert validation is a
+# provenance concern the factory invokes separately, since verify must also
+# pass here, where there is no cert.
+cert_path = ".stagecraft/born-with.json"
+cert_schema = ".stagecraft/born-with.schema.json"
+verify = "node scripts/verify-born-with.mjs"
+postures = ["none", "assisted", "autonomous"]

@@ -16,7 +16,7 @@ summary: >
   substitution, lockfile discipline, registry regeneration, and
   certificate placement all live in one script with one contract entry.
   Absorption line item LI-4 of spec 010; fills the scaffold verb
-  reserved by spec 009 §3.2 and bumps the contract to 0.3.0.
+  reserved by spec 009 §3.2 and bumps the contract to 0.4.0.
 ---
 
 # 014: Scaffold verb
@@ -36,7 +36,8 @@ platform-specific npm optionals intact, and place the provenance cert.
 - `scripts/stamp.mjs` (this spec).
 - Amends `template.toml` (spec 009; edit both specs together): add
   `scaffold = "node scripts/stamp.mjs"` under `[verbs]`, bump
-  `[contract].version` to `0.3.0`.
+  `[contract].version` to `0.4.0` (0.3.0 was taken by spec 012's
+  `[provenance]` table; the scaffold verb is the next minor).
 
 ## 3. Behavior
 
@@ -78,7 +79,7 @@ run from the repo root of a fresh clone:
 - End-to-end: stamping a fresh clone with a test name leaves
   `npm ci && npm run typecheck && npm test` (the verify verb) green and
   `spec-spine index check` fresh, matching the manual smoke's result.
-- Contract version reads 0.3.0; spine gates green.
+- Contract version reads 0.4.0; spine gates green.
 
 ## 5. Out of scope
 

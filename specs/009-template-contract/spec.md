@@ -59,6 +59,8 @@ commands to contract verbs, not the commands themselves.
 - `[contract].version`: semver for the *schema of this file*. The factory
   pins a compatible range (`^0.1`). Adding an optional key is a minor bump;
   changing or removing a key, or changing a verb's meaning, is a major bump.
+  Worked minors: v0.2 added `[requires].toolchain` (spec 018); v0.3 added
+  the `[provenance]` table (spec 012).
 - `[requires]`: runtime requirements of a stamped app. `node >= 24`, and
   (contract v0.2, spec 018) `toolchain = "^0.1"`: the `@enrahitu/toolchain`
   chassis package a stamped app devDepends on for its build drivers and
@@ -86,13 +88,16 @@ commands to contract verbs, not the commands themselves.
   chassis to an operations backend, which is exactly the coupling this
   substrate exists to sever.
 
-### 3.3 Provenance hooks (reserved)
+### 3.3 Provenance hooks
 
 The born-with certificate and agentic-posture binding (OAP specs
-203/210/220 lineage, the tenant-emit / tenant-tail ecosystem) will bind
-at stamp time. A `[provenance]` table is reserved for the contract minor
-version that lands with spec 010; it is intentionally absent from v0
-rather than present-but-lying.
+203/210/220 lineage, the tenant-emit / tenant-tail ecosystem) bind at
+stamp time. The `[provenance]` table landed at contract 0.3.0 with spec
+012 (LI-2 of the spec-010 absorption): it names the cert path, its
+schema, the template-owned validator verb, and the closed posture set.
+The template carries the schema and validator but never a cert instance;
+the instance lives only in stamped repos, written by the factory. It was
+intentionally absent from v0 rather than present-but-lying.
 
 ## 4. Out of scope
 
