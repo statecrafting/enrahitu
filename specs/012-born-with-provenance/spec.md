@@ -3,12 +3,14 @@ id: "012-born-with-provenance"
 title: "Born-with certificate + agentic posture binding (LI-2)"
 status: approved
 created: "2026-07-14"
-implementation: pending
+implementation: complete
 depends_on:
   - "009-template-contract"
 establishes:
   - ".stagecraft/born-with.schema.json"
   - "scripts/verify-born-with.mjs"
+  - "scripts/verify-born-with.test.ts"
+  - "scripts/fixtures/born-with.example.json"
 summary: >
   Every stamped app is born with a provenance certificate that states, at
   the moment of stamping, what it was stamped from and what agentic
@@ -40,8 +42,12 @@ lineage design existed to kill.
 - `scripts/verify-born-with.mjs`: validator invoked as
   `node scripts/verify-born-with.mjs [path]` (default
   `.stagecraft/born-with.json`); exit 0 valid, exit 1 with reasons.
+- `scripts/verify-born-with.test.ts` +
+  `scripts/fixtures/born-with.example.json`: the acceptance suite and a
+  well-formed fixture cert (a test artifact, not the repo's own
+  instance), driving the validator through its CLI.
 - Amends `template.toml` (owned by spec 009; edit both specs together):
-  add the `[provenance]` table and bump `[contract].version` to `0.2.0`.
+  add the `[provenance]` table and bump `[contract].version` to `0.3.0`.
 
 The certificate *instance* (`.stagecraft/born-with.json`) exists only in
 stamped repos, written by the factory at stamp time; the template repo
@@ -85,7 +91,7 @@ hash on success; the factory records the same hash in its attestation
 ledger (stagecraft spec 008), which is what makes the repo-local cert
 independently checkable against the platform's record.
 
-## 5. template.toml [provenance] (contract 0.2.0)
+## 5. template.toml [provenance] (contract 0.3.0)
 
 ```toml
 [provenance]
@@ -95,10 +101,14 @@ verify = "node scripts/verify-born-with.mjs"
 postures = ["none", "assisted", "autonomous"]
 ```
 
-Adding the table is a minor contract bump (0.1.0 -> 0.2.0) per spec 009
-§3.1. The `verify` verb in `[verbs]` is unchanged; cert validation is a
-provenance concern the factory invokes separately, because the verify
-verb must also pass in the template repo itself, which has no cert.
+Adding the table is a minor contract bump (0.2.0 -> 0.3.0) per spec 009
+§3.1. (0.2.0 was already taken by spec 018's `[requires].toolchain`
+key, which landed after this spec was drafted; the provenance table is
+the next minor. The following contract minor, 0.4.0, belongs to the
+scaffold verb of spec 014.) The `verify` verb in `[verbs]` is unchanged;
+cert validation is a provenance concern the factory invokes separately,
+because the verify verb must also pass in the template repo itself,
+which has no cert.
 
 ## 6. Acceptance
 
@@ -108,7 +118,7 @@ verb must also pass in the template repo itself, which has no cert.
   temp file in tests) validates and prints a stable sha256 that matches
   an independently computed keysorted-JSON hash in the test.
 - `spec-spine lint --fail-on-warn`, `index check`, typecheck, and vitest
-  stay green; contract version reads 0.2.0.
+  stay green; contract version reads 0.3.0.
 
 ## 7. Out of scope
 

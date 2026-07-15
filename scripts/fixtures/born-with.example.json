@@ -1,0 +1,13 @@
+{
+  "certVersion": "1",
+  "app": { "name": "example-app", "org": "stagecraft-ing" },
+  "template": {
+    "name": "enrahitu",
+    "version": "0.1.0",
+    "contractVersion": "0.3.0",
+    "commit": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "agenticPostureBinding": { "posture": "assisted", "defaulted": false },
+  "stampedAt": "2026-07-15T00:00:00Z",
+  "stampedBy": { "kind": "factory", "id": "stagecraft/factory@1" }
+}

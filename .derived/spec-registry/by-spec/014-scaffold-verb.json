@@ -23,9 +23,9 @@
     ],
     "specPath": "specs/014-scaffold-verb/spec.md",
     "status": "approved",
-    "summary": "Moves stamping logic from \"factory-side folklore\" into the template itself: a scaffold verb the factory (or a human) invokes inside a fresh clone of this repo to turn it into a named app. Slot substitution, lockfile discipline, registry regeneration, and certificate placement all live in one script with one contract entry. Absorption line item LI-4 of spec 010; fills the scaffold verb reserved by spec 009 §3.2 and bumps the contract to 0.3.0.\n",
+    "summary": "Moves stamping logic from \"factory-side folklore\" into the template itself: a scaffold verb the factory (or a human) invokes inside a fresh clone of this repo to turn it into a named app. Slot substitution, lockfile discipline, registry regeneration, and certificate placement all live in one script with one contract entry. Absorption line item LI-4 of spec 010; fills the scaffold verb reserved by spec 009 §3.2 and bumps the contract to 0.4.0.\n",
     "title": "In-template scaffold verb + repoInit seeding (LI-4)"
   },
-  "shardHash": "7bb29949b904898be3ccd5c229bafe0d8f4cb16c86b0a7bb2935817916e6fb2e",
+  "shardHash": "58b07d58f3cbb5dace6ea0039cfc8cb09d89ee03788ca38ca294277687aeab6f",
   "specVersion": "1.1.0"
 }
