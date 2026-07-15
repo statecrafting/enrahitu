@@ -25,9 +25,9 @@
     ],
     "specPath": "specs/009-template-contract/spec.md",
     "status": "approved",
-    "summary": "The explicit, versioned interface between this template and the Stagecraft factory. The factory learns how to stamp, verify, and package an app from this chassis by reading template.toml and nothing else. This replaces the implicit coupling that plagued the factory-encore / template-encore pair, where the shared assumption (the encore CLI, plus folklore about repo layout) lived in two codebases at once and drift surfaced only at stamp time. v0 ships the contract file with verify and package verbs live; scaffold arrives with the repoInit absorption (spec 010) and deploy is permanently fleet-owned.\n",
+    "summary": "The explicit, versioned interface between this template and the Stagecraft factory. The factory learns how to stamp, verify, and package an app from this chassis by reading template.toml and nothing else. This replaces the implicit coupling that plagued the factory-encore / template-encore pair, where the shared assumption (the encore CLI, plus folklore about repo layout) lived in two codebases at once and drift surfaced only at stamp time. v0 shipped the contract file with verify and package verbs live; scaffold landed with the repoInit absorption (spec 014, contract 0.4.0) and deploy is permanently fleet-owned.\n",
     "title": "The versioned template contract (template.toml)"
   },
-  "shardHash": "5aa0f36fecd3d985e0de13d0cac967cb2df4646ba3a8bf4b43299205b4170a8c",
+  "shardHash": "3e04d1364a8906832076bc8ecd3c5443e9e47d5992257fdb4da35a68e678e2d6",
   "specVersion": "1.1.0"
 }

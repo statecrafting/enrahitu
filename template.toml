@@ -12,8 +12,9 @@ license = "Apache-2.0"
 # Contract schema version (semver). The factory pins a compatible range;
 # a breaking change to this file's shape bumps the major. v0.2 added the
 # optional [requires].toolchain key (spec 018); v0.3 added the [provenance]
-# table (spec 012). Each is a minor bump per spec 009 §3.1.
-version = "0.3.0"
+# table (spec 012); v0.4 added the scaffold verb (spec 014). Each is a minor
+# bump per spec 009 §3.1.
+version = "0.4.0"
 
 [requires]
 node = ">=24"
@@ -35,8 +36,12 @@ frontend = { default = "vue", allowed = ["vue"] }
 # Commands the factory runs inside a stamped repo. Exit code is the verdict.
 verify = "npm run typecheck && npm test"
 package = "scripts/docker-build.sh"
-# scaffold: v0 stamping is factory-side (clone + slot substitution); an
-#   in-template scaffold verb arrives with the repoInit absorption (spec 010).
+# scaffold (contract v0.4, spec 014): the in-template stamping recipe. Run from
+#   the repo root of a fresh clone to turn it into a named app: slot validation,
+#   app-name substitution in the manifest and lockfile, provenance-cert
+#   placement, derived-truth regeneration, and a README lineage marker. Required
+#   flags: --app-name, --org; optional: --frontend, --cert, --stamped-from.
+scaffold = "node scripts/stamp.mjs"
 # deploy: owned by the Stagecraft fleet service, never by the template.
 
 [provenance]

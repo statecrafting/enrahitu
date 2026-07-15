@@ -9,23 +9,28 @@
       {
         "kind": "file",
         "path": "scripts/stamp.mjs"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/stamp.test.ts"
       }
     ],
     "id": "014-scaffold-verb",
-    "implementation": "pending",
+    "implementation": "complete",
     "sectionHeadings": [
       "014: Scaffold verb",
       "1. Purpose",
       "2. Territory",
       "3. Behavior",
       "4. Acceptance",
-      "5. Out of scope"
+      "5. Out of scope",
+      "6. Implementation notes"
     ],
     "specPath": "specs/014-scaffold-verb/spec.md",
     "status": "approved",
     "summary": "Moves stamping logic from \"factory-side folklore\" into the template itself: a scaffold verb the factory (or a human) invokes inside a fresh clone of this repo to turn it into a named app. Slot substitution, lockfile discipline, registry regeneration, and certificate placement all live in one script with one contract entry. Absorption line item LI-4 of spec 010; fills the scaffold verb reserved by spec 009 §3.2 and bumps the contract to 0.4.0.\n",
     "title": "In-template scaffold verb + repoInit seeding (LI-4)"
   },
-  "shardHash": "58b07d58f3cbb5dace6ea0039cfc8cb09d89ee03788ca38ca294277687aeab6f",
+  "shardHash": "14ed1403edca20f3cbd43d02c1ba96796d47224e50c38f2018152b4b0894bc65",
   "specVersion": "1.1.0"
 }
