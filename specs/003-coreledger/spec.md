@@ -9,7 +9,7 @@ origin:
 depends_on:
   - "001-enrahitu-architecture"
 establishes:
-  - { kind: directory, path: "core/" }
+  - { kind: directory, path: "backend/core/" }
 summary: >
   The durable data layer: stage-3 @Entity/@Column decorators over a
   LedgerDriver interface, with a libSQL driver speaking a local SQLite file
@@ -30,7 +30,7 @@ surface when scale demands it. Scaling is a driver swap, not a rewrite.
 
 ## 2. Territory
 
-`core/ledger/`: `decorators.ts` (`@Entity`, `@Column`, `ColumnOptions`),
+`backend/core/ledger/`: `decorators.ts` (`@Entity`, `@Column`, `ColumnOptions`),
 `metadata.ts` (module-level registries), `driver.ts` (the `LedgerDriver`
 interface), `libsql.ts` (`LibsqlDriver`, local file + Turso replica),
 `schema.ts` (`createTableSql`, `ensureSchema`), `repository.ts`

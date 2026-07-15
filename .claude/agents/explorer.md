@@ -31,7 +31,7 @@ spec-spine is an installed CLI tool that governs your repo's spec corpus. In you
 | Surface | Path | Tech |
 |---------|------|------|
 | Spec corpus | `specs/NNN-slug/spec.md` | Markdown + YAML frontmatter |
-| Your code | `addon/`, `hiq/`, `core/`, `auth/`, `lib/`, `idp/`, `web/`, `webapp/`, `health/`, `docker/` | The implementation governed by specs |
+| Your code | `backend/` (`hiq/ core/ auth/ lib/ idp/ web/ health/`), `frontend/`, `addon/`, `docker/` | The implementation governed by specs |
 | Standard | `standards/spec/{constitution.md,contract.md,templates/}` | Principles, contract, templates |
 | Derived | `.derived/` | Compiler output (registry, index) |
 

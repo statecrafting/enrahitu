@@ -10,7 +10,7 @@ establishes:
   - ".github/workflows/pages.yml"
 summary: >
   An optional, off-by-default GitHub Pages workflow that stamped apps are
-  born with: it publishes the built SPA (web/dist) as a static preview
+  born with: it publishes the built SPA (backend/web/dist) as a static preview
   site when the repo owner enables Pages. Absorption line item LI-3 of
   spec 010. Not a contract verb: it is CI-side, not factory-side. The
   workflow must be inert (skip cleanly, not fail) in repos where Pages
@@ -37,8 +37,8 @@ not part of the factory contract (spec 009 §Out of scope holds).
   repo variable `ENABLE_PAGES` is `"true"` (job-level
   `if: github.event_name == 'workflow_dispatch' || vars.ENABLE_PAGES == 'true'`).
   Default posture (variable unset) means push events skip the job.
-- Steps: checkout, setup-node 24 (npm cache), `npm --prefix webapp ci`,
-  `npm run build:web`, upload `web/dist` via `actions/upload-pages-artifact`,
+- Steps: checkout, setup-node 24 (npm cache), `npm --prefix frontend ci`,
+  `npm run build:web`, upload `backend/web/dist` via `actions/upload-pages-artifact`,
   deploy via `actions/deploy-pages` with the standard
   `pages: write` + `id-token: write` permissions and the `github-pages`
   environment.
@@ -58,7 +58,7 @@ not part of the factory contract (spec 009 §Out of scope holds).
   to main leaves the workflow skipped (not failed).
 - `workflow_dispatch` on this repo (enable Pages on the repo first, or
   document the manual toggle in the workflow header comment) publishes
-  web/dist and the resulting URL serves the SPA placeholder.
+  backend/web/dist and the resulting URL serves the SPA placeholder.
 - actionlint (or `gh workflow view` syntax acceptance) passes; spine
   gates stay green (the index hashes workflow files).
 

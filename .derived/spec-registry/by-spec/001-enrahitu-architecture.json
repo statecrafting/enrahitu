@@ -7,7 +7,7 @@
     "establishes": [
       {
         "kind": "directory",
-        "path": "health/"
+        "path": "backend/health/"
       },
       {
         "kind": "file",
@@ -44,6 +44,6 @@
     "summary": "The architecture thesis and the app shell. Encore.ts is kept as the application framework while its managed-infrastructure coupling is severed: in-process hiqlite replaces Redis, CoreLedger on libSQL/Turso replaces Encore SQLDatabase, and rauthy ships inside the app image as the OIDC IdP. One Docker image plus one volume is a complete authenticated application. This spec owns the repo-shell units (Encore app manifest, TypeScript and test configuration, the health service) and anchors the root package; each subsystem is governed by its own spec (002-007). This repository is enrahitu (EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso; formerly enrahi / enrahi-kit): the Encore toolchain is vendored and driven directly via napi-rs instead of through the encore CLI (spec 008), and the repo doubles as the template chassis the Stagecraft factory stamps (spec 009).\n",
     "title": "enrahitu: a self-contained single-container application core"
   },
-  "shardHash": "46eb8b64b9bde30c7821a6521789e06f8e39a102d8acf5e223a0aae4a3e7aad1",
+  "shardHash": "33b084aea33cebdc6c1d5f3f4e5c6e80bd8eae3a19190d61dabbe316df3a4882",
   "specVersion": "1.1.0"
 }

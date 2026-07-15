@@ -15,20 +15,21 @@
       }
     ],
     "id": "019-two-directory-layout",
-    "implementation": "pending",
+    "implementation": "in-progress",
     "sectionHeadings": [
       "019: Two-directory layout",
       "1. Target tree (stamped-app view)",
       "2. Movement map",
       "3. Risks the implementer must verify first",
       "4. Acceptance",
-      "5. Out of scope"
+      "5. Out of scope",
+      "6. Status"
     ],
     "specPath": "specs/019-two-directory-layout/spec.md",
     "status": "approved",
     "summary": "After spec 018 sheds the toolchain payload, the remaining tree is restructured into two directories a developer understands at first glance: frontend/ (the SPA, one directory per flavor lifecycle) and backend/ (every Encore.ts service plus the shared lib and CoreLedger). Decided 2026-07-14, chosen over client/apis and app/services because frontend/backend is the pair with zero ambiguity. All Encore.ts concerns co-locate under backend/, which is what makes the chassis easy to reason about; everything else at the root is contract, packaging, or governance. Lands before stagecraft spec 002 so the first template consumer imports the simple shape.\n",
     "title": "Template layout: frontend/ + backend/, nothing else to explain"
   },
-  "shardHash": "de5c2fa8ef581889f5f8ffb6df14455fee3fddcff83b5adcbb183b3a101a6011",
+  "shardHash": "7d16aa5947366f927226dcede36f252ad36157c01edf3aba93168d2e9b51f3cf",
   "specVersion": "1.1.0"
 }

@@ -39,3 +39,13 @@ Specs declare typed edges (`establishes`, `extends`, `refines`,
 `supersedes`, `amends`, `co_authority`, `constrains`, `references`) and
 the units they own (file / section / symbol / directory / crate / module).
 Authority is derived by walking the graph.
+
+## 3. Repository configuration (`spec-spine.toml`)
+
+`spec-spine.toml`, owned here, declares this repository's layout to the
+compiler: the specs / derived / standards directories, the coupling waiver
+keyword, the extra hashed governance inputs, and the standalone npm/Rust
+packages that carry their own manifests outside the single root package. The
+`standalone_npm_packages` list tracks the directory layout; spec 019's
+two-directory move renamed the SPA standalone package from `webapp/` to
+`frontend/`, updated here with it.

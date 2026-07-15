@@ -4,8 +4,8 @@
     "warnings": [
       {
         "code": "W-001",
-        "message": "spec '011-coreledger-postgres-driver' file unit 'core/ledger/postgres.ts' does not exist",
-        "path": "core/ledger/postgres.ts"
+        "message": "spec '011-coreledger-postgres-driver' file unit 'backend/core/ledger/postgres.ts' does not exist",
+        "path": "backend/core/ledger/postgres.ts"
       }
     ]
   },
@@ -21,7 +21,7 @@
         "sourceField": "establishes",
         "unit": {
           "kind": "file",
-          "path": "core/ledger/postgres.ts"
+          "path": "backend/core/ledger/postgres.ts"
         }
       }
     ],
@@ -29,5 +29,5 @@
     "specStatus": "draft"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "fd2c4d0f88e1dde1aa360e03eb749508dd00fa1a726f501b4de2bf56e1b76b82"
+  "shardHash": "22c014062baf9503ce6caf05dc0f57c3d48055410564211c97100b327b794656"
 }

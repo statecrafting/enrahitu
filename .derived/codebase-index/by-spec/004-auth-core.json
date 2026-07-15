@@ -6,11 +6,11 @@
     ],
     "implementingPaths": [
       {
-        "path": "auth/",
+        "path": "backend/auth/",
         "source": "spec-edge"
       },
       {
-        "path": "lib/",
+        "path": "backend/lib/",
         "source": "spec-edge"
       },
       {
@@ -22,27 +22,27 @@
       {
         "locations": [
           {
-            "file": "auth/"
+            "file": "backend/auth/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "auth/"
+          "path": "backend/auth/"
         }
       },
       {
         "locations": [
           {
-            "file": "lib/"
+            "file": "backend/lib/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "lib/"
+          "path": "backend/lib/"
         }
       },
       {
@@ -63,5 +63,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "24457e2d3cafe85d2283d32853f551efd30094ecb0f24d87495567f86aa9ad68"
+  "shardHash": "375fdbcfbc6c574d939a226a5d00b360aff2e862c17dd43d6c598e34277041a9"
 }

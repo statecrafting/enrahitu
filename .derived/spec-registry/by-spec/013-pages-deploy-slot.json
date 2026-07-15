@@ -22,9 +22,9 @@
     ],
     "specPath": "specs/013-pages-deploy-slot/spec.md",
     "status": "approved",
-    "summary": "An optional, off-by-default GitHub Pages workflow that stamped apps are born with: it publishes the built SPA (web/dist) as a static preview site when the repo owner enables Pages. Absorption line item LI-3 of spec 010. Not a contract verb: it is CI-side, not factory-side. The workflow must be inert (skip cleanly, not fail) in repos where Pages is disabled, which is the default posture.\n",
+    "summary": "An optional, off-by-default GitHub Pages workflow that stamped apps are born with: it publishes the built SPA (backend/web/dist) as a static preview site when the repo owner enables Pages. Absorption line item LI-3 of spec 010. Not a contract verb: it is CI-side, not factory-side. The workflow must be inert (skip cleanly, not fail) in repos where Pages is disabled, which is the default posture.\n",
     "title": "GitHub Pages deployment slot (LI-3)"
   },
-  "shardHash": "7f11349df6412f844b397af6f7df510f52f82ef0829d5f26a6bd1c553dd71597",
+  "shardHash": "472ec7d803a5c7139bffd2729e8d5e1f478a24822d898b239dbcb6d00d251ec6",
   "specVersion": "1.1.0"
 }

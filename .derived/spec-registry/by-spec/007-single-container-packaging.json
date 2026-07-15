@@ -49,6 +49,6 @@
     "summary": "The deliverable image: one container running rauthy (loopback :8081) and the Encore app (:8080) under a die-together entrypoint, all durable state on a single /data volume, every secret self-provisioned at first boot. scripts/docker-build.sh builds from a clean git worktree of HEAD, injects the cross-built addon, the built SPA, and production node_modules, runs `encore build docker`, asserts the base-image entrypoint, and layers rauthy + the entrypoint on top.\n",
     "title": "Single-container packaging: app + rauthy in one image"
   },
-  "shardHash": "d1f070ec1d183f230e382ab257fdd52fec4adbf4d894117f60465f006debe344",
+  "shardHash": "628c9860b97bb94b4c1c088823ab582a9163a125123bb0ffefd14aaec800115c",
   "specVersion": "1.1.0"
 }

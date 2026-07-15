@@ -9,7 +9,7 @@ origin:
 depends_on:
   - "000-bootstrap"
 establishes:
-  - { kind: directory, path: "health/" }
+  - { kind: directory, path: "backend/health/" }
   - "encore.app"
   - "tsconfig.json"
   - "vitest.config.ts"
@@ -57,9 +57,12 @@ Development and early deployment cost nothing but a container host; scaling is
 
 The repo shell: the Encore app manifest (`encore.app`), TypeScript
 configuration (`tsconfig.json`), the vitest configuration and setup, and the
-`health/` service (liveness endpoint at `GET /health` plus the phase-0
+`backend/health/` service (liveness endpoint at `GET /health` plus the phase-0
 decorator canary). The root `package.json` links to this spec via its
-manifest key; the subsystem directories are owned by specs 002-007.
+manifest key; the subsystem directories are owned by specs 002-007. Spec 019
+restructures those subsystems into `backend/` (every Encore.ts service plus
+`lib/` and `core/`) and `frontend/` (the SPA); this spec's `health` service
+moved to `backend/health/` with them.
 
 ## 3. Behavior
 
@@ -69,7 +72,7 @@ decisions 1 and 2):
 1. **Single-package repo, app at the root.** No npm workspaces: workspaces
    made `encore build docker`'s `bundle_source` treat the workspace root as
    the bundle root in the template-encore PR #40 spike (the 3.7 GB failure
-   mode). `addon/` and `webapp/` have their own `package.json`s but are not
+   mode). `addon/` and `frontend/` have their own `package.json`s but are not
    workspace members.
 2. **No Encore `SQLDatabase` anywhere.** `encore run` must not want Docker
    Postgres; `encore build docker` must not require database infra config.

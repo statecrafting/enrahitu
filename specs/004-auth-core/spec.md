@@ -10,8 +10,8 @@ depends_on:
   - "002-in-process-hiqlite"
   - "003-coreledger"
 establishes:
-  - { kind: directory, path: "auth/" }
-  - { kind: directory, path: "lib/" }
+  - { kind: directory, path: "backend/auth/" }
+  - { kind: directory, path: "backend/lib/" }
   - "scripts/generate-keys.ts"
 summary: >
   The authentication core, re-based from template-encore apps/api onto
@@ -19,7 +19,7 @@ summary: >
   cookies, rotated DB-backed refresh tokens, CSRF double-submit, roles, and
   audit records on CoreLedger; login rate limiting on hiqlite counters.
   Drivers are pluggable: mock (dev) here, rauthy OIDC in spec 005 (which
-  owns auth/rauthy.ts inside this spec's directory claim).
+  owns backend/auth/rauthy.ts inside this spec's directory claim).
 ---
 
 # 004: Auth core
@@ -34,13 +34,13 @@ template-encore `apps/api`, ported off Encore `SQLDatabase`/Postgres.
 
 ## 2. Territory
 
-- `auth/`: the Encore service: driver discovery (`drivers.ts`,
+- `backend/auth/`: the Encore service: driver discovery (`drivers.ts`,
   `GET /api/v1/auth/drivers|status|login`), the mock driver (`mock.ts`),
   refresh rotation (`refresh.ts`, `refresh-token-model.ts`), session
   surface (`me.ts`, `logout.ts`, `csrf-token.ts`), the auth handler
   (`handler.ts`), user persistence (`user-model.ts`, `entities.ts`,
-  `store.ts`). `auth/rauthy.ts` is the one file owned by spec 005.
-- `lib/`: the shared security library: `jwt.ts` (RS256 sign/verify),
+  `store.ts`). `backend/auth/rauthy.ts` is the one file owned by spec 005.
+- `backend/lib/`: the shared security library: `jwt.ts` (RS256 sign/verify),
   `cookies.ts` + `cookie-config.ts` (httpOnly cookie plumbing), `csrf.ts`
   (double-submit), `rate-limit.ts` + `rate-limit-window.ts` (hiqlite-backed
   windows), `roles.ts`, `audit.ts`, `security-headers.ts`, `env.ts`,

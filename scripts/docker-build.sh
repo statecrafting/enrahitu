@@ -8,7 +8,7 @@
 # in .env, keys/, .data/ can never leak in) plus exactly four injected
 # artifact kinds:
 #   1. the cross-built hiqlite-native addon (.node + napi-generated loader)
-#   2. the built SPA (web/dist)
+#   2. the built SPA (backend/web/dist)
 #   3. production node_modules (npm ci --omit=dev + the linux libsql binding,
 #      which npm on macOS never installs by itself)
 #   4. the cross-built Encore napi runtime (encore-runtime.node, from
@@ -65,13 +65,13 @@ git worktree add --detach "$WORKTREE" HEAD >/dev/null
 
 echo "==> injecting build artifacts"
 cp "$ADDON_NODE" addon/index.js addon/index.d.ts "$WORKTREE/addon/"
-rm -rf "$WORKTREE/web/dist"
-cp -R web/dist "$WORKTREE/web/dist"
+rm -rf "$WORKTREE/backend/web/dist"
+cp -R backend/web/dist "$WORKTREE/backend/web/dist"
 cp "$RUNTIME_SO" "$WORKTREE/docker/encore-runtime.node"
-# The SPA source is not part of the image (web/dist is prebuilt) and its
-# devDependencies are not installed in the worktree; drop it so the tsparser
-# app walk never sees its unresolvable imports.
-rm -rf "$WORKTREE/webapp"
+# The SPA source is not part of the image (backend/web/dist is prebuilt) and
+# its devDependencies are not installed in the worktree; drop it so the
+# tsparser app walk never sees its unresolvable imports.
+rm -rf "$WORKTREE/frontend"
 
 echo "==> production node_modules"
 (cd "$WORKTREE" && npm ci --omit=dev --no-fund --no-audit >/dev/null)

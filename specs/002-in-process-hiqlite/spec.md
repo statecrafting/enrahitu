@@ -10,7 +10,7 @@ depends_on:
   - "001-enrahitu-architecture"
 establishes:
   - { kind: directory, path: "addon/" }
-  - { kind: directory, path: "hiq/" }
+  - { kind: directory, path: "backend/hiq/" }
 summary: >
   The hiqlite runtime embedded in the Node process: a napi-rs cdylib
   (@enrahitu/hiqlite-native) exposing init/health, TTL'd KV, and counters,
@@ -37,8 +37,10 @@ its own embedded hiqlite, so the entire stack stays in the SQLite family.
   loader are gitignored (`addon/.gitignore`) and injected into the image
   worktree by spec 007's build script, which fails loudly when they are
   missing.
-- `hiq/`: the Encore service over the addon. `hiq/init.ts` starts the
-  hiqlite node at service load, not lazily (template-encore PR #40 caveat 5).
+- `backend/hiq/`: the Encore service over the addon. `backend/hiq/init.ts`
+  starts the hiqlite node at service load, not lazily (template-encore PR #40
+  caveat 5). The addon stays at the repo root (`addon/`) as chassis source,
+  outside `backend/` (spec 019).
 
 ## 3. Behavior
 

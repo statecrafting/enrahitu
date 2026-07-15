@@ -9,8 +9,8 @@ origin:
 depends_on:
   - "004-auth-core"
 establishes:
-  - { kind: directory, path: "idp/" }
-  - "auth/rauthy.ts"
+  - { kind: directory, path: "backend/idp/" }
+  - "backend/auth/rauthy.ts"
   - { kind: directory, path: "docker/rauthy/" }
   - "docker/compose.dev.yml"
   - "scripts/sync-dev-rauthy-secret.mjs"
@@ -18,7 +18,7 @@ summary: >
   rauthy as the OIDC IdP, reached exclusively through the app's own origin:
   the idp service mounts /auth/* as a raw passthrough proxy onto rauthy
   (RAUTHY_UPSTREAM, default 127.0.0.1:8081), so issuer, callback, and SPA
-  share one origin with no CORS. auth/rauthy.ts is the OIDC
+  share one origin with no CORS. backend/auth/rauthy.ts is the OIDC
   authorization-code + PKCE driver (login redirect + callback) plugged into
   spec 004's driver registry. Dev runs rauthy via docker compose with the
   same declarative client bootstrap the container uses in prod.
@@ -35,10 +35,11 @@ IdP. Fallback (not taken): exposing rauthy on a second port.
 
 ## 2. Territory
 
-- `idp/`: the passthrough proxy service, `ANY /auth/*rest` onto
+- `backend/idp/`: the passthrough proxy service, `ANY /auth/*rest` onto
   `RAUTHY_UPSTREAM` (default `http://127.0.0.1:8081`).
-- `auth/rauthy.ts`: the OIDC driver inside spec 004's `auth/` directory
-  claim: `GET /api/v1/auth/rauthy/login` (302 to the same-origin authorize
+- `backend/auth/rauthy.ts`: the OIDC driver inside spec 004's `backend/auth/`
+  directory claim: `GET /api/v1/auth/rauthy/login` (302 to the same-origin
+  authorize
   URL, `code_challenge_method=S256`) and `GET /api/v1/auth/rauthy/callback`
   (code exchange, user upsert, cookie issuance via spec 004's machinery).
   `isRauthyConfigured()` gates the driver's presence in driver discovery.

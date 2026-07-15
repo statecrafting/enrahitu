@@ -6,7 +6,7 @@ created: "2026-07-14"
 depends_on:
   - "003-coreledger"
 establishes:
-  - "core/ledger/postgres.ts"
+  - "backend/core/ledger/postgres.ts"
 summary: >
   Design for the Postgres LedgerDriver that spec 003 stages as future work.
   The forcing function is the Stagecraft control plane: it is itself an
@@ -37,11 +37,12 @@ identical application code above the driver line.
 
 ## 2. Territory
 
-`core/ledger/postgres.ts` (the `PostgresDriver`), claimed ahead of the
-code so the path is reserved: creating the driver without touching this
+`backend/core/ledger/postgres.ts` (the `PostgresDriver`), claimed ahead of
+the code so the path is reserved: creating the driver without touching this
 spec trips the coupling gate. The driver selection logic in
-`core/ledger/ledger.ts` gets amended when the code lands; `core/` as a
-directory stays owned by spec 003.
+`backend/core/ledger/ledger.ts` gets amended when the code lands;
+`backend/core/` as a directory stays owned by spec 003 (relocated under
+`backend/` by spec 019).
 
 ## 3. Design constraints
 

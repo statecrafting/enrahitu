@@ -56,7 +56,10 @@ completion; the implementing specs own the how.
   verify verb (`.github/workflows/verify.yml`, owned here) alongside
   the spec-spine governance gate (`.github/workflows/spec-spine.yml`).
   Because stamping is a tracked-tree copy, these same workflows ARE the
-  born-with set: no separate per-repo copy step exists to drift.
+  born-with set: no separate per-repo copy step exists to drift. The
+  workflow's SPA dependency path (`npm --prefix frontend ci`, npm cache on
+  `frontend/package-lock.json`) tracks the spec 019 two-directory rename
+  from `webapp/` to `frontend/`.
   Born-green proof: stagecraft-ing/enrahitu-stamp-smoke-1, a manual v0
   stamp (spec 009 §3.2 factory-side mode: app_name slot into
   package.json + lockfile, registry/index regenerated), whose verify

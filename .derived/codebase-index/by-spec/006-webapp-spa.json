@@ -5,15 +5,15 @@
     ],
     "implementingPaths": [
       {
-        "path": "web/",
+        "path": "backend/web/",
         "source": "spec-edge"
       },
       {
-        "path": "webapp",
+        "path": "frontend",
         "source": "manifest-metadata"
       },
       {
-        "path": "webapp/",
+        "path": "frontend/",
         "source": "spec-edge"
       }
     ],
@@ -21,27 +21,27 @@
       {
         "locations": [
           {
-            "file": "web/"
+            "file": "backend/web/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "web/"
+          "path": "backend/web/"
         }
       },
       {
         "locations": [
           {
-            "file": "webapp/"
+            "file": "frontend/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "webapp/"
+          "path": "frontend/"
         }
       }
     ],
@@ -49,5 +49,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "2ffd11d3e4bdcc945d8f1b3042bed12e1c059bb8780132da653b06dc0a785b58"
+  "shardHash": "add63845149edc98f1a8c9eec34cd16d19a6e4302960f7fff8e8b09ba4c7bc35"
 }

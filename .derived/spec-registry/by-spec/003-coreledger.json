@@ -7,7 +7,7 @@
     "establishes": [
       {
         "kind": "directory",
-        "path": "core/"
+        "path": "backend/core/"
       }
     ],
     "id": "003-coreledger",
@@ -27,6 +27,6 @@
     "summary": "The durable data layer: stage-3 @Entity/@Column decorators over a LedgerDriver interface, with a libSQL driver speaking a local SQLite file by default and Turso embedded-replica sync (syncUrl + authToken) when configured. ensureSchema() creates tables from decorator metadata; typed repositories give find/save ergonomics. Replaces Encore SQLDatabase so no managed database is required to develop, build, or ship.\n",
     "title": "CoreLedger: decorator data layer on libSQL/Turso"
   },
-  "shardHash": "56a798b3ddf13a5446e75ab6c252d84870c13e16f739dad6f9e2a85fe7a5a854",
+  "shardHash": "aacd55209276d41ef014295887e63f3f50fd0cca0e1979038b35442b06497309",
   "specVersion": "1.1.0"
 }

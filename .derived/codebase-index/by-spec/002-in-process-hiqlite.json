@@ -13,7 +13,7 @@
         "source": "spec-edge"
       },
       {
-        "path": "hiq/",
+        "path": "backend/hiq/",
         "source": "spec-edge"
       }
     ],
@@ -34,14 +34,14 @@
       {
         "locations": [
           {
-            "file": "hiq/"
+            "file": "backend/hiq/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "hiq/"
+          "path": "backend/hiq/"
         }
       }
     ],
@@ -49,5 +49,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "b777fe15156a9c732424545b26d079e3b591fdfe0e82e7c8ee8747ebe553e55f"
+  "shardHash": "f22abcb065bd0878dbb501b2c2c856053735abfc45fd55e55b371c691730f04a"
 }

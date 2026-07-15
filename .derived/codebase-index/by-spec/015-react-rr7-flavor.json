@@ -4,8 +4,8 @@
     "warnings": [
       {
         "code": "W-001",
-        "message": "spec '015-react-rr7-flavor' directory unit 'webapp-react/' is not a directory",
-        "path": "webapp-react/"
+        "message": "spec '015-react-rr7-flavor' directory unit 'frontend-react/' is not a directory",
+        "path": "frontend-react/"
       }
     ]
   },
@@ -22,7 +22,7 @@
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "webapp-react/"
+          "path": "frontend-react/"
         }
       }
     ],
@@ -30,5 +30,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "329d9d3891088babd92ee03f582fc85e2a448ad7619e82df7c7e0922947bf0ef"
+  "shardHash": "7f41141b8b1e3a7969b40512ac4a97eb33404072b9197d84b77c4cd93f1c5b95"
 }

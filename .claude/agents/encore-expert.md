@@ -81,16 +81,18 @@ coupling gate:
 - **Secrets** via lib/secrets `secret("NAME")`; never raw `process.env` for
   secret material. Local dev fallback is keys/ from `npm run generate-keys`.
 - **ESM only, TypeScript strict, single npm package at the root** (addon/ and
-  webapp/ are standalone manifests; no npm workspaces, spec 001).
+  frontend/ are standalone manifests; no npm workspaces, spec 001).
 - **Governance**: every substantive change binds to a spec; owned paths and
   their owning spec.md move together (`spec-spine couple` at PR time).
 
 ## Service map
 
-`health/` (liveness + decorator canary), `hiq/` (hiqlite addon surface),
-`auth/` (drivers, me/refresh/logout, Gateway), `idp/` (same-origin rauthy
-passthrough), `web/` (static SPA serving from web/dist), `core/` (CoreLedger,
-not an Encore service), `lib/` (shared security primitives, no endpoints).
+All under `backend/` (spec 019): `backend/health/` (liveness + decorator
+canary), `backend/hiq/` (hiqlite addon surface), `backend/auth/` (drivers,
+me/refresh/logout, Gateway), `backend/idp/` (same-origin rauthy passthrough),
+`backend/web/` (static SPA serving from backend/web/dist), `backend/core/`
+(CoreLedger, not an Encore service), `backend/lib/` (shared security
+primitives, no endpoints). The SPA source is `frontend/`.
 
 ## Output Format
 

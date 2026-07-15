@@ -31,7 +31,7 @@ spec-spine is an installed CLI tool: a typed, hash-verifiable authority ledger o
 | Surface | Path | Notes |
 |---------|------|-------|
 | Spec corpus | `specs/NNN-slug/spec.md` | Markdown + YAML frontmatter, the authoritative design record |
-| Your code | `addon/`, `hiq/`, `core/`, `auth/`, `lib/`, `idp/`, `web/`, `webapp/`, `health/`, `docker/` | The implementation that specs govern |
+| Your code | `backend/` (`hiq/ core/ auth/ lib/ idp/ web/ health/`), `frontend/`, `addon/`, `docker/` | The implementation that specs govern |
 | Standard | `standards/spec/{constitution.md,contract.md,templates/}` | Durable principles, normative contract, spec template |
 | Derived | `.derived/` | Compiler output (registry, index), read only through the binary |
 

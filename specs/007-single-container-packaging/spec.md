@@ -41,12 +41,12 @@ prerequisites.
 - `scripts/docker-build.sh`: the build pipeline (amended by spec 008: the
   vendored toolchain replaced `encore build docker`). The script builds
   from a CLEAN git worktree of HEAD and injects exactly four artifact
-  kinds: the cross-built native addon, the built SPA (`web/dist`),
+  kinds: the cross-built native addon, the built SPA (`backend/web/dist`),
   production node_modules (`npm ci --omit=dev` plus the linux libsql
   binding npm-on-macOS never installs), and the cross-built Encore napi
   runtime (`docker/encore-runtime.node`). The app bundle + metadata are
   produced inside the worktree by the host `tsparser-encore`; the SPA
-  source (`webapp/`) is dropped from the worktree since its
+  source (`frontend/`) is dropped from the worktree since its
   devDependencies are not installed there. Local secrets (.env, keys/,
   .data/) are never in the image. The script asserts the base image's
   entrypoint verbatim so `docker/entrypoint.sh` and the image layout move

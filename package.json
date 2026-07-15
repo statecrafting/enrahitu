@@ -21,8 +21,8 @@
     "dev:idp": "docker compose -f docker/compose.dev.yml up -d && node scripts/sync-dev-rauthy-secret.mjs",
     "dev:idp-secret": "node scripts/sync-dev-rauthy-secret.mjs",
     "build:addon": "npm --prefix addon run build",
-    "dev:web": "npm --prefix webapp run dev",
-    "build:web": "npm --prefix webapp run build"
+    "dev:web": "npm --prefix frontend run dev",
+    "build:web": "npm --prefix frontend run build"
   },
   "dependencies": {
     "@enrahitu/hiqlite-native": "file:./addon",

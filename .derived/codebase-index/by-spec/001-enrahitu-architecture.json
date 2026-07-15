@@ -9,11 +9,11 @@
         "source": "manifest-metadata"
       },
       {
-        "path": "encore.app",
+        "path": "backend/health/",
         "source": "spec-edge"
       },
       {
-        "path": "health/",
+        "path": "encore.app",
         "source": "spec-edge"
       },
       {
@@ -33,14 +33,14 @@
       {
         "locations": [
           {
-            "file": "health/"
+            "file": "backend/health/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "health/"
+          "path": "backend/health/"
         }
       },
       {
@@ -100,5 +100,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "408a091da50cf5ff6c5cd999b23bfd8642fdd3f2dbb2225aaad86941ab198879"
+  "shardHash": "24e1ce607e6e72496221893d14b146d64cafa6bc6bf6951f7c22f61aba122382"
 }

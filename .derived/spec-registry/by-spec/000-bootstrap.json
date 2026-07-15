@@ -14,7 +14,8 @@
     "sectionHeadings": [
       "000: Bootstrap spec system",
       "1. The authoring / derived boundary",
-      "2. The typed authority graph"
+      "2. The typed authority graph",
+      "3. Repository configuration (`spec-spine.toml`)"
     ],
     "specPath": "specs/000-bootstrap/spec.md",
     "status": "approved",
@@ -28,6 +29,6 @@
       "refusal-rule"
     ]
   },
-  "shardHash": "a2ad6a9b346470686085d6d3a6d5301d75d71465f06a91210e1fad360121b587",
+  "shardHash": "9455622f2ccf7643dd82684399e40334987f0480f1849bca4c58b52121245bd2",
   "specVersion": "1.1.0"
 }

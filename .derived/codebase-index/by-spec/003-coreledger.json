@@ -5,7 +5,7 @@
     ],
     "implementingPaths": [
       {
-        "path": "core/",
+        "path": "backend/core/",
         "source": "spec-edge"
       }
     ],
@@ -13,14 +13,14 @@
       {
         "locations": [
           {
-            "file": "core/"
+            "file": "backend/core/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "core/"
+          "path": "backend/core/"
         }
       }
     ],
@@ -28,5 +28,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "22ba718204cf270a79df20e5e47c49b1fd8f827f5aadf571d4d6c03f07a1e9a9"
+  "shardHash": "3f757d45b61b22afa62b057b5a96d0dcfd88eb2a270c888f619bb5620f8ca9e5"
 }

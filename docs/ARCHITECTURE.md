@@ -60,19 +60,19 @@ Development and early deployment cost nothing but a container host; scaling is
 | Component | Where | Role |
 |-----------|-------|------|
 | `addon/` (`@enrahitu/hiqlite-native`) | Rust, napi-rs cdylib | in-process hiqlite: `init`, `health`, `kvPut/kvGet/kvDel` (TTL), `counterAdd/Get/Set/Del`. hiqlite `=0.14.0`, features `cache,counters,macros` (no SQLite-C). Env: `ENRAHITU_HIQ_*`. |
-| `hiq/` | Encore service | thin API over the addon; starts the node at service load (`hiq/init.ts`) |
-| `core/` | library | CoreLedger: stage-3 `@Entity`/`@Column` decorators, `LedgerDriver` interface, libSQL driver (local file + Turso replica), `ensureSchema()`, typed repositories (Phase 1) |
-| `auth/` | Encore service | mock + rauthy OIDC drivers, JWT cookies, refresh rotation, CSRF, roles, audit on CoreLedger; rate limiting on hiqlite counters (Phase 2) |
-| `idp/` | Encore service | raw passthrough proxy mounting `/auth/*` onto rauthy (`RAUTHY_UPSTREAM`, default `127.0.0.1:8081`), one public origin for app + IdP (Phase 3; fallback: expose rauthy on a second port) |
-| `webapp/` | Vue 3 + Vite | minimal SPA: login, callback, `/me`, logout; served by the app in prod (Phase 4) |
-| `health/` | Encore service | liveness (+ Phase 0 decorator canary) |
+| `backend/hiq/` | Encore service | thin API over the addon; starts the node at service load (`backend/hiq/init.ts`) |
+| `backend/core/` | library | CoreLedger: stage-3 `@Entity`/`@Column` decorators, `LedgerDriver` interface, libSQL driver (local file + Turso replica), `ensureSchema()`, typed repositories (Phase 1) |
+| `backend/auth/` | Encore service | mock + rauthy OIDC drivers, JWT cookies, refresh rotation, CSRF, roles, audit on CoreLedger; rate limiting on hiqlite counters (Phase 2) |
+| `backend/idp/` | Encore service | raw passthrough proxy mounting `/auth/*` onto rauthy (`RAUTHY_UPSTREAM`, default `127.0.0.1:8081`), one public origin for app + IdP (Phase 3; fallback: expose rauthy on a second port) |
+| `frontend/` | Vue 3 + Vite | minimal SPA: login, callback, `/me`, logout; served by the app in prod (Phase 4); builds into `backend/web/dist` |
+| `backend/health/` | Encore service | liveness (+ Phase 0 decorator canary) |
 | `docker/` | packaging | final image: `encore build docker` output + rauthy binary + entrypoint supervising both (Phase 5) |
 
 ## Key decisions
 
 1. **Single-package repo, app at the root.** No npm workspaces: workspaces
    made `bundle_source` treat the workspace root as bundle root in the spike
-   (caveat 3). `addon/` and `webapp/` have their own `package.json`s but are
+   (caveat 3). `addon/` and `frontend/` have their own `package.json`s but are
    not workspace members.
 2. **No Encore `SQLDatabase` anywhere.** `encore run` must not want Docker
    Postgres; `encore build docker` must not require database infra config.

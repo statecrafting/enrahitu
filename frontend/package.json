@@ -1,11 +1,11 @@
 {
-  "name": "@enrahitu/webapp",
+  "name": "@enrahitu/frontend",
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
   "spec-spine": { "spec": "006-webapp-spa" },
   "type": "module",
-  "description": "Minimal enrahitu SPA: login (mock + rauthy), profile, logout, cache demo. Builds into web/dist, served by the api's static service.",
+  "description": "Minimal enrahitu SPA: login (mock + rauthy), profile, logout, cache demo. Builds into backend/web/dist, served by the backend's static service.",
   "scripts": {
     "dev": "vite",
     "build": "vite build"

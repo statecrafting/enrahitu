@@ -3,7 +3,7 @@ id: "019-two-directory-layout"
 title: "Template layout: frontend/ + backend/, nothing else to explain"
 status: approved
 created: "2026-07-14"
-implementation: pending
+implementation: in-progress
 depends_on:
   - "018-packaged-chassis"
 establishes:
@@ -107,3 +107,39 @@ packages/ and vendor/encore as toolchain source (018 §3).
   single npm package with standalone frontend/ manifest (spec 001
   key decision 1 holds).
 - Renaming services or splitting lib/.
+
+## 6. Status
+
+**2026-07-14, in-progress.** The move landed in one commit: `auth/ idp/
+hiq/ health/ web/ core/ lib/` moved under `backend/` via `git mv` (history
+preserved, 61 renames), `webapp/` became `frontend/` (package renamed
+`@enrahitu/webapp` to `@enrahitu/frontend`). Cross-service imports were
+sibling-relative and survived the move unedited; `~encore/*` still resolves
+through `encore.gen` at the app root. Every owning spec was amended in the
+same commit: 001 (`backend/health/`), 002 (`backend/hiq/`; `addon/` stays at
+root), 003 (`backend/core/`), 004 (`backend/auth/` + `backend/lib/`), 005
+(`backend/idp/` + `backend/auth/rauthy.ts`), 006 (`frontend/` +
+`backend/web/`), 011's reserved `backend/core/ledger/postgres.ts`; plus the
+config owners 000 (spec-spine.toml standalone list), 007 (docker-build.sh +
+.dockerignore), 010 (verify.yml). `template.toml` is unchanged: the contract
+exposes no moved path (verbs are npm scripts + `scripts/docker-build.sh`, the
+`frontend` slot is a flavor name), so no contract bump was required (spec 009
+§3.1 condition not met).
+
+Verified locally on the new layout: `build:app` (the pinned v1.57.9 tsparser
+walks `backend/*/encore.service.ts` correctly, risk §3.1 cleared), `tsc
+--noEmit`, `vitest` (39/39), `build:web` (outputs to `backend/web/dist`), and
+the spine gates (`compile`, `index`, `lint --fail-on-warn`, `index check`)
+all green with zero waivers.
+
+Remaining before `complete`:
+- **Image build + boot smoke** (§4): needs the cross-built linux runtime
+  (`build-runtime-linux.sh`) and linux addon built locally; not run this
+  session. The layout's only runtime impact (the SPA static dir, now
+  `backend/web/dist`) is resolved into the app meta at parse time and
+  exercised by the local build, and `docker-build.sh` was updated to copy
+  `backend/web/dist` and drop `frontend/` from the worktree.
+- **Fresh stamp born green on CI** (§4): external, out-of-band, matching the
+  `enrahitu-stamp-smoke-1` precedent (needs a new stamp-smoke repo). Pending
+  the scaffold verb (spec 014) or a manual v0 stamp.
+- **verify.yml green**: confirmed on push to main.

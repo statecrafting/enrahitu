@@ -24,7 +24,7 @@ standards_dir = "standards/spec"
 standalone_rust_workspaces = ["addon"]
 standalone_npm_packages = [
   "addon",
-  "webapp",
+  "frontend",
   "packages/toolchain",
   "packages/toolchain-darwin-arm64",
   "packages/toolchain-linux-x64",

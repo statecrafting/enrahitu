@@ -8,7 +8,7 @@
     "establishes": [
       {
         "kind": "directory",
-        "path": "webapp-react/"
+        "path": "frontend-react/"
       }
     ],
     "id": "015-react-rr7-flavor",
@@ -23,9 +23,9 @@
     ],
     "specPath": "specs/015-react-rr7-flavor/spec.md",
     "status": "approved",
-    "summary": "Makes the frontend slot real by adding a second allowed value: react-rr7. A parallel SPA source directory (webapp-react/, React 19 + React Router v7 in SPA/data-router mode + Vite) builds into the same web/dist that the web static service serves, hitting the same auth and API endpoints as the Vue SPA (spec 006). The scaffold verb selects the flavor at stamp time; the chassis never ships both to a stamped app.\n",
+    "summary": "Makes the frontend slot real by adding a second allowed value: react-rr7. A parallel SPA source directory (frontend-react/, React 19 + React Router v7 in SPA/data-router mode + Vite) builds into the same backend/web/dist that the web static service serves, hitting the same auth and API endpoints as the Vue SPA (spec 006). The scaffold verb selects the flavor at stamp time; the chassis never ships both to a stamped app.\n",
     "title": "Second frontend flavor: React + React Router v7"
   },
-  "shardHash": "9b5a6900e4ad0b8f7d02c87038d03a024aae4af660d958dbec83f4db35d8276f",
+  "shardHash": "585ee9b51ec54d7c9edfd06ead8aa667f2036b99d3b3b1b31ef2ba630ef2c0bf",
   "specVersion": "1.1.0"
 }

@@ -1,27 +1,25 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '019-two-directory-layout' directory unit 'backend/' is not a directory",
-        "path": "backend/"
-      },
-      {
-        "code": "W-001",
-        "message": "spec '019-two-directory-layout' directory unit 'frontend/' is not a directory",
-        "path": "frontend/"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "018-packaged-chassis"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "backend/",
+        "source": "spec-edge"
+      },
+      {
+        "path": "frontend/",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "backend/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -30,7 +28,11 @@
         }
       },
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "frontend/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -43,5 +45,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "41959c0bdde35012021266f036be808b415bc8169947fed6dddef271f948b4fc"
+  "shardHash": "c1bc05a1ebdc81ad9be5e0e07d7a03d255bd4dc7b221ec750679cd83d24e693a"
 }

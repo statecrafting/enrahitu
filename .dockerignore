@@ -11,7 +11,7 @@ data
 addon/target
 addon/target-linux
 addon/node_modules
-webapp/node_modules
+frontend/node_modules
 *.log
 # Vendored Encore toolchain: only the encore.dev JS runtime is needed at
 # runtime (via the node_modules symlink). The Rust sources build the

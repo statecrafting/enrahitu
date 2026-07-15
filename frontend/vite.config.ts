@@ -18,9 +18,9 @@ export default defineConfig({
     },
   },
   build: {
-    // Prod: the bundle lands inside the api's web service; encore build
+    // Prod: the bundle lands inside the backend's web service; encore build
     // docker carries it into the single image.
-    outDir: fileURLToPath(new URL("../web/dist", import.meta.url)),
+    outDir: fileURLToPath(new URL("../backend/web/dist", import.meta.url)),
     emptyOutDir: true,
   },
 });

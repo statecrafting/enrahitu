@@ -301,19 +301,19 @@ _tmp/
 data/
 # Encore generated code
 encore.gen/
-# Built SPA bundle (webapp/ builds here). Track only the dev placeholder;
-# real builds (hashed assets) come from `npm run build:web`. `!web/dist/`
-# re-includes the directory itself: the Node template's global `dist` rule
-# above excludes it wholesale, and git cannot re-include a file whose parent
-# directory is excluded.
-!web/dist/
-web/dist/*
-!web/dist/index.html
+# Built SPA bundle (frontend/ builds here). Track only the dev placeholder;
+# real builds (hashed assets) come from `npm run build:web`.
+# `!backend/web/dist/` re-includes the directory itself: the Node template's
+# global `dist` rule above excludes it wholesale, and git cannot re-include a
+# file whose parent directory is excluded.
+!backend/web/dist/
+backend/web/dist/*
+!backend/web/dist/index.html
 ### enrahitu
 # The vendored encore.dev JS runtime is the published npm artifact: its
 # built dist/ IS the runtime and must be tracked. The Node template's
 # global `dist` rule above would silently exclude it (same parent-dir
-# trap as web/dist).
+# trap as backend/web/dist).
 !vendor/encore/runtimes/js/encore.dev/dist/
 encore.gen.go
 encore.gen.cue

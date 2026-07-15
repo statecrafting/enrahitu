@@ -14,5 +14,5 @@
       "~encore/*": ["./encore.gen/*"]
     }
   },
-  "exclude": ["node_modules", "encore.gen", "addon", "webapp", "vendor", ".encore"]
+  "exclude": ["node_modules", "encore.gen", "addon", "frontend", "vendor", ".encore"]
 }

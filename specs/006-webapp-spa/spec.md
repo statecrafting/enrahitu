@@ -9,13 +9,13 @@ origin:
 depends_on:
   - "005-rauthy-same-origin"
 establishes:
-  - { kind: directory, path: "webapp/" }
-  - { kind: directory, path: "web/" }
+  - { kind: directory, path: "frontend/" }
+  - { kind: directory, path: "backend/web/" }
 summary: >
   The minimal frontend: a Vue 3 + Vite SPA (login, OIDC callback handoff,
-  /me, logout) built from webapp/ into web/dist, and the `web` Encore
-  service that serves the built bundle as static files from the app's own
-  origin. No separate frontend host: the same container serves UI, API,
+  /me, logout) built from frontend/ into backend/web/dist, and the `web`
+  Encore service that serves the built bundle as static files from the app's
+  own origin. No separate frontend host: the same container serves UI, API,
   and IdP.
 ---
 
@@ -29,12 +29,14 @@ single-container thesis: the app serves its own UI.
 
 ## 2. Territory
 
-- `webapp/`: the Vue 3 + Vite source (own `package.json`, not a workspace
-  member). `npm run build:web` at the root builds it into `web/dist`.
-- `web/`: the Encore static service (`static.ts`, fallback route `/!path`)
-  serving `web/dist`. Only the dev placeholder `web/dist/index.html` is
-  tracked; real builds (hashed assets) are produced at build time and
-  injected into the image by spec 007.
+- `frontend/`: the Vue 3 + Vite source (own `package.json`, not a workspace
+  member). `npm run build:web` at the root builds it into `backend/web/dist`.
+  Spec 019 renamed this directory from `webapp/` to `frontend/`; the package
+  is `@enrahitu/frontend`.
+- `backend/web/`: the Encore static service (`static.ts`, fallback route
+  `/!path`) serving `backend/web/dist`. Only the dev placeholder
+  `backend/web/dist/index.html` is tracked; real builds (hashed assets) are
+  produced at build time and injected into the image by spec 007.
 
 ## 3. Behavior
 
