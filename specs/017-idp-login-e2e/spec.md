@@ -52,6 +52,11 @@ especially before stamped apps put this flow in front of customers.
   `/profile` shows the user's email via `GET /api/v1/auth/me`, logout
   clears the session (a subsequent /me returns 401), and no request in
   the trace ever left the app origin.
+- The rauthy login page must be allowed to hydrate before the form is
+  submitted (wait for network idle): its submit is a client-side JSON
+  fetch, and clicking before the handler is attached fires a native
+  urlencoded POST that rauthy rejects ("Content type error"). This
+  surfaced only on slower CI runners, which is why the wait is explicit.
 - Failure artifacts: Playwright trace + screenshot on failure, written
   under e2e/artifacts/ (gitignored).
 - CI: not part of verify.yml. An `e2e.yml` workflow on
