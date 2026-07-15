@@ -32,7 +32,9 @@ single-container thesis: the app serves its own UI.
 - `frontend/`: the Vue 3 + Vite source (own `package.json`, not a workspace
   member). `npm run build:web` at the root builds it into `backend/web/dist`.
   Spec 019 renamed this directory from `webapp/` to `frontend/`; the package
-  is `@enrahitu/frontend`.
+  is `@enrahitu/frontend`. `vite.config.ts` honors a `PAGES_BASE` env var as the
+  Vite `base` (default `/`) so the GitHub Pages workflow (spec 013) can serve
+  the SPA from a project subpath without affecting the container or dev build.
 - `backend/web/`: the Encore static service (`static.ts`, fallback route
   `/!path`) serving `backend/web/dist`. Only the dev placeholder
   `backend/web/dist/index.html` is tracked; real builds (hashed assets) are

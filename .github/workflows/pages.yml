@@ -17,6 +17,13 @@
 # It publishes the built SPA (backend/web/dist) as a zero-cost static preview
 # of the frontend, no container required.
 #
+# Project-site base path: a project Pages site serves at
+# https://<owner>.github.io/<repo>/, so the build sets PAGES_BASE=/<repo>/ (or
+# the PAGES_BASE repo variable, if set) as the SPA's Vite base and React Router
+# basename, and drops a 404.html SPA fallback. It is flavor-agnostic: it builds
+# whichever frontend flavor the stamped app kept (spec 015). For a user/org site
+# (<owner>.github.io) or a custom domain, set the PAGES_BASE variable to "/".
+#
 # needs-guard rule (spec 013 section 3, hard requirement): the deploy job
 # depends on build and relies on the IMPLICIT success() guard, so a skipped or
 # failed build skips deploy too. If you ever add a custom `if:` to the deploy
@@ -52,12 +59,41 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          # The chassis carries every frontend flavor (spec 015); a stamped app
+          # keeps exactly one. Cache off whichever flavor lockfile is present.
+          cache-dependency-path: |
+            frontend/package-lock.json
+            frontend-react/package-lock.json
+      # Resolve the surviving frontend flavor directory: the chassis carries all
+      # of them, a stamped app carries one, and build:web (root) already points
+      # at it. This keeps the Pages build flavor-agnostic (spec 013/015).
+      - name: Resolve frontend flavor directory
+        id: spa
+        run: |
+          if [ -d frontend ]; then dir=frontend
+          elif [ -d frontend-react ]; then dir=frontend-react
+          else echo "::error::no frontend flavor directory found"; exit 1
+          fi
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
       # Only the SPA is needed for a Pages preview; build:web delegates to the
-      # frontend package's build (no root deps required).
-      - run: npm --prefix frontend ci
+      # flavor package's build (no root deps required).
+      - run: npm --prefix "${{ steps.spa.outputs.dir }}" ci
       - name: Build the SPA (-> backend/web/dist)
+        # A project Pages site serves at https://<owner>.github.io/<repo>/, so the
+        # SPA is built with that subpath as its base (PAGES_BASE) or every hashed
+        # asset 404s. It flows into each flavor's vite.config base and, for the
+        # React flavor, the router basename (import.meta.env.BASE_URL). Override
+        # with the PAGES_BASE repo variable (set it to "/") for a user/org site
+        # or a custom domain.
         run: npm run build:web
+        env:
+          PAGES_BASE: ${{ vars.PAGES_BASE || format('/{0}/', github.event.repository.name) }}
+      # SPA deep-link fallback: GitHub Pages returns 404 for client-side routes
+      # (e.g. /<repo>/profile), since no such file exists. Serving index.html as
+      # 404.html hands control to the SPA router. Harmless for the routerless Vue
+      # flavor, where only "/" exists.
+      - name: SPA deep-link 404 fallback
+        run: cp backend/web/dist/index.html backend/web/dist/404.html
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

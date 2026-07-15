@@ -31,6 +31,6 @@
     "summary": "The minimal frontend: a Vue 3 + Vite SPA (login, OIDC callback handoff, /me, logout) built from frontend/ into backend/web/dist, and the `web` Encore service that serves the built bundle as static files from the app's own origin. No separate frontend host: the same container serves UI, API, and IdP.\n",
     "title": "Minimal Vue SPA served by the app itself"
   },
-  "shardHash": "7dd1e6995a13e46b96e42c2b522499b41e5b8ef501988a0f51d75b6119b522eb",
+  "shardHash": "dcaf04da5a7604d6b46653c19a79953083fe9a0350400bbc947dc563635e7b40",
   "specVersion": "1.1.0"
 }

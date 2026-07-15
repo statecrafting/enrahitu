@@ -18,13 +18,14 @@
       "2. Territory",
       "3. Behavior",
       "4. Acceptance",
-      "5. Out of scope"
+      "5. Out of scope",
+      "6. Amendment (2026-07-15): project-site base path + flavor-agnostic build"
     ],
     "specPath": "specs/013-pages-deploy-slot/spec.md",
     "status": "approved",
     "summary": "An optional, off-by-default GitHub Pages workflow that stamped apps are born with: it publishes the built SPA (backend/web/dist) as a static preview site when the repo owner enables Pages. Absorption line item LI-3 of spec 010. Not a contract verb: it is CI-side, not factory-side. The workflow must be inert (skip cleanly, not fail) in repos where Pages is disabled, which is the default posture.\n",
     "title": "GitHub Pages deployment slot (LI-3)"
   },
-  "shardHash": "7e7ac5a2f9e33cc19758ff228bdf515fb80ea4dddfdfc4e8974d1ba5afd0da1d",
+  "shardHash": "0595d03e9d913881ca9dd21b54557ce3116a5c9e5db67977102f3c6777287d1f",
   "specVersion": "1.1.0"
 }

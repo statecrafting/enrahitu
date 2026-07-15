@@ -44,6 +44,20 @@ not part of the factory contract (spec 009 §Out of scope holds).
   environment.
 - All actions SHA-pinned with a trailing `# vX.Y.Z` comment, matching
   `verify.yml` house style.
+- **Project-site base path (amended 2026-07-15)**: a project Pages site serves
+  at `https://<owner>.github.io/<repo>/`, so the build sets `PAGES_BASE` to
+  `/<repo>/` (overridable by a `PAGES_BASE` repo variable, set to `/` for a
+  user/org site or a custom domain). Each frontend flavor's `vite.config.ts`
+  reads it as the Vite `base` (specs 006/015); the React flavor also feeds it to
+  the router `basename` via `import.meta.env.BASE_URL` (spec 015). The build then
+  copies `index.html` to `404.html` so client-side deep links resolve through the
+  SPA router instead of a Pages 404. The container and dev builds leave
+  `PAGES_BASE` unset, so `base` stays `/` and the image is unaffected.
+- **Flavor-agnostic build (amended 2026-07-15)**: the workflow resolves and
+  builds whichever frontend flavor directory the stamped app kept (`frontend/`
+  or `frontend-react/`), since a stamped app carries exactly one (spec 015),
+  rather than a hardcoded `frontend/`. The chassis, carrying both, builds the
+  Vue default.
 - **The needs-guard rule (hard requirement)**: if the workflow gains a
   dependent job (e.g. build then deploy), the dependent job's `if` MUST
   re-assert `needs.<job>.result == 'success'` whenever any custom
@@ -61,9 +75,38 @@ not part of the factory contract (spec 009 §Out of scope holds).
   backend/web/dist and the resulting URL serves the SPA placeholder.
 - actionlint (or `gh workflow view` syntax acceptance) passes; spine
   gates stay green (the index hashes workflow files).
+- A Pages build with `PAGES_BASE=/<repo>/` emits asset URLs under `/<repo>/`
+  for both flavors and writes a `404.html`; an unset `PAGES_BASE` builds at base
+  `/`, matching the container build.
+- A react-stamped app (only `frontend-react/` present) builds cleanly: the
+  workflow resolves the surviving flavor directory rather than a hardcoded
+  `frontend/`.
 
 ## 5. Out of scope
 
 - Publishing docs sites (that is stagecraft.ing's concern).
 - Custom domains for stamped apps.
 - Any coupling to the factory contract or verify verb.
+
+## 6. Amendment (2026-07-15): project-site base path + flavor-agnostic build
+
+The original workflow served correctly only from a user/org Pages site or a
+custom domain (Vite `base` defaulted to `/`), and hardcoded the `frontend/`
+(Vue) flavor. Two additions, both inside pages.yml territory plus the flavor
+configs their owning specs govern:
+
+1. **Project base path.** The build sets `PAGES_BASE` (default `/<repo>/`,
+   overridable via the `PAGES_BASE` repo variable) so a project Pages site
+   (`https://<owner>.github.io/<repo>/`) loads its hashed assets. The flavor
+   `vite.config.ts` files consume it as `base` (specs 006/015) and the React
+   router reads it as `basename` (spec 015); a `404.html` copy of `index.html`
+   gives client-side deep links an SPA fallback. The container and dev builds
+   leave `PAGES_BASE` unset, so nothing about the image changes.
+2. **Flavor-agnostic.** The install and build steps resolve the surviving
+   flavor directory instead of assuming `frontend/`, so a react-stamped app's
+   Pages build works (it prunes `frontend/`, keeping `frontend-react/`; spec
+   015).
+
+Still out of the factory contract (no `template.toml` change): Pages remains a
+born-with CI capability, off by default. Owning-spec edits coupled in the same
+change: 006 (`frontend/vite.config.ts`) and 015 (`frontend-react/`).

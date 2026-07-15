@@ -4,6 +4,12 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // A project GitHub Pages site serves at /<repo>/, so the SPA must be built
+  // with that subpath as its base or every hashed asset 404s (spec 013).
+  // pages.yml sets PAGES_BASE, which also feeds the router basename via
+  // import.meta.env.BASE_URL; the container and dev builds leave it unset, so
+  // base stays "/".
+  base: process.env.PAGES_BASE ?? "/",
   plugins: [react()],
   server: {
     port: 5173,
