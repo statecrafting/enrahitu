@@ -63,11 +63,16 @@ jobs:
       # build:web (run inside docker-build.sh) needs the Vue flavor's deps; the
       # image worktree drops every flavor + e2e/ before its own parse walk, so
       # the other flavors are not needed here.
+      - run: npm --prefix addon ci
       - run: npm --prefix frontend ci
-      # The addon and the runtime .so both build in rust:1-bookworm so they link
-      # against the same glibc as the node:24-slim image; a native build on this
-      # newer runner would require a glibc the image lacks.
-      - name: Cross-build the hiqlite-native addon (bookworm .node)
+      # Host build:addon emits the arch-independent JS loader (addon/index.js +
+      # index.d.ts) that docker-build.sh injects, plus a native .node. Then the
+      # bookworm cross-build OVERWRITES that .node so it links against the same
+      # glibc as the node:24-slim image (a native build on this newer runner
+      # would require a glibc the image lacks).
+      - name: Build the addon JS loader (index.js/index.d.ts) + a native .node
+        run: npm run build:addon
+      - name: Cross-build the addon .node in bookworm (glibc-matched, overwrites)
         run: packages/toolchain/scripts/build-addon-linux.sh ${{ matrix.arch }}
       - name: Build the host Encore toolchain (tsparser-encore for the app build)
         run: npm run build:runtime
