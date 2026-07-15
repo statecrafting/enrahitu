@@ -3,7 +3,7 @@ id: "017-idp-login-e2e"
 title: "End-to-end rauthy login validation (browser-real)"
 status: approved
 created: "2026-07-14"
-implementation: pending
+implementation: complete
 depends_on:
   - "005-rauthy-same-origin"
   - "006-webapp-spa"
@@ -19,6 +19,7 @@ summary: >
   script and an optional scheduled CI job.
 establishes:
   - { kind: directory, path: "e2e/" }
+  - ".github/workflows/e2e.yml"
 ---
 
 # 017: IdP login e2e

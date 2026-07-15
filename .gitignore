@@ -330,3 +330,7 @@ keys/
 # the manifests + READMEs are tracked; the binaries never enter git.
 packages/toolchain-*/encore-runtime.node
 packages/toolchain-*/tsparser-encore
+
+### enrahitu
+# Playwright login e2e output (spec 017): traces, screenshots, HTML report.
+e2e/artifacts/
