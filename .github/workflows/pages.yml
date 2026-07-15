@@ -1,0 +1,81 @@
+# GitHub Pages deployment slot (spec 013, absorption line item LI-3 of
+# spec 010). A CI-side capability stamped apps are *born with*, NOT part of
+# the factory template contract (spec 009 holds Pages out of scope).
+#
+# Off by default. The workflow ships inert and stays that way until the repo
+# owner opts in:
+#   1. Settings > Pages > "Build and deployment" > Source: "GitHub Actions".
+#   2. (optional) Settings > Secrets and variables > Actions > Variables:
+#      set ENABLE_PAGES = "true" to also publish on every push to main.
+#      Without it, only the manual "Run workflow" button (workflow_dispatch)
+#      publishes.
+#
+# With Pages disabled and ENABLE_PAGES unset (the default posture), a push to
+# main evaluates the build job's `if` to false, so the whole run is skipped,
+# never failed.
+#
+# It publishes the built SPA (backend/web/dist) as a zero-cost static preview
+# of the frontend, no container required.
+#
+# needs-guard rule (spec 013 section 3, hard requirement): the deploy job
+# depends on build and relies on the IMPLICIT success() guard, so a skipped or
+# failed build skips deploy too. If you ever add a custom `if:` to the deploy
+# job, that `if` silently REPLACES the success() guard: you MUST then
+# re-assert `needs.build.result == 'success'` inside it. A missing
+# re-assertion once shipped a deploy-after-failed-build bug in the
+# template-encore era, which is why this rule is written down.
+name: pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Never cancel an in-flight Pages deployment (GitHub Pages guidance): queue
+# instead of interrupting a publish already in progress.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Manual dispatch always builds; pushes build only when the repo opts in
+    # via the ENABLE_PAGES variable. Absent variable => push is skipped.
+    if: github.event_name == 'workflow_dispatch' || vars.ENABLE_PAGES == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # Only the SPA is needed for a Pages preview; build:web delegates to the
+      # frontend package's build (no root deps required).
+      - run: npm --prefix frontend ci
+      - name: Build the SPA (-> backend/web/dist)
+        run: npm run build:web
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: backend/web/dist
+
+  deploy:
+    needs: build
+    # No custom `if:` on purpose. The implicit success() guard means a skipped
+    # or failed build skips this job. Read the needs-guard rule in the header
+    # before adding any `if:` here.
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write # publish the Pages deployment
+      id-token: write # OIDC token deploy-pages exchanges with Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

@@ -3,7 +3,7 @@ id: "013-pages-deploy-slot"
 title: "GitHub Pages deployment slot (LI-3)"
 status: approved
 created: "2026-07-14"
-implementation: pending
+implementation: complete
 depends_on:
   - "010-template-encore-absorption"
 establishes:
