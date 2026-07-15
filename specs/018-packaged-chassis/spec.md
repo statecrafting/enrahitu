@@ -83,7 +83,11 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
 - **Platform matrix**: darwin-arm64, linux-x64, linux-arm64. This is
   the same matrix spec 016 (amd64 image) needs; implement the shared
   cross-build once, in the publish workflow, and let 016's image build
-  consume the linux artifacts.
+  consume the linux artifacts. The linux cross-build
+  (`build-runtime-linux`) deletes CMake's stray `.ts` dependency files
+  inside the build container, as root, so a non-root host (a Linux CI
+  runner) is never blocked by container-root ownership when it consumes
+  the target dir; macOS Docker Desktop remapped ownership and hid this.
 - **Supervisor: explicit non-goal.** Upstream Encore's self-hosted
   images use a Rust supervisor binary to orchestrate multiple service
   processes and the gateway. EnRaHiTu builds ONE combined bundle
