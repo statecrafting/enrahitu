@@ -30,6 +30,12 @@ docker run --rm --platform "$PLATFORM" \
     apt-get install -y -qq protobuf-compiler cmake >/dev/null
     ENCORE_VERSION=v1.57.9 CARGO_TARGET_DIR=/src/target-linux \
       cargo build --release -p encore-js-runtime
+    # The tsparser app walk chokes on CMake's *.ts dependency-tracking files.
+    # Delete them HERE, as root inside the container: the bind-mounted target
+    # dir is root-owned, so a non-root host user (e.g. a Linux CI runner)
+    # cannot delete them afterward (Permission denied). macOS Docker Desktop
+    # remaps ownership to the host user, which hid this on dev machines.
+    find /src/target-linux -name '*.ts' -type f -delete
   "
 
 SO="$ROOT/vendor/encore/target-linux/release/libencore_js_runtime.so"
@@ -37,6 +43,4 @@ if [ ! -f "$SO" ]; then
   echo "expected $SO after the container build" >&2
   exit 1
 fi
-# The tsparser app walk chokes on CMake's *.ts dependency-tracking files.
-find "$ROOT/vendor/encore/target-linux" -name "*.ts" -type f -delete
 echo "built $SO ($ARCH)"
