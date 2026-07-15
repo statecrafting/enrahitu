@@ -55,18 +55,20 @@ jobs:
             ~/.cargo/git
             vendor/encore/target
             vendor/encore/target-linux
-            addon/target
+            addon/target-linux
           key: image-cargo-${{ matrix.arch }}-${{ hashFiles('vendor/encore/Cargo.lock', 'addon/Cargo.lock') }}
           restore-keys: |
             image-cargo-${{ matrix.arch }}-
       - run: npm ci
-      - run: npm --prefix addon ci
       # build:web (run inside docker-build.sh) needs the Vue flavor's deps; the
       # image worktree drops every flavor + e2e/ before its own parse walk, so
       # the other flavors are not needed here.
       - run: npm --prefix frontend ci
-      - name: Build hiqlite-native addon (native linux .node for this arch)
-        run: npm run build:addon
+      # The addon and the runtime .so both build in rust:1-bookworm so they link
+      # against the same glibc as the node:24-slim image; a native build on this
+      # newer runner would require a glibc the image lacks.
+      - name: Cross-build the hiqlite-native addon (bookworm .node)
+        run: packages/toolchain/scripts/build-addon-linux.sh ${{ matrix.arch }}
       - name: Build the host Encore toolchain (tsparser-encore for the app build)
         run: npm run build:runtime
       - name: Cross-build the linux Encore runtime (.so injected into the image)
