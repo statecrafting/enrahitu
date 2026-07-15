@@ -46,4 +46,9 @@ export const router = createBrowserRouter([
       },
     ],
   },
-]);
+], {
+  // Under a project Pages base (/<repo>/), the data router must know its mount
+  // point or client navigation escapes the subpath. import.meta.env.BASE_URL is
+  // "/" for the container and dev builds, "/<repo>/" for a Pages build (spec 013).
+  basename: import.meta.env.BASE_URL,
+});

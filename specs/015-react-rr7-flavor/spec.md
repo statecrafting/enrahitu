@@ -116,3 +116,10 @@ Acceptance (§4) status:
   (spec 007/008) and spec 016's amd64 work, as with spec 019's consumer-side
   acceptance; the flavor's only runtime footprint is the built `backend/web/dist`,
   which `docker-build.sh` already copies from `build:web` output.
+
+**Amended 2026-07-15 (spec 013, Pages base path).** `frontend-react/vite.config.ts`
+honors a `PAGES_BASE` env var as the Vite `base` (default `/`), and
+`src/router.tsx` sets the `createBrowserRouter` `basename` to
+`import.meta.env.BASE_URL`, so the React SPA works under a project Pages subpath
+(`https://<owner>.github.io/<repo>/`) as well as at root. No effect on the
+container or dev build, where `PAGES_BASE` is unset and `base` stays `/`.

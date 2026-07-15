@@ -27,6 +27,6 @@
     "summary": "Makes the frontend slot real by adding a second allowed value: react-rr7. A parallel SPA source directory (frontend-react/, React 19 + React Router v7 in SPA/data-router mode + Vite) builds into the same backend/web/dist that the web static service serves, hitting the same auth and API endpoints as the Vue SPA (spec 006). The scaffold verb selects the flavor at stamp time; the chassis never ships both to a stamped app.\n",
     "title": "Second frontend flavor: React + React Router v7"
   },
-  "shardHash": "a48d8d7216fab74104c85cae7e10152088f2b719e032233d6b25c04770578e7d",
+  "shardHash": "72300c56b76f7944075eda7cec7c6490cd4441374589708aac31e7fa906b078c",
   "specVersion": "1.1.0"
 }

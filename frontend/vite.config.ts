@@ -4,6 +4,11 @@ import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  // A project GitHub Pages site serves at /<repo>/, so the SPA must be built
+  // with that subpath as its base or every hashed asset 404s (spec 013). The
+  // pages.yml workflow sets PAGES_BASE; the container and dev builds leave it
+  // unset, so base stays "/". No effect outside a Pages build.
+  base: process.env.PAGES_BASE ?? "/",
   plugins: [vue()],
   server: {
     port: 5173,
