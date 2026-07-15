@@ -45,6 +45,7 @@ jobs:
             package-lock.json
             addon/package-lock.json
             frontend/package-lock.json
+            frontend-react/package-lock.json
       - name: Install protoc
         run: sudo apt-get update -q && sudo apt-get install -y -q protobuf-compiler
       - name: Cache cargo (vendored runtime + addon)
@@ -60,7 +61,12 @@ jobs:
             cargo-${{ runner.os }}-
       - run: npm ci
       - run: npm --prefix addon ci
+      # The template carries every frontend flavor (spec 015); the Encore parse
+      # walk (build:app) resolves each flavor's vite.config imports, so both
+      # flavor packages are installed here. A stamped app keeps only one flavor
+      # (the scaffold verb prunes the rest), so its CI installs just the survivor.
       - run: npm --prefix frontend ci
+      - run: npm --prefix frontend-react ci
       - name: Build hiqlite-native addon
         run: npm run build:addon
       - name: Build vendored Encore runtime

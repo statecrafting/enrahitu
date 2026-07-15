@@ -57,9 +57,14 @@ completion; the implementing specs own the how.
   the spec-spine governance gate (`.github/workflows/spec-spine.yml`).
   Because stamping is a tracked-tree copy, these same workflows ARE the
   born-with set: no separate per-repo copy step exists to drift. The
-  workflow's SPA dependency path (`npm --prefix frontend ci`, npm cache on
-  `frontend/package-lock.json`) tracks the spec 019 two-directory rename
-  from `webapp/` to `frontend/`. The verify job also runs a digest-pinned
+  workflow installs every frontend flavor's deps (`npm --prefix frontend ci`
+  and `npm --prefix frontend-react ci`, npm cache on both flavor lockfiles):
+  the template carries every flavor (spec 015) and the Encore parse walk
+  (`build:app`) resolves each flavor's `vite.config` imports, so both must be
+  present in CI. A stamped app keeps only the selected flavor (the scaffold
+  verb prunes the rest), so its CI installs just the survivor. The flavor
+  directory names track the spec 019 two-directory rename from `webapp/` to
+  `frontend/`. The verify job also runs a digest-pinned
   Postgres service and passes `TEST_POSTGRES_URL` to the verify verb so
   CoreLedger's Postgres-driver arm (spec 011) is exercised on every run
   alongside the libSQL default; the service is CI-side only and stays out
