@@ -16,9 +16,9 @@ summary: >
   implicit coupling that plagued the factory-encore / template-encore pair,
   where the shared assumption (the encore CLI, plus folklore about repo
   layout) lived in two codebases at once and drift surfaced only at stamp
-  time. v0 ships the contract file with verify and package verbs live;
-  scaffold arrives with the repoInit absorption (spec 010) and deploy is
-  permanently fleet-owned.
+  time. v0 shipped the contract file with verify and package verbs live;
+  scaffold landed with the repoInit absorption (spec 014, contract 0.4.0)
+  and deploy is permanently fleet-owned.
 ---
 
 # 009: The versioned template contract
@@ -60,7 +60,8 @@ commands to contract verbs, not the commands themselves.
   pins a compatible range (`^0.1`). Adding an optional key is a minor bump;
   changing or removing a key, or changing a verb's meaning, is a major bump.
   Worked minors: v0.2 added `[requires].toolchain` (spec 018); v0.3 added
-  the `[provenance]` table (spec 012).
+  the `[provenance]` table (spec 012); v0.4 made the reserved `scaffold`
+  verb live (spec 014).
 - `[requires]`: runtime requirements of a stamped app. `node >= 24`, and
   (contract v0.2, spec 018) `toolchain = "^0.1"`: the `@enrahitu/toolchain`
   chassis package a stamped app devDepends on for its build drivers and
@@ -73,16 +74,20 @@ commands to contract verbs, not the commands themselves.
   `react-rr7` is the planned second flavor and `svelte` earns a slot on
   demand. Each added flavor is a minor contract bump.
 - `[verbs]`: commands the factory runs inside a stamped repo, exit code as
-  verdict. v0 live verbs: `verify`, `package`.
+  verdict. Live verbs: `verify`, `package`, and (contract v0.4, spec 014)
+  `scaffold`.
 
 ### 3.2 Verb semantics
 
 - `verify`: the born-green gate. Must pass in a freshly stamped repo with
   no network access beyond the npm registry.
 - `package`: produces the single-container image (spec 007/008 pipeline).
-- `scaffold` (reserved): in-template seeding logic; arrives with the
-  repoInit absorption (spec 010). Until then, stamping is factory-side
-  (clone + slot substitution).
+- `scaffold` (live, contract v0.4): in-template stamping logic. Run from a
+  fresh clone, it validates slots, substitutes the app name in the manifest
+  and lockfile, places and validates the provenance cert, regenerates the
+  derived truth, and writes a README lineage marker. Owned by spec 014
+  (`scripts/stamp.mjs`); the recipe it encodes was the folklore that
+  factory-side clone + substitution relied on before v0.4.
 - `deploy` (reserved, permanently): deployment is the Stagecraft fleet
   service's job. A template that deploys itself would re-couple the
   chassis to an operations backend, which is exactly the coupling this

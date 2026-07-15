@@ -3,12 +3,13 @@ id: "014-scaffold-verb"
 title: "In-template scaffold verb + repoInit seeding (LI-4)"
 status: approved
 created: "2026-07-14"
-implementation: pending
+implementation: complete
 depends_on:
   - "009-template-contract"
   - "012-born-with-provenance"
 establishes:
   - "scripts/stamp.mjs"
+  - "scripts/stamp.test.ts"
 summary: >
   Moves stamping logic from "factory-side folklore" into the template
   itself: a scaffold verb the factory (or a human) invokes inside a
@@ -89,3 +90,33 @@ run from the repo root of a fresh clone:
   makes a second value real).
 - Cert *content* generation (factory-side; the script only places and
   validates).
+
+## 6. Implementation notes
+
+Landed 2026-07-15. `scripts/stamp.mjs` encodes the recipe; `template.toml`
+exposes it as the `scaffold` verb and reads `[contract].version = "0.4.0"`.
+Spec 009 (owner of `template.toml`) was amended in the same change to make
+the reserved verb live.
+
+Acceptance (§4) status:
+
+- **Unit suite (§4 bullet 1): satisfied here.** `scripts/stamp.test.ts`
+  child-processes the real CLI against a temp copy of a minimal fixture
+  tree: happy path, invalid app name, missing org, disallowed frontend
+  flavor, lockfile name sync (substrate names left intact), idempotent
+  re-run (exactly one `## Stamped` section), and a failing cert (rejected
+  and rolled back).
+- **Contract + spine gates (§4 bullet 3): satisfied here.** Contract reads
+  0.4.0; `compile`/`index`/`lint`/`couple` green.
+- **Real-clone spine path (§4 bullet 2, in-repo half): exercised here.** A
+  `git clone --local` of this repo, stamped with a test name, regenerates
+  its derived truth (the app name is a hashed input) and leaves
+  `spec-spine index check` fresh, matching the 2026-07-14 manual smoke.
+- **Fresh-clone `npm ci` verify verb (§4 bullet 2, network half):
+  delegated.** The born-green `npm ci && npm run typecheck && npm test` on a
+  clean clone is owned by the first stamped consumer's CI (stagecraft spec
+  002) and the scaffold path the factory drives; running it here would
+  reinstall the full dependency tree behind the network. A minimal
+  design-time hazard: v0 stamping edits no dependencies, so the lockfile
+  changes by exactly two `name` fields and the dependency graph is
+  byte-identical to this repo's already-green tree.

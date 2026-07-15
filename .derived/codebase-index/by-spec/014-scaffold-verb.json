@@ -1,28 +1,44 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '014-scaffold-verb' file unit 'scripts/stamp.mjs' does not exist",
-        "path": "scripts/stamp.mjs"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "009-template-contract",
       "012-born-with-provenance"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "scripts/stamp.mjs",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/stamp.test.ts",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "scripts/stamp.mjs"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "file",
           "path": "scripts/stamp.mjs"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/stamp.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/stamp.test.ts"
         }
       }
     ],
@@ -30,5 +46,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "010822cf5c8c8521054322a7e7358209175022a5128fd597b79a21c61b7187f0"
+  "shardHash": "fc92623631ddd989327374785b5f85dc1780932c3f664f768423aa5f1e41767d"
 }
