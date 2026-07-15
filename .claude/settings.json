@@ -19,8 +19,7 @@
       "Bash(grep *)",
       "Bash(rg *)",
       "Read(**)",
-      "Edit(**)",
-      "Write(**)"
+      "Edit(**)"
     ],
     "deny": [
       "Bash(cargo publish*)",
