@@ -1,0 +1,87 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+body {
+  margin: 0;
+  display: grid;
+  place-items: start center;
+  min-height: 100vh;
+}
+.shell {
+  max-width: 40rem;
+  padding: 3rem 1.5rem;
+}
+.tagline {
+  opacity: 0.7;
+}
+nav.crumbs {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+}
+nav.crumbs a {
+  color: inherit;
+}
+nav.crumbs a[aria-current="page"] {
+  font-weight: 600;
+  text-decoration: none;
+}
+.card {
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+.drivers {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.button {
+  display: inline-block;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  margin-right: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.button.primary {
+  border-color: #7c5cff;
+  color: #7c5cff;
+}
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+}
+dt {
+  opacity: 0.6;
+}
+dd {
+  margin: 0;
+}
+.kv {
+  display: flex;
+  gap: 0.5rem;
+}
+.kv input {
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: none;
+  color: inherit;
+}
+.error {
+  color: #e5484d;
+}
+.hint {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}

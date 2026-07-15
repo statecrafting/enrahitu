@@ -45,8 +45,9 @@ prerequisites.
   production node_modules (`npm ci --omit=dev` plus the linux libsql
   binding npm-on-macOS never installs), and the cross-built Encore napi
   runtime (`docker/encore-runtime.node`). The app bundle + metadata are
-  produced inside the worktree by the host `tsparser-encore`; the SPA
-  source (`frontend/`) is dropped from the worktree since its
+  produced inside the worktree by the host `tsparser-encore`; every SPA
+  flavor source directory (`frontend/`, `frontend-react/`; the template
+  carries them all, spec 015) is dropped from the worktree since their
   devDependencies are not installed there. Local secrets (.env, keys/,
   .data/) are never in the image. The script asserts the base image's
   entrypoint verbatim so `docker/entrypoint.sh` and the image layout move

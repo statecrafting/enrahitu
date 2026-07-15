@@ -12,9 +12,9 @@ license = "Apache-2.0"
 # Contract schema version (semver). The factory pins a compatible range;
 # a breaking change to this file's shape bumps the major. v0.2 added the
 # optional [requires].toolchain key (spec 018); v0.3 added the [provenance]
-# table (spec 012); v0.4 added the scaffold verb (spec 014). Each is a minor
-# bump per spec 009 §3.1.
-version = "0.4.0"
+# table (spec 012); v0.4 added the scaffold verb (spec 014); v0.5 added the
+# react-rr7 frontend flavor (spec 015). Each is a minor bump per spec 009 §3.1.
+version = "0.5.0"
 
 [requires]
 node = ">=24"
@@ -30,7 +30,11 @@ toolchain = "^0.1"
 # Values the factory substitutes at stamp time.
 app_name = { required = true, pattern = "^[a-z][a-z0-9-]*$" }
 org = { required = true }
-frontend = { default = "vue", allowed = ["vue"] }
+# frontend is a slot, not a fork (spec 009 §3.1). Each allowed value maps to a
+# sibling flavor directory the scaffold verb keeps or prunes (spec 014/015):
+# vue -> frontend/, react-rr7 -> frontend-react/. The chassis carries every
+# flavor; a stamped app carries exactly one.
+frontend = { default = "vue", allowed = ["vue", "react-rr7"] }
 
 [verbs]
 # Commands the factory runs inside a stamped repo. Exit code is the verdict.

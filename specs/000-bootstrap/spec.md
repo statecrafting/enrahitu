@@ -48,4 +48,6 @@ keyword, the extra hashed governance inputs, and the standalone npm/Rust
 packages that carry their own manifests outside the single root package. The
 `standalone_npm_packages` list tracks the directory layout; spec 019's
 two-directory move renamed the SPA standalone package from `webapp/` to
-`frontend/`, updated here with it.
+`frontend/`, updated here with it; spec 015 added the second frontend flavor
+`frontend-react/` (the chassis carries every flavor, the scaffold verb prunes
+to one at stamp time), updated here with it.

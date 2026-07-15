@@ -1,23 +1,26 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '015-react-rr7-flavor' directory unit 'frontend-react/' is not a directory",
-        "path": "frontend-react/"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "006-webapp-spa",
       "014-scaffold-verb"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "frontend-react",
+        "source": "manifest-metadata"
+      },
+      {
+        "path": "frontend-react/",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "frontend-react/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -30,5 +33,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "94f52df3b5c1ae43c50e3327dc87a307f57fdc700e553e4682bf278e89e6fa41"
+  "shardHash": "674c92230d375b84b8d76d205f30bcd46ad029f88f7ff9e3b8c148c5644b5697"
 }

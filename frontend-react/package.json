@@ -1,0 +1,25 @@
+{
+  "name": "@enrahitu/frontend-react",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "spec-spine": { "spec": "015-react-rr7-flavor" },
+  "type": "module",
+  "description": "React 19 + React Router v7 (SPA/data-router) flavor of the enrahitu SPA: login (mock + rauthy), profile, logout, cache demo. Builds into backend/web/dist, served by the backend's static service. Feature parity with @enrahitu/frontend (spec 015).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^7.6.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^7.0.0"
+  }
+}

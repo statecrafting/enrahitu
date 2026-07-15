@@ -72,8 +72,11 @@ decisions 1 and 2):
 1. **Single-package repo, app at the root.** No npm workspaces: workspaces
    made `encore build docker`'s `bundle_source` treat the workspace root as
    the bundle root in the template-encore PR #40 spike (the 3.7 GB failure
-   mode). `addon/` and `frontend/` have their own `package.json`s but are not
-   workspace members.
+   mode). `addon/`, `frontend/`, and `frontend-react/` (the second SPA flavor,
+   spec 015) have their own `package.json`s but are not workspace members. The
+   root `tsconfig.json` and `vitest.config.ts` exclude every frontend flavor
+   directory: the SPA flavors typecheck and test under their own manifests, not
+   the backend's.
 2. **No Encore `SQLDatabase` anywhere.** `encore run` must not want Docker
    Postgres; `encore build docker` must not require database infra config.
    Durable state is CoreLedger's job (spec 003).

@@ -102,6 +102,14 @@ export function validateSlots(slots, values) {
 }
 
 // --- Steps ------------------------------------------------------------------
+// Each frontend flavor (template.toml [slots].frontend.allowed) is a sibling
+// source directory (spec 015). This map is stamp.mjs's half of that contract:
+// the allowed list lives in template.toml (spec 009), the directory each value
+// resolves to lives here. The two are amended together (spec 015 §2). A flavor
+// in the allowed list with no entry here fails the stamp loudly rather than
+// silently pruning nothing.
+const FLAVOR_DIRS = { vue: "frontend", "react-rr7": "frontend-react" };
+
 function writeJson(path, value) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
@@ -126,6 +134,46 @@ function substituteAppName(root, appName) {
     if (lock.packages && lock.packages[""]) lock.packages[""].name = appName;
     writeJson(lockPath, lock);
   }
+}
+
+// Keep the selected frontend flavor, prune the rest, and repoint the root
+// build:web / dev:web scripts at the survivor's directory. A flavor is a slot,
+// not a fork (spec 009 §3.1): the chassis carries every flavor directory, a
+// stamped app carries exactly one. Idempotent: a re-run finds the unselected
+// dirs already gone and the scripts already pointed at the survivor. Only script
+// keys that exist are rewritten, so a minimal tree without them is left intact.
+// Spec 014 (scaffold) x spec 015 (flavors).
+function selectFrontendFlavor(root, frontend) {
+  const chosenDir = FLAVOR_DIRS[frontend];
+  if (!chosenDir) {
+    throw new StampError("select frontend flavor", `no directory mapping for frontend flavor "${frontend}"`);
+  }
+
+  const pruned = [];
+  for (const [flavor, dir] of Object.entries(FLAVOR_DIRS)) {
+    if (flavor === frontend) continue;
+    const abs = join(root, dir);
+    if (existsSync(abs)) {
+      rmSync(abs, { recursive: true, force: true });
+      pruned.push(dir);
+    }
+  }
+
+  const pkgPath = join(root, "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  let rewrote = false;
+  if (pkg.scripts) {
+    if (typeof pkg.scripts["build:web"] === "string") {
+      pkg.scripts["build:web"] = `npm --prefix ${chosenDir} run build`;
+      rewrote = true;
+    }
+    if (typeof pkg.scripts["dev:web"] === "string") {
+      pkg.scripts["dev:web"] = `npm --prefix ${chosenDir} run dev`;
+      rewrote = true;
+    }
+  }
+  if (rewrote) writeJson(pkgPath, pkg);
+  return { chosenDir, pruned, rewrote };
 }
 
 // Place the born-with cert and validate it through the template-owned validator
@@ -244,6 +292,7 @@ export function main(argv, now = new Date()) {
   const values = validateSlots(slots, args);
 
   substituteAppName(repoRoot, values.appName);
+  const flavor = selectFrontendFlavor(repoRoot, values.frontend);
   const certDest = args.cert ? placeCert(repoRoot, args.cert) : null;
   const derived = regenerateDerived(repoRoot);
   const templateCommit = resolveTemplateCommit(repoRoot, args.stampedFrom);
@@ -258,6 +307,11 @@ export function main(argv, now = new Date()) {
 
   console.log(`ok stamped ${values.appName} (org ${values.org}, frontend ${values.frontend})`);
   console.log(`  name -> ${values.appName} in package.json + package-lock.json`);
+  console.log(
+    `  frontend -> ${flavor.chosenDir}/${
+      flavor.pruned.length ? ` (pruned ${flavor.pruned.join(", ")})` : ""
+    }${flavor.rewrote ? "; build:web/dev:web repointed" : ""}`,
+  );
   if (certDest) console.log(`  provenance cert -> ${certDest} (validated)`);
   console.log(
     derived.ran
