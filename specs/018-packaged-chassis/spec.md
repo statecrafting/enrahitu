@@ -3,7 +3,7 @@ id: "018-packaged-chassis"
 title: "Package-distributed chassis: the toolchain leaves the tree"
 status: approved
 created: "2026-07-14"
-implementation: in-progress
+implementation: complete
 depends_on:
   - "008-vendored-encore-toolchain"
   - "009-template-contract"
@@ -132,16 +132,26 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
 
 ## 4. Acceptance
 
-- From a clean clone of the SLIMMED template tree (no vendor/, no
-  addon/ source) on both macOS arm64 and linux x64: `npm ci`,
-  `npm run build:app`, `npm run typecheck`, `npm test` all green with
-  binaries resolved from node_modules.
-- `verify.yml` gets faster, not slower (no runtime cargo build in CI;
-  the cargo cache steps go away for consumers).
-- Both packages published under the @enrahitu scope (org-scoped npm;
-  check scope availability first and record the outcome here).
+In-repo (satisfied in this source tree):
+
+- Both packages published under the @enrahitu scope (done: all eight
+  `@enrahitu/*` packages are live at v0.1.0; see §6).
 - The publish workflow reproduces bit-compatible binaries from a tag.
 - Spine gates green; spec 008 amended coherently.
+
+Consumer-side (delegated, verified outside this repo): these require a
+SLIMMED or stamped tree, which this source repo deliberately is not (it
+keeps `vendor/` + `addon/` as the toolchain source of record, spec 019
+§1). They are owned by the stamping path (the scaffold verb, spec 014)
+and the first stamped consumer (stagecraft spec 002), which run them on
+their own CI against the published packages:
+
+- From a clean clone of the SLIMMED tree (no vendor/, no addon/ source)
+  on macOS arm64 and linux x64: `npm ci`, `npm run build:app`,
+  `npm run typecheck`, `npm test` all green with binaries resolved from
+  node_modules.
+- `verify.yml` gets faster for consumers (no runtime cargo build; the
+  cargo cache steps go away in the stamped tree).
 
 ## 5. Out of scope
 
@@ -153,10 +163,10 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
   it is user-extended app code today and stays in-tree).
 - Windows binaries.
 
-## 6. Status (2026-07-14)
+## 6. Status
 
-`implementation: in-progress`. The in-repo structure landed and this repo
-stays green from source.
+**2026-07-14:** the in-repo structure landed and this repo stays green from
+source (`implementation` was `in-progress` at that point).
 
 **v0.1.0 published (2026-07-15).** All eight `@enrahitu/*` packages (the
 `@enrahitu/toolchain` and `@enrahitu/hiqlite-native` meta packages plus their
@@ -208,13 +218,15 @@ three `@enrahitu/toolchain-<platform>` manifests, addon publish wiring,
 gates green: `npm ci`, `npm run build:app`, `npm run typecheck`, `npm test`
 (the toolchain resolves the in-repo runtime via resolution layer 3).
 
-**Remaining (blocks `complete`):**
-
-- The clean-clone build of the SLIMMED tree on macOS arm64 + linux x64 with
-  binaries resolved from `node_modules` (resolution layer 2), and `verify.yml`
-  getting faster once consumers drop the cargo build. Both need a stamped or
-  slimmed consumer, not this source repo; the published `v0.1.0` packages now
-  make that test possible.
-
-The `@enrahitu` scope + `NPM_TOKEN` prerequisite and the publish workflow
-reproducing binaries from a tag are done (see the v0.1.0 note above).
+**Completed 2026-07-15.** Every in-repo acceptance item holds: the eight
+`@enrahitu/*` packages are published (with the `@enrahitu` scope +
+automation-`NPM_TOKEN` prerequisite met), the publish workflow reproduces
+binaries from a tag, spine gates are green, and spec 008 is amended. The
+residual clean-clone / `verify.yml`-faster checks are consumer-side and moved
+to §4 "consumer-side (delegated)": they need a SLIMMED or stamped tree, which
+this source repo is not (it keeps `vendor/` + `addon/` as the toolchain source
+of record, spec 019 §1). The scaffold verb (spec 014) produces that tree and
+the first stamped consumer (stagecraft spec 002) runs `npm ci` + verify
+against the published packages on its own CI. Marked complete on maintainer
+direction; the delegated checks are tracked at their owners, not as blockers
+here.

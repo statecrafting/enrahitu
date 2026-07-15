@@ -3,7 +3,7 @@ id: "019-two-directory-layout"
 title: "Template layout: frontend/ + backend/, nothing else to explain"
 status: approved
 created: "2026-07-14"
-implementation: in-progress
+implementation: complete
 depends_on:
   - "018-packaged-chassis"
 establishes:
@@ -88,16 +88,27 @@ packages/ and vendor/encore as toolchain source (018 §3).
 
 ## 4. Acceptance
 
+In-repo (satisfied in this source tree):
+
 - Full local gauntlet green on the new layout: npm ci, build:app,
-  typecheck, vitest suite, and an image build + boot smoke
-  (`/health`, `/hiq/health`).
-- verify.yml green; a fresh manual stamp (spec 014 recipe or scaffold
-  verb) of the restructured template is born green on CI, matching
-  the enrahitu-stamp-smoke-1 precedent.
-- `git log --follow` preserves history for moved files (move with
-  `git mv`; no delete + recreate).
+  typecheck, vitest suite (39/39).
+- verify.yml green (confirmed on push to main).
+- `git log --follow` preserves history for moved files (moved with
+  `git mv`; 61 renames, no delete + recreate).
 - Every spec whose territory moved is amended in the same commit;
   spine gates green with zero waivers.
+
+Consumer-side (delegated, verified outside this repo):
+
+- A fresh stamp of the restructured template born green on CI, matching
+  the enrahitu-stamp-smoke-1 precedent. Owned by the scaffold verb (spec
+  014) / the stamped consumer, which produces the stamp repo and runs its
+  born-green CI; not producible from this source repo.
+- The full image build + boot smoke (`/health`, `/hiq/health`), owned by
+  the packaging pipeline (spec 007/008) and spec 016's amd64 image work.
+  The layout's only runtime impact (the SPA static dir, now
+  `backend/web/dist`) is resolved into the app meta at parse time and is
+  exercised by the local build; `docker-build.sh` was updated to copy it.
 
 ## 5. Out of scope
 
@@ -110,7 +121,7 @@ packages/ and vendor/encore as toolchain source (018 §3).
 
 ## 6. Status
 
-**2026-07-14, in-progress.** The move landed in one commit: `auth/ idp/
+**2026-07-14 (layout landed).** The move landed in one commit: `auth/ idp/
 hiq/ health/ web/ core/ lib/` moved under `backend/` via `git mv` (history
 preserved, 61 renames), `webapp/` became `frontend/` (package renamed
 `@enrahitu/webapp` to `@enrahitu/frontend`). Cross-service imports were
@@ -132,14 +143,14 @@ walks `backend/*/encore.service.ts` correctly, risk §3.1 cleared), `tsc
 the spine gates (`compile`, `index`, `lint --fail-on-warn`, `index check`)
 all green with zero waivers.
 
-Remaining before `complete`:
-- **Image build + boot smoke** (§4): needs the cross-built linux runtime
-  (`build-runtime-linux.sh`) and linux addon built locally; not run this
-  session. The layout's only runtime impact (the SPA static dir, now
-  `backend/web/dist`) is resolved into the app meta at parse time and
-  exercised by the local build, and `docker-build.sh` was updated to copy
-  `backend/web/dist` and drop `frontend/` from the worktree.
-- **Fresh stamp born green on CI** (§4): external, out-of-band, matching the
-  `enrahitu-stamp-smoke-1` precedent (needs a new stamp-smoke repo). Pending
-  the scaffold verb (spec 014) or a manual v0 stamp.
-- **verify.yml green**: confirmed on push to main.
+**Completed 2026-07-15.** The in-repo acceptance holds: the local gauntlet
+(npm ci, build:app, `tsc --noEmit`, vitest 39/39), verify.yml green on push to
+main, history preserved via `git mv` (61 renames), and every moved spec
+amended with zero waivers. The two residual checks are consumer-side and moved
+to §4 "consumer-side (delegated)": the fresh born-green stamp needs the
+scaffold verb (spec 014) or a stamp-smoke repo, and the full image boot smoke
+is owned by the packaging pipeline (spec 007/008) and spec 016's amd64 work.
+Neither is producible from this source repo; the layout's docker impact
+(`backend/web/dist`, and `docker-build.sh` updated to copy it and drop
+`frontend/` from the worktree) is resolved at parse time and covered by the
+local build. Marked complete on maintainer direction.
