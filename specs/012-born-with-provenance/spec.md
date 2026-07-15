@@ -115,5 +115,15 @@ verb must also pass in the template repo itself, which has no cert.
 - Emission (factory-side, stagecraft spec 005) and ledger recording
   (stagecraft spec 008).
 - Ed25519 signing of certs: v1 certs are hash-anchored via the platform
-  ledger, not self-signed; signing may arrive with a later certVersion.
+  ledger, not self-signed. Signing is reserved for certVersion 2, whose
+  designed path is the vended pair from the stagecraft-ing lineage (OAP
+  specs 219/220): the factory emits through tenant-emit with a
+  platform-minted Ed25519 key delivered as a repo CI secret at repo
+  creation (the mint belongs to stagecraft specs 004/005), the stamped
+  repo pins tenant-tail and re-verifies the certificate in its verify
+  workflow, and the platform ledger anchor (stagecraft spec 008) plays
+  the countersign role. v1 keeps a bespoke validator precisely because
+  tenant-tail verifies the signed governance-certificate shape, not
+  this unsigned v1 cert; pinning tenant-tail before certVersion 2
+  would verify nothing.
 - Posture enforcement semantics (platform policy, not template).
