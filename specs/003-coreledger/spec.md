@@ -53,7 +53,9 @@ module singleton), and the barrel `index.ts`.
 
 ## 4. Out of scope
 
-- The Postgres driver: designed for, not implemented; a future spec amends
-  this one when it lands.
-- Migrations beyond idempotent `ensureSchema()` table creation.
+- The Postgres driver landed in spec 011: `schema.ts` grew a dialect switch
+  and `ledger.ts` grew URL-scheme driver selection, both behind this same
+  decorator surface. The libSQL default and codec are unchanged.
+- Migrations beyond idempotent `ensureSchema()` table creation: the minimal
+  forward-only migration runner is owned by spec 011.
 - Query-builder or relation features beyond the typed repository surface.

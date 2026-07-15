@@ -1,22 +1,55 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '011-coreledger-postgres-driver' file unit 'backend/core/ledger/postgres.ts' does not exist",
-        "path": "backend/core/ledger/postgres.ts"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "003-coreledger"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "backend/core/ledger/migrations.ts",
+        "source": "spec-edge"
+      },
+      {
+        "path": "backend/core/ledger/postgres.test.ts",
+        "source": "spec-edge"
+      },
+      {
+        "path": "backend/core/ledger/postgres.ts",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "backend/core/ledger/migrations.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "backend/core/ledger/migrations.ts"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "backend/core/ledger/postgres.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "backend/core/ledger/postgres.test.ts"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "backend/core/ledger/postgres.ts"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -26,8 +59,8 @@
       }
     ],
     "specId": "011-coreledger-postgres-driver",
-    "specStatus": "draft"
+    "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "22c014062baf9503ce6caf05dc0f57c3d48055410564211c97100b327b794656"
+  "shardHash": "0d8f2f32ca19ae0482808746ba7bd47b17b03584db3ca20ba134b35283783578"
 }

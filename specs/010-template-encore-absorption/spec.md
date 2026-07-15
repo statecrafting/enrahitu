@@ -59,7 +59,11 @@ completion; the implementing specs own the how.
   born-with set: no separate per-repo copy step exists to drift. The
   workflow's SPA dependency path (`npm --prefix frontend ci`, npm cache on
   `frontend/package-lock.json`) tracks the spec 019 two-directory rename
-  from `webapp/` to `frontend/`.
+  from `webapp/` to `frontend/`. The verify job also runs a digest-pinned
+  Postgres service and passes `TEST_POSTGRES_URL` to the verify verb so
+  CoreLedger's Postgres-driver arm (spec 011) is exercised on every run
+  alongside the libSQL default; the service is CI-side only and stays out
+  of the stamped runtime.
   Born-green proof: stagecraft-ing/enrahitu-stamp-smoke-1, a manual v0
   stamp (spec 009 §3.2 factory-side mode: app_name slot into
   package.json + lockfile, registry/index regenerated), whose verify

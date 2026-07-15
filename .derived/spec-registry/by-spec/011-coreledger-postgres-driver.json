@@ -8,22 +8,32 @@
       {
         "kind": "file",
         "path": "backend/core/ledger/postgres.ts"
+      },
+      {
+        "kind": "file",
+        "path": "backend/core/ledger/migrations.ts"
+      },
+      {
+        "kind": "file",
+        "path": "backend/core/ledger/postgres.test.ts"
       }
     ],
     "id": "011-coreledger-postgres-driver",
+    "implementation": "complete",
     "sectionHeadings": [
       "011: CoreLedger Postgres driver",
       "1. Purpose",
       "2. Territory",
       "3. Design constraints",
       "4. Acceptance",
-      "5. Out of scope"
+      "5. Out of scope",
+      "6. Status"
     ],
     "specPath": "specs/011-coreledger-postgres-driver/spec.md",
-    "status": "draft",
-    "summary": "Design for the Postgres LedgerDriver that spec 003 stages as future work. The forcing function is the Stagecraft control plane: it is itself an EnRaHiTu app but carries webhook bursts, audit writes, and multi-tenant state, so it runs CoreLedger-on-Postgres while stamped customer apps run CoreLedger-on-libSQL/Turso. Same decorator surface, different driver; the \"scaling is a driver swap, not a rewrite\" thesis gets validated in production on ourselves before any customer needs it. Draft: territory claims land with the code.\n",
+    "status": "approved",
+    "summary": "The Postgres LedgerDriver that spec 003 stages as future work. The forcing function is the Stagecraft control plane: it is itself an EnRaHiTu app but carries webhook bursts, audit writes, and multi-tenant state, so it runs CoreLedger-on-Postgres while stamped customer apps run CoreLedger-on-libSQL/Turso. Same decorator surface, different driver; the \"scaling is a driver swap, not a rewrite\" thesis is validated by running the exact spec 003 test suite, unchanged, against both drivers. Selection is by URL scheme; the driver owns dialect DDL, `?`-to-`$n` placeholder translation, and a minimal forward-only migration runner.\n",
     "title": "CoreLedger Postgres driver: scaling as a driver swap, proven"
   },
-  "shardHash": "3b706e9de9709947b09192ee0fcc5cbb8ea2d038a113afc3cda90cee9f5ed780",
+  "shardHash": "8053b06fe05b3860d7bcc852e57ae16d5fe35d578013bb741ceb7aef61751bf8",
   "specVersion": "1.1.0"
 }

@@ -27,14 +27,16 @@
   "dependencies": {
     "@enrahitu/hiqlite-native": "file:./addon",
     "@libsql/client": "^0.17.4",
-    "encore.dev": "^1.57.9",
+    "encore.dev": "file:/Users/bart/DevWork/enrahitu/vendor/encore/runtimes/js/encore.dev",
     "jsonwebtoken": "^9.0.3",
-    "openid-client": "^6.8.4"
+    "openid-client": "^6.8.4",
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@enrahitu/toolchain": "file:./packages/toolchain",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.0.1",
+    "@types/pg": "^8.20.0",
     "tsx": "^4.19.2",
     "typescript": "^6.0.3",
     "vitest": "^4.0.18"

@@ -37,6 +37,8 @@ export type {
   SqlValue,
 } from "./driver";
 export { LibsqlDriver, type LibsqlConfig } from "./libsql";
-export { createTableSql, ensureSchema } from "./schema";
+export { PostgresDriver, type PostgresConfig, translatePlaceholders } from "./postgres";
+export { createTableSql, ensureSchema, sqlType, quoteIdent, type Dialect } from "./schema";
+export { appliedVersions, migrate, addColumnSql, type Migration } from "./migrations";
 export { Repository, type FindOptions } from "./repository";
 export { Ledger, ledger } from "./ledger";

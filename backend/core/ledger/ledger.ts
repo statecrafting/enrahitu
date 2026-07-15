@@ -1,21 +1,48 @@
 /**
  * The Ledger facade: driver selection from env, repositories, schema boot.
  *
+ * Driver selection is config, not code: the URL scheme decides (spec 011).
+ * `postgres://` / `postgresql://` selects the Postgres driver (the control
+ * plane); `file:` / `libsql://` selects libSQL (the default, spec 003).
+ *
  * Env knobs:
  * - `ENRAHITU_LEDGER_URL`                default `file:./.data/ledger/enrahitu.db`
  * - `ENRAHITU_LEDGER_SYNC_URL`           set to a `libsql://...turso.io` URL to
  *                                      turn the local file into a Turso
- *                                      embedded replica
- * - `ENRAHITU_LEDGER_AUTH_TOKEN`         Turso auth token
- * - `ENRAHITU_LEDGER_SYNC_INTERVAL_SECS` background sync cadence
+ *                                      embedded replica (libSQL only)
+ * - `ENRAHITU_LEDGER_AUTH_TOKEN`         Turso auth token (libSQL only)
+ * - `ENRAHITU_LEDGER_SYNC_INTERVAL_SECS` background sync cadence (libSQL only)
+ * - `ENRAHITU_LEDGER_POOL_SIZE`          Postgres pool max (default 10)
  */
 
 import type { LedgerDriver, LedgerTx, SqlRow, SqlValue } from "./driver";
 import { LibsqlDriver } from "./libsql";
 import type { EntityCtor } from "./metadata";
 import { entityMeta } from "./metadata";
+import { PostgresDriver } from "./postgres";
 import { Repository } from "./repository";
 import { ensureSchema } from "./schema";
+
+function driverFromEnv(): LedgerDriver {
+  const url = process.env.ENRAHITU_LEDGER_URL ?? "file:./.data/ledger/enrahitu.db";
+  if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
+    return new PostgresDriver({
+      url,
+      poolSize: process.env.ENRAHITU_LEDGER_POOL_SIZE
+        ? Number(process.env.ENRAHITU_LEDGER_POOL_SIZE)
+        : undefined,
+    });
+  }
+  const syncUrl = process.env.ENRAHITU_LEDGER_SYNC_URL;
+  return new LibsqlDriver({
+    url,
+    syncUrl: syncUrl || undefined,
+    authToken: process.env.ENRAHITU_LEDGER_AUTH_TOKEN || undefined,
+    syncIntervalSecs: process.env.ENRAHITU_LEDGER_SYNC_INTERVAL_SECS
+      ? Number(process.env.ENRAHITU_LEDGER_SYNC_INTERVAL_SECS)
+      : undefined,
+  });
+}
 
 export class Ledger {
   private readonly repos = new Map<EntityCtor, Repository<object>>();
@@ -23,17 +50,7 @@ export class Ledger {
   constructor(readonly driver: LedgerDriver) {}
 
   static fromEnv(): Ledger {
-    const syncUrl = process.env.ENRAHITU_LEDGER_SYNC_URL;
-    return new Ledger(
-      new LibsqlDriver({
-        url: process.env.ENRAHITU_LEDGER_URL ?? "file:./.data/ledger/enrahitu.db",
-        syncUrl: syncUrl || undefined,
-        authToken: process.env.ENRAHITU_LEDGER_AUTH_TOKEN || undefined,
-        syncIntervalSecs: process.env.ENRAHITU_LEDGER_SYNC_INTERVAL_SECS
-          ? Number(process.env.ENRAHITU_LEDGER_SYNC_INTERVAL_SECS)
-          : undefined,
-      }),
-    );
+    return new Ledger(driverFromEnv());
   }
 
   /** Create tables/indexes for the given (default: all) registered entities. */
