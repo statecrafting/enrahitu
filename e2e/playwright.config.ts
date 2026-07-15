@@ -30,7 +30,11 @@ const APP_ORIGIN = "http://localhost:4000";
 // globalSetup and is read lazily at callback time (backend/lib/secrets.ts).
 const rauthyEnv: Record<string, string> = {
   AUTH_DRIVER: "rauthy",
-  RAUTHY_ISSUER: `${APP_ORIGIN}/auth/v1`,
+  // Trailing slash is REQUIRED: rauthy 0.36.0 advertises its issuer as
+  // http://localhost:4000/auth/v1/ and openid-client v6 validates the
+  // discovery document's issuer field exactly. Without it, getConfig() throws
+  // and rauthyLogin returns 500.
+  RAUTHY_ISSUER: `${APP_ORIGIN}/auth/v1/`,
   RAUTHY_CLIENT_ID: "enrahitu",
   RAUTHY_REDIRECT_URI: `${APP_ORIGIN}/api/v1/auth/rauthy/callback`,
   RAUTHY_SCOPES: "openid profile email groups",
@@ -70,6 +74,9 @@ export default defineConfig({
     timeout: 180_000,
     stdout: "pipe",
     stderr: "pipe",
-    env: rauthyEnv,
+    // Spread process.env explicitly: the app child only enables the rauthy
+    // driver when these reach it (backend/lib/env.ts reads process.env), and a
+    // bare env object would drop the inherited PATH/HOME the dev runner needs.
+    env: { ...process.env, ...rauthyEnv },
   },
 });
