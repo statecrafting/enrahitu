@@ -28,6 +28,6 @@
     "summary": "The explicit, versioned interface between this template and the Stagecraft factory. The factory learns how to stamp, verify, and package an app from this chassis by reading template.toml and nothing else. This replaces the implicit coupling that plagued the factory-encore / template-encore pair, where the shared assumption (the encore CLI, plus folklore about repo layout) lived in two codebases at once and drift surfaced only at stamp time. v0 shipped the contract file with verify and package verbs live; scaffold landed with the repoInit absorption (spec 014, contract 0.4.0) and deploy is permanently fleet-owned.\n",
     "title": "The versioned template contract (template.toml)"
   },
-  "shardHash": "3e04d1364a8906832076bc8ecd3c5443e9e47d5992257fdb4da35a68e678e2d6",
+  "shardHash": "cceccd1eea8427fbaa36677c2d9b210723dde0898b5295ef8ef6b61c652f3ebb",
   "specVersion": "1.1.0"
 }

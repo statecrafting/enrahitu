@@ -42,7 +42,7 @@ platform-specific npm optionals intact, and place the provenance cert.
 
 ## 3. Behavior
 
-`node scripts/stamp.mjs --app-name <name> --org <org> [--frontend vue]
+`node scripts/stamp.mjs --app-name <name> --org <org> [--frontend vue|react-rr7]
 [--cert <path-to-born-with.json>] [--stamped-from <template-commit-sha>]`
 run from the repo root of a fresh clone:
 
@@ -53,22 +53,31 @@ run from the repo root of a fresh clone:
    `packages[""]` entry). Substrate names (`@enrahitu/*`, the addon
    crate, env prefixes) are deliberately NOT touched: they are the
    chassis, not the app.
-3. **Lockfile discipline**: if dependency edits ever become part of
+3. **Select frontend flavor** (spec 015): keep the selected flavor's
+   directory and prune the rest (`vue → frontend/`,
+   `react-rr7 → frontend-react/`), then repoint the root `build:web` /
+   `dev:web` scripts at the survivor (`npm --prefix <dir> run build|dev`).
+   The chassis carries every flavor directory; a stamped app ships exactly
+   one. Idempotent: a re-run finds the unselected dirs already pruned and
+   the scripts already repointed. The flavor→directory map lives in
+   `stamp.mjs`; the allowed list lives in `template.toml` (spec 009); the
+   two are amended together.
+4. **Lockfile discipline**: if dependency edits ever become part of
    stamping, refresh with `npm install --package-lock-only` from the
    committed lock; never a full `npm install` on macOS, which prunes
    linux esbuild/rollup platform optionals and breaks `npm ci` on CI
    runners.
-4. **Provenance**: when `--cert` is given, copy it to
+5. **Provenance**: when `--cert` is given, copy it to
    `.stagecraft/born-with.json` and run
    `node scripts/verify-born-with.mjs` (spec 012); a failing cert fails
    the stamp.
-5. **Regenerate derived truth**: `spec-spine compile && spec-spine index`
+6. **Regenerate derived truth**: `spec-spine compile && spec-spine index`
    (the app name is a hashed input; stale shards would fail the stamped
    repo's own spine gate). If the `spec-spine` binary is absent, fail
    with the install one-liner; do not skip.
-6. **Detach lineage marker**: append a `## Stamped` section to README.md
+7. **Detach lineage marker**: append a `## Stamped` section to README.md
    naming app, org, template commit, and date.
-7. Print a summary and exit 0; any step failure exits non-zero with the
+8. Print a summary and exit 0; any step failure exits non-zero with the
    failing step named. The script is idempotent: re-running with the
    same slots is a no-op that exits 0.
 
@@ -86,8 +95,10 @@ run from the repo root of a fresh clone:
 
 - Creating GitHub repos, pushing, or org-side setup (factory, stagecraft
   spec 005).
-- Frontend flavor swapping beyond validating the slot value (spec 015
-  makes a second value real).
+- Authoring new frontend flavors: each flavor directory is owned by its
+  own spec (spec 015 added `frontend-react/`). The scaffold verb only
+  selects among the flavors the chassis already carries: keep the chosen
+  one, prune the rest, repoint `build:web` / `dev:web`.
 - Cert *content* generation (factory-side; the script only places and
   validates).
 
@@ -120,3 +131,15 @@ Acceptance (§4) status:
   design-time hazard: v0 stamping edits no dependencies, so the lockfile
   changes by exactly two `name` fields and the dependency graph is
   byte-identical to this repo's already-green tree.
+
+**Amended 2026-07-15 (spec 015, contract v0.5).** The recipe gained step 3,
+frontend flavor selection: the scaffold verb now prunes the unselected flavor
+directories (`vue → frontend/`, `react-rr7 → frontend-react/`) and repoints the
+root `build:web` / `dev:web` scripts at the survivor. `scripts/stamp.test.ts`
+gained three cases (react-rr7 prunes the vue dir and repoints the scripts; vue
+default prunes the react dir; re-stamp idempotent). A pruned flavor left in
+`spec-spine.toml`'s standalone list or a spec's `establishes` directory is
+benign: an absent standalone package and an unimplemented `establishes` unit
+are index-render diagnostics, not `compile`/`index`/`lint` failures, so the
+stamped app's spine gates stay green without the stamp editing governance
+files. Verified empirically before the change.

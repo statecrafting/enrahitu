@@ -61,7 +61,8 @@ commands to contract verbs, not the commands themselves.
   changing or removing a key, or changing a verb's meaning, is a major bump.
   Worked minors: v0.2 added `[requires].toolchain` (spec 018); v0.3 added
   the `[provenance]` table (spec 012); v0.4 made the reserved `scaffold`
-  verb live (spec 014).
+  verb live (spec 014); v0.5 added the `react-rr7` frontend flavor to the
+  `frontend` slot's allowed list (spec 015).
 - `[requires]`: runtime requirements of a stamped app. `node >= 24`, and
   (contract v0.2, spec 018) `toolchain = "^0.1"`: the `@enrahitu/toolchain`
   chassis package a stamped app devDepends on for its build drivers and
@@ -70,9 +71,11 @@ commands to contract verbs, not the commands themselves.
   remain template-development requirements only and are deliberately absent.
 - `[slots]`: the values the factory substitutes at stamp time. v0: app
   name, org, and the `frontend` flavor knob. The knob exists so frontend
-  variants are a slot, not a fork: `vue` is the only allowed value today;
-  `react-rr7` is the planned second flavor and `svelte` earns a slot on
-  demand. Each added flavor is a minor contract bump.
+  variants are a slot, not a fork: `vue` and `react-rr7` are the allowed
+  values (the second landed with spec 015, contract v0.5); `svelte` earns
+  a slot on demand. Each allowed value maps to a sibling flavor directory
+  the scaffold verb keeps or prunes (spec 014/015). Each added flavor is a
+  minor contract bump.
 - `[verbs]`: commands the factory runs inside a stamped repo, exit code as
   verdict. Live verbs: `verify`, `package`, and (contract v0.4, spec 014)
   `scaffold`.
