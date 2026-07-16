@@ -3,7 +3,7 @@ id: "016-amd64-image"
 title: "linux/amd64 image support (multi-arch packaging)"
 status: approved
 created: "2026-07-14"
-implementation: in-progress
+implementation: complete
 depends_on:
   - "007-single-container-packaging"
   - "008-vendored-encore-toolchain"
@@ -97,10 +97,14 @@ integration arrived; it has. stagecraft spec 006's fleet E2E needs a pullable
 amd64 enrahitu image, and this workflow was the only place that builds one (it
 built and smoked but never pushed). `image.yml` now pushes each arch to
 `ghcr.io/stagecraft-ing/enrahitu` and assembles a multi-arch manifest on
-`release`/`workflow_dispatch`. The build + smoke acceptance already holds; the
-new publish acceptance (image pullable from GHCR, amd64 booting on an x86-64
-host) holds once the workflow has run against a published ref and the image has
-been pulled. Flip back to `complete` then.
+`release`/`workflow_dispatch`. The build + smoke acceptance already held; the
+new publish acceptance is now verified: the `image` workflow ran (2026-07-16),
+built and smoked both arches on native runners, and pushed them, so
+`ghcr.io/stagecraft-ing/enrahitu:latest` resolves as a multi-arch manifest list
+carrying linux/amd64 (digest `sha256:0be2dca8...`) and linux/arm64, pulled under
+auth. The package is private, so the fleet supplies GHCR credentials through its
+image-pull secret (stagecraft spec 006, `FLEET_IMAGE_PULL_SECRET`). Back to
+`complete`.
 
 ## 5. Out of scope
 
