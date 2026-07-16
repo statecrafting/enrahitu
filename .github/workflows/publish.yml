@@ -70,7 +70,17 @@ jobs:
           cp vendor/encore/target/release/tsparser-encore "$dst/"
       - name: Publish @enrahitu/toolchain-${{ matrix.triple }}
         working-directory: packages/toolchain-${{ matrix.triple }}
-        run: npm publish --access public --provenance
+        # Idempotent (spec 018 versioning): the @enrahitu/* packages track their
+        # own semver, so a template-release tag that does not bump them must not
+        # fail. Publish only when this exact version is not already on npm.
+        run: |
+          pkg=$(node -p "require('./package.json').name")
+          ver=$(node -p "require('./package.json').version")
+          if npm view "$pkg@$ver" version 2>/dev/null | grep -q .; then
+            echo "$pkg@$ver already on npm; skipping publish"
+          else
+            npm publish --access public --provenance
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -84,7 +94,15 @@ jobs:
              addon/npm/${{ matrix.napi_triple }}/
       - name: Publish @enrahitu/hiqlite-native-${{ matrix.napi_triple }}
         working-directory: addon/npm/${{ matrix.napi_triple }}
-        run: npm publish --access public --provenance
+        # Idempotent: skip if this exact version is already on npm (spec 018).
+        run: |
+          pkg=$(node -p "require('./package.json').name")
+          ver=$(node -p "require('./package.json').version")
+          if npm view "$pkg@$ver" version 2>/dev/null | grep -q .; then
+            echo "$pkg@$ver already on npm; skipping publish"
+          else
+            npm publish --access public --provenance
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -92,7 +110,15 @@ jobs:
       - name: Publish @enrahitu/toolchain (meta)
         if: matrix.publish_meta
         working-directory: packages/toolchain
-        run: npm publish --access public --provenance
+        # Idempotent: skip if this exact version is already on npm (spec 018).
+        run: |
+          pkg=$(node -p "require('./package.json').name")
+          ver=$(node -p "require('./package.json').version")
+          if npm view "$pkg@$ver" version 2>/dev/null | grep -q .; then
+            echo "$pkg@$ver already on npm; skipping publish"
+          else
+            npm publish --access public --provenance
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       # The addon's platform optionalDependencies are injected here at publish
@@ -106,6 +132,14 @@ jobs:
       - name: Publish @enrahitu/hiqlite-native (meta)
         if: matrix.publish_meta
         working-directory: addon
-        run: npm publish --access public --provenance
+        # Idempotent: skip if this exact version is already on npm (spec 018).
+        run: |
+          pkg=$(node -p "require('./package.json').name")
+          ver=$(node -p "require('./package.json').version")
+          if npm view "$pkg@$ver" version 2>/dev/null | grep -q .; then
+            echo "$pkg@$ver already on npm; skipping publish"
+          else
+            npm publish --access public --provenance
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

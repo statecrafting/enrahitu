@@ -146,7 +146,12 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
   the pinned upstream Encore version (v1.57.9) is recorded in the
   package README and a `--version` output. template.toml `[requires]`
   gains `toolchain = "<semver range>"` (minor contract bump per spec
-  009 §3.1).
+  009 §3.1). Because these versions are independent of the template's
+  release tag, the publish workflow is **idempotent** (amended
+  2026-07-15): on a `v*` tag it publishes each `@enrahitu/*` package only
+  when its current version is not already on npm, so a template-only
+  release (no toolchain bump, e.g. the v0.2.0 feature release) is a clean
+  no-op instead of a "cannot publish over previously published" failure.
 
 ## 4. Acceptance
 
@@ -154,7 +159,9 @@ In-repo (satisfied in this source tree):
 
 - Both packages published under the @enrahitu scope (done: all eight
   `@enrahitu/*` packages are live at v0.1.0; see §6).
-- The publish workflow reproduces bit-compatible binaries from a tag.
+- The publish workflow reproduces bit-compatible binaries from a tag, and
+  is idempotent: a repeat `v*` tag whose `@enrahitu/*` versions are already
+  on npm publishes nothing and succeeds (amended 2026-07-15).
 - `git archive` of a template SHA excludes the vendored build-source
   (`vendor/encore/{tsparser,miniredis,proto,runtimes/core,runtimes/js/src,...}`)
   while keeping `runtimes/js/encore.dev`, so a stamp carries no toolchain
