@@ -3,7 +3,7 @@ id: "016-amd64-image"
 title: "linux/amd64 image support (multi-arch packaging)"
 status: approved
 created: "2026-07-14"
-implementation: complete
+implementation: in-progress
 depends_on:
   - "007-single-container-packaging"
   - "008-vendored-encore-toolchain"
@@ -68,6 +68,15 @@ fails the build.
   `workflow_dispatch` + weekly schedule building both arches on a
   ubuntu runner (amd64 native, arm64 cross or matrix) so drift is
   caught without gating every push on a long image build.
+- **Publish.** On `release` or `workflow_dispatch` (never on a PR, so a
+  fork cannot push), each arch job pushes its smoked image to
+  `ghcr.io/<owner>/enrahitu:<sha>-<arch>`, and a `manifest` job stitches
+  the two into the pullable multi-arch tags (`:<sha>`, `:latest`, and the
+  release tag) with `docker buildx imagetools`, so `docker pull` resolves
+  per host arch. GHCR auth is the workflow `GITHUB_TOKEN` (`packages:
+  write`). This is the registry publishing that §5 deferred until the
+  fleet needed it: the fleet control plane (stagecraft spec 006) now
+  places EnRaHiTu containers on x86-64 nodes and must pull this image.
 
 ## 4. Acceptance
 
@@ -76,10 +85,25 @@ fails the build.
   smoke above under its platform.
 - The amd64 image runs on a real x86-64 host (fleet node or CI runner),
   same smoke.
+- The published multi-arch image is pullable from GHCR
+  (`docker pull ghcr.io/stagecraft-ing/enrahitu:<tag>`) and its amd64
+  manifest boots on an x86-64 host with the smoke above.
 - Spine gates green; specs 007/008 amended where behavior moved.
+
+## Status (2026-07-16)
+
+Reopened `in-progress`. §5 originally deferred registry publishing until fleet
+integration arrived; it has. stagecraft spec 006's fleet E2E needs a pullable
+amd64 enrahitu image, and this workflow was the only place that builds one (it
+built and smoked but never pushed). `image.yml` now pushes each arch to
+`ghcr.io/stagecraft-ing/enrahitu` and assembles a multi-arch manifest on
+`release`/`workflow_dispatch`. The build + smoke acceptance already holds; the
+new publish acceptance (image pullable from GHCR, amd64 booting on an x86-64
+host) holds once the workflow has run against a published ref and the image has
+been pulled. Flip back to `complete` then.
 
 ## 5. Out of scope
 
-- A public registry publishing pipeline (arrives with fleet/factory
-  integration, stagecraft side).
+- Automatic publish on every push (kept to `release`/`workflow_dispatch` +
+  the weekly drift build, so a long image build never gates a push).
 - musl/static builds; glibc images match the current base.
