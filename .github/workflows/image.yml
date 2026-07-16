@@ -12,12 +12,18 @@ name: image
 
 on:
   workflow_dispatch:
+  release:
+    types: [published]
   schedule:
     # Mondays 05:00 UTC.
     - cron: "0 5 * * 1"
 
+# packages: write lets the run push the per-arch images and the multi-arch
+# manifest to GHCR (spec 016 section 3 publish). The workflow runs only on
+# dispatch/release/schedule, never on a PR, so a fork can never push.
 permissions:
   contents: read
+  packages: write
 
 concurrency:
   group: image-${{ github.ref }}
@@ -103,3 +109,43 @@ jobs:
           docker rm -f enrahitu-smoke
       - name: Report built image arch
         run: docker image inspect enrahitu:latest --format 'built enrahitu:latest ({{.Architecture}})'
+      # Push this arch under a per-arch, SHA-scoped tag; the manifest job below
+      # stitches the two arches into the pullable multi-arch tags. Only reached
+      # on dispatch/release/schedule, and only after the smoke above passed.
+      - name: Push the ${{ matrix.arch }} image to GHCR
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/enrahitu
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag enrahitu:latest "$IMAGE:${{ github.sha }}-${{ matrix.arch }}"
+          docker push "$IMAGE:${{ github.sha }}-${{ matrix.arch }}"
+
+  # Stitch the two per-arch images pushed by build-smoke into one multi-arch
+  # manifest, so `docker pull ghcr.io/<owner>/enrahitu:<tag>` resolves per host
+  # arch (spec 016 section 3 publish). buildx imagetools needs no experimental
+  # flag and is preinstalled on the runner.
+  manifest:
+    needs: build-smoke
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Assemble and push the multi-arch manifest
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/enrahitu
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          # The immutable commit SHA always; latest on every publish; the release
+          # tag (e.g. v0.2.0) as well when a release triggered the run.
+          tags="${{ github.sha }} latest"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            tags="$tags ${{ github.event.release.tag_name }}"
+          fi
+          for tag in $tags; do
+            docker buildx imagetools create -t "$IMAGE:$tag" \
+              "$IMAGE:${{ github.sha }}-amd64" \
+              "$IMAGE:${{ github.sha }}-arm64"
+          done
