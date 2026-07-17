@@ -5,7 +5,7 @@
     ],
     "implementingPaths": [
       {
-        "path": ".stagecraft/born-with.schema.json",
+        "path": ".statecraft/born-with.schema.json",
         "source": "spec-edge"
       },
       {
@@ -25,14 +25,14 @@
       {
         "locations": [
           {
-            "file": ".stagecraft/born-with.schema.json"
+            "file": ".statecraft/born-with.schema.json"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "file",
-          "path": ".stagecraft/born-with.schema.json"
+          "path": ".statecraft/born-with.schema.json"
         }
       },
       {

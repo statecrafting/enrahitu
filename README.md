@@ -3,7 +3,7 @@
 **EnRaHiTu**: **En**core.ts + **ra**uthy + **hi**qlite + **Tu**rso/libSQL.
 A self-contained, single-container application core with zero
 managed-infrastructure dependencies, and the template chassis the
-Stagecraft factory stamps (spec 009 defines the template contract).
+Statecraft factory stamps (spec 009 defines the template contract).
 The Encore toolchain (rust runtime core, TS parser/compiler, encore.dev
 JS runtime) is vendored under `vendor/encore/` and driven directly via
 napi-rs; the `encore` CLI is not used anywhere (spec 008). Lineage:

@@ -1,6 +1,6 @@
 {
   "certVersion": "1",
-  "app": { "name": "example-app", "org": "stagecraft-ing" },
+  "app": { "name": "example-app", "org": "statecraft-ing" },
   "template": {
     "name": "enrahitu",
     "version": "0.1.0",
@@ -9,5 +9,5 @@
   },
   "agenticPostureBinding": { "posture": "assisted", "defaulted": false },
   "stampedAt": "2026-07-15T00:00:00Z",
-  "stampedBy": { "kind": "factory", "id": "stagecraft/factory@1" }
+  "stampedBy": { "kind": "factory", "id": "statecraft/factory@1" }
 }

@@ -31,7 +31,7 @@
     ],
     "specPath": "specs/011-coreledger-postgres-driver/spec.md",
     "status": "approved",
-    "summary": "The Postgres LedgerDriver that spec 003 stages as future work. The forcing function is the Stagecraft control plane: it is itself an EnRaHiTu app but carries webhook bursts, audit writes, and multi-tenant state, so it runs CoreLedger-on-Postgres while stamped customer apps run CoreLedger-on-libSQL/Turso. Same decorator surface, different driver; the \"scaling is a driver swap, not a rewrite\" thesis is validated by running the exact spec 003 test suite, unchanged, against both drivers. Selection is by URL scheme; the driver owns dialect DDL, `?`-to-`$n` placeholder translation, and a minimal forward-only migration runner.\n",
+    "summary": "The Postgres LedgerDriver that spec 003 stages as future work. The forcing function is the Statecraft control plane: it is itself an EnRaHiTu app but carries webhook bursts, audit writes, and multi-tenant state, so it runs CoreLedger-on-Postgres while stamped customer apps run CoreLedger-on-libSQL/Turso. Same decorator surface, different driver; the \"scaling is a driver swap, not a rewrite\" thesis is validated by running the exact spec 003 test suite, unchanged, against both drivers. Selection is by URL scheme; the driver owns dialect DDL, `?`-to-`$n` placeholder translation, and a minimal forward-only migration runner.\n",
     "title": "CoreLedger Postgres driver: scaling as a driver swap, proven"
   },
   "shardHash": "8053b06fe05b3860d7bcc852e57ae16d5fe35d578013bb741ceb7aef61751bf8",

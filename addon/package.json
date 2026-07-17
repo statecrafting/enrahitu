@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stagecraft-ing/enrahitu.git",
+    "url": "git+https://github.com/statecrafting/enrahitu.git",
     "directory": "addon"
   },
   "spec-spine": { "spec": "002-in-process-hiqlite" },

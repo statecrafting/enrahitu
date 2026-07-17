@@ -4,7 +4,7 @@
 //! runtime (napi-rs `tokio_rt` feature). Encore's Rust runtime lives in a
 //! separate dylib (`encore-runtime.node`); the two runtimes coexist in one
 //! process. This was proven end to end by the template-encore Shape A spike
-//! (stagecraft-ing/template-encore PR #40) and hardened here:
+//! (statecrafting/template-encore PR #40) and hardened here:
 //!
 //! - config comes from `ENRAHITU_HIQ_*` env vars instead of hardcoded values
 //! - the data dir persists across restarts (the spike wiped a temp dir)

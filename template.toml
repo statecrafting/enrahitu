@@ -1,5 +1,5 @@
 # template.toml: the versioned contract between this template and the
-# Stagecraft factory (spec 009). The factory reads ONLY this file to learn
+# Statecraft factory (spec 009). The factory reads ONLY this file to learn
 # how to stamp, verify, and package an app from this chassis; anything not
 # expressed here is not part of the interface.
 
@@ -46,7 +46,7 @@ package = "scripts/docker-build.sh"
 #   placement, derived-truth regeneration, and a README lineage marker. Required
 #   flags: --app-name, --org; optional: --frontend, --cert, --stamped-from.
 scaffold = "node scripts/stamp.mjs"
-# deploy: owned by the Stagecraft fleet service, never by the template.
+# deploy: owned by the Statecraft fleet service, never by the template.
 
 [provenance]
 # Born-with certificate + agentic-posture binding (spec 012, contract v0.3).
@@ -55,7 +55,7 @@ scaffold = "node scripts/stamp.mjs"
 # template itself. Kept out of the verify verb on purpose: cert validation is a
 # provenance concern the factory invokes separately, since verify must also
 # pass here, where there is no cert.
-cert_path = ".stagecraft/born-with.json"
-cert_schema = ".stagecraft/born-with.schema.json"
+cert_path = ".statecraft/born-with.json"
+cert_schema = ".statecraft/born-with.schema.json"
 verify = "node scripts/verify-born-with.mjs"
 postures = ["none", "assisted", "autonomous"]

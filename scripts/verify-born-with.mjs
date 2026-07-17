@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // Validator for the born-with provenance certificate (spec 012).
 //
-//   node scripts/verify-born-with.mjs [path]   # default .stagecraft/born-with.json
+//   node scripts/verify-born-with.mjs [path]   # default .statecraft/born-with.json
 //
 // Exit 0 and print the certificate's sha256 identity hash when the cert is
 // valid; exit 1 and print the reasons when it is not. The schema
-// (.stagecraft/born-with.schema.json) is the single source of truth for shape:
+// (.statecraft/born-with.schema.json) is the single source of truth for shape:
 // this file applies it, so "the schema rejects X" and "the validator rejects X"
 // are the same statement. Dependency-free on purpose, so a stamped app can run
 // it with nothing but node.
@@ -16,8 +16,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..");
-const SCHEMA_PATH = join(repoRoot, ".stagecraft", "born-with.schema.json");
-const DEFAULT_CERT_PATH = join(repoRoot, ".stagecraft", "born-with.json");
+const SCHEMA_PATH = join(repoRoot, ".statecraft", "born-with.schema.json");
+const DEFAULT_CERT_PATH = join(repoRoot, ".statecraft", "born-with.json");
 
 // --- Canonical form and hash (spec 012 §4) --------------------------------
 // Recursive lexicographic sort of object keys, then compact serialization:

@@ -25,7 +25,7 @@ summary: >
 ## 1. Purpose
 
 The v0 stamping mode (spec 009: factory-side clone + substitution) was
-proven manually on 2026-07-14 (stagecraft-ing/enrahitu-stamp-smoke-1,
+proven manually on 2026-07-14 (statecrafting/enrahitu-stamp-smoke-1,
 born green). The manual recipe had four steps that must not remain
 tribal knowledge: substitute the app name in the manifest AND the
 lockfile, regenerate the spec registry and codebase index, keep
@@ -68,7 +68,7 @@ run from the repo root of a fresh clone:
    linux esbuild/rollup platform optionals and breaks `npm ci` on CI
    runners.
 5. **Provenance**: when `--cert` is given, copy it to
-   `.stagecraft/born-with.json` and run
+   `.statecraft/born-with.json` and run
    `node scripts/verify-born-with.mjs` (spec 012); a failing cert fails
    the stamp.
 6. **Regenerate derived truth**: `spec-spine compile && spec-spine index`
@@ -93,7 +93,7 @@ run from the repo root of a fresh clone:
 
 ## 5. Out of scope
 
-- Creating GitHub repos, pushing, or org-side setup (factory, stagecraft
+- Creating GitHub repos, pushing, or org-side setup (factory, statecraft
   spec 005).
 - Authoring new frontend flavors: each flavor directory is owned by its
   own spec (spec 015 added `frontend-react/`). The scaffold verb only
@@ -125,7 +125,7 @@ Acceptance (§4) status:
   `spec-spine index check` fresh, matching the 2026-07-14 manual smoke.
 - **Fresh-clone `npm ci` verify verb (§4 bullet 2, network half):
   delegated.** The born-green `npm ci && npm run typecheck && npm test` on a
-  clean clone is owned by the first stamped consumer's CI (stagecraft spec
+  clean clone is owned by the first stamped consumer's CI (statecraft spec
   002) and the scaffold path the factory drives; running it here would
   reinstall the full dependency tree behind the network. A minimal
   design-time hazard: v0 stamping edits no dependencies, so the lockfile

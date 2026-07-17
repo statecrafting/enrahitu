@@ -18,7 +18,7 @@ summary: >
   frontend/backend is the pair with zero ambiguity. All Encore.ts
   concerns co-locate under backend/, which is what makes the chassis
   easy to reason about; everything else at the root is contract,
-  packaging, or governance. Lands before stagecraft spec 002 so the
+  packaging, or governance. Lands before statecraft spec 002 so the
   first template consumer imports the simple shape.
 ---
 

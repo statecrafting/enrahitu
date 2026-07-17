@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://stagecraft.ing/enrahitu/born-with.schema.json",
+  "$id": "https://statecraft.ing/enrahitu/born-with.schema.json",
   "title": "Born-with provenance certificate (v1)",
   "description": "The certificate a stamped app is born with: what it was stamped from and the agentic posture it was born under. Owned by the enrahitu template (spec 012); the factory emits the instance at stamp time. The template repo carries this schema but never a cert instance.",
   "type": "object",
