@@ -26,7 +26,7 @@ summary: >
   enrahitu (EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso; formerly
   enrahi / enrahi-kit): the Encore toolchain is vendored and driven
   directly via napi-rs instead of through the encore CLI (spec 008), and
-  the repo doubles as the template chassis the Stagecraft factory stamps
+  the repo doubles as the template chassis the Statecraft factory stamps
   (spec 009).
 ---
 
@@ -92,7 +92,7 @@ decisions 1 and 2):
 
 ### Lineage
 
-- **stagecraft-ing/template-encore PR #40** proved a napi-rs addon linking
+- **statecrafting/template-encore PR #40** proved a napi-rs addon linking
   hiqlite runs in-process under `encore run` AND inside an
   `encore build docker` image (two tokio runtimes, separate dylibs, no
   contention). Its caveats drive the hardening in specs 002 and 007.

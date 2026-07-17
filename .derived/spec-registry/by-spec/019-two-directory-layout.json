@@ -27,7 +27,7 @@
     ],
     "specPath": "specs/019-two-directory-layout/spec.md",
     "status": "approved",
-    "summary": "After spec 018 sheds the toolchain payload, the remaining tree is restructured into two directories a developer understands at first glance: frontend/ (the SPA, one directory per flavor lifecycle) and backend/ (every Encore.ts service plus the shared lib and CoreLedger). Decided 2026-07-14, chosen over client/apis and app/services because frontend/backend is the pair with zero ambiguity. All Encore.ts concerns co-locate under backend/, which is what makes the chassis easy to reason about; everything else at the root is contract, packaging, or governance. Lands before stagecraft spec 002 so the first template consumer imports the simple shape.\n",
+    "summary": "After spec 018 sheds the toolchain payload, the remaining tree is restructured into two directories a developer understands at first glance: frontend/ (the SPA, one directory per flavor lifecycle) and backend/ (every Encore.ts service plus the shared lib and CoreLedger). Decided 2026-07-14, chosen over client/apis and app/services because frontend/backend is the pair with zero ambiguity. All Encore.ts concerns co-locate under backend/, which is what makes the chassis easy to reason about; everything else at the root is contract, packaging, or governance. Lands before statecraft spec 002 so the first template consumer imports the simple shape.\n",
     "title": "Template layout: frontend/ + backend/, nothing else to explain"
   },
   "shardHash": "a2f4a686ed9207abb70aef4f235f61fd752a99259d00bf6513fa40e11883131c",

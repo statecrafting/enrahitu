@@ -22,10 +22,10 @@ summary: >
   drops from ~780 tracked files to a surface a developer can read in
   one sitting, and a chassis upgrade becomes a devDependency bump
   instead of a tree re-import. Decided 2026-07-14 to land BEFORE
-  stagecraft's app-shell import (stagecraft spec 002), so the first
+  statecraft's app-shell import (statecraft spec 002), so the first
   template consumer never duplicates the fat tree. The build contract
   is unchanged where it matters: a stamped app still builds with
-  npm + cargo-free installs and NO proprietary tool; the Stagecraft
+  npm + cargo-free installs and NO proprietary tool; the Statecraft
   CLI never becomes a build daemon.
 ---
 
@@ -85,7 +85,7 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
   (`tsparser`, `miniredis`, `proto`, `runtimes/core`,
   `runtimes/js/{src,build.rs}`, and the workspace Cargo manifests)
   `export-ignore`, mirroring the `.dockerignore` exclusions. `git archive`
-  (what the Stagecraft factory uses to export a stamp, stagecraft spec
+  (what the Statecraft factory uses to export a stamp, statecraft spec
   005) honours it, so a stamp carries the packaged toolchain, not its
   source: the export drops from 861 to 441 tracked files. The
   `runtimes/js/encore.dev` JS runtime (195 files) is deliberately kept,
@@ -173,7 +173,7 @@ Consumer-side (delegated, verified outside this repo): these require a
 SLIMMED or stamped tree, which this source repo deliberately is not (it
 keeps `vendor/` + `addon/` as the toolchain source of record, spec 019
 §1). They are owned by the stamping path (the scaffold verb, spec 014)
-and the first stamped consumer (stagecraft spec 002), which run them on
+and the first stamped consumer (statecraft spec 002), which run them on
 their own CI against the published packages:
 
 - From a clean clone of the SLIMMED tree (no vendor/, no addon/ source)
@@ -187,8 +187,8 @@ their own CI against the published packages:
 
 - Moving app-owned code (services, webapp, docker packaging) into
   packages; that is spec 019's layout question and stays in-tree.
-- The Stagecraft CLI acquiring any build responsibility (the upgrade
-  verb is stagecraft-cli spec 006 and only orchestrates bumps).
+- The Statecraft CLI acquiring any build responsibility (the upgrade
+  verb is statecraft-cli spec 006 and only orchestrates bumps).
 - CoreLedger as a package (`@enrahitu/coreledger` is plausible later;
   it is user-extended app code today and stays in-tree).
 - Windows binaries.
@@ -213,7 +213,7 @@ resolving binaries from `node_modules` (below).
 (§1/§2) is now realized on the archive path: `.gitattributes` marks the
 `vendor/encore` build-source `export-ignore`, mirroring `.dockerignore`, so a
 `git archive` stamp drops from 861 to 441 tracked files (`vendor/` 625 -> 197,
-keeping the `encore.dev` JS runtime). Found via a dry-run of the Stagecraft
+keeping the `encore.dev` JS runtime). Found via a dry-run of the Statecraft
 factory's stamp export against a real target, which had been carrying all 625
 vendor files into every stamp because no `export-ignore` existed. This closes
 the `vendor/` half of the slimmed-tree target; the `addon/` Rust-source half
@@ -266,7 +266,7 @@ residual clean-clone / `verify.yml`-faster checks are consumer-side and moved
 to §4 "consumer-side (delegated)": they need a SLIMMED or stamped tree, which
 this source repo is not (it keeps `vendor/` + `addon/` as the toolchain source
 of record, spec 019 §1). The scaffold verb (spec 014) produces that tree and
-the first stamped consumer (stagecraft spec 002) runs `npm ci` + verify
+the first stamped consumer (statecraft spec 002) runs `npm ci` + verify
 against the published packages on its own CI. Marked complete on maintainer
 direction; the delegated checks are tracked at their owners, not as blockers
 here.

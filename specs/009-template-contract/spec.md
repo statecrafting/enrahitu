@@ -10,7 +10,7 @@ depends_on:
 establishes:
   - "template.toml"
 summary: >
-  The explicit, versioned interface between this template and the Stagecraft
+  The explicit, versioned interface between this template and the Statecraft
   factory. The factory learns how to stamp, verify, and package an app from
   this chassis by reading template.toml and nothing else. This replaces the
   implicit coupling that plagued the factory-encore / template-encore pair,
@@ -37,7 +37,7 @@ operating history):
    factory and template together"; it is a versioned contract one side
    publishes and the other side pins.
 
-`template.toml` is that contract. The factory (stagecraft's `factory/`
+`template.toml` is that contract. The factory (statecraft's `factory/`
 service) reads only this file; the template promises only what this file
 says. Everything else in the repo is implementation detail the factory
 must not depend on.
@@ -91,7 +91,7 @@ commands to contract verbs, not the commands themselves.
   derived truth, and writes a README lineage marker. Owned by spec 014
   (`scripts/stamp.mjs`); the recipe it encodes was the folklore that
   factory-side clone + substitution relied on before v0.4.
-- `deploy` (reserved, permanently): deployment is the Stagecraft fleet
+- `deploy` (reserved, permanently): deployment is the Statecraft fleet
   service's job. A template that deploys itself would re-couple the
   chassis to an operations backend, which is exactly the coupling this
   substrate exists to sever.
@@ -110,7 +110,7 @@ intentionally absent from v0 rather than present-but-lying.
 ## 4. Out of scope
 
 - Deploy semantics (fleet-owned, see 3.2).
-- A multi-template registry or template discovery; Stagecraft pins this
+- A multi-template registry or template discovery; Statecraft pins this
   one chassis for now.
-- Slot substitution mechanics inside the factory (owned by stagecraft's
+- Slot substitution mechanics inside the factory (owned by statecraft's
   factory spec, which consumes this contract).

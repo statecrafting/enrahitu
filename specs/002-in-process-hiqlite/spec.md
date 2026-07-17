@@ -78,7 +78,7 @@ across platforms (the transitive emnapi optional tree), which would break
 publishing is additive, not a replacement for the in-tree dev path.
 
 The addon meta manifest carries a `repository` field pointing at this repo
-(`github.com/stagecraft-ing/enrahitu`): `npm publish --provenance` rejects a
+(`github.com/statecrafting/enrahitu`): `npm publish --provenance` rejects a
 package whose `repository.url` does not match the GitHub source recorded in
 the signed provenance bundle. `napi create-npm-dirs` copies `repository` into
 each generated `@enrahitu/hiqlite-native-<triple>` manifest, so it is declared

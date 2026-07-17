@@ -7,7 +7,7 @@ implementation: complete
 depends_on:
   - "009-template-contract"
 establishes:
-  - ".stagecraft/born-with.schema.json"
+  - ".statecraft/born-with.schema.json"
   - "scripts/verify-born-with.mjs"
   - "scripts/verify-born-with.test.ts"
   - "scripts/fixtures/born-with.example.json"
@@ -15,7 +15,7 @@ summary: >
   Every stamped app is born with a provenance certificate that states, at
   the moment of stamping, what it was stamped from and what agentic
   posture it was born under. The template owns the certificate's schema
-  and its validator; the factory (stagecraft) owns emission. This lands
+  and its validator; the factory (statecraft) owns emission. This lands
   the reserved [provenance] contract table from spec 009 §3.3 and is
   absorption line item LI-2 of spec 010. Lineage: the born-with cert +
   agenticPostureBinding flow proven in the template-encore era; the
@@ -37,11 +37,11 @@ lineage design existed to kill.
 
 ## 2. Territory
 
-- `.stagecraft/born-with.schema.json`: JSON Schema (draft 2020-12) for
+- `.statecraft/born-with.schema.json`: JSON Schema (draft 2020-12) for
   the certificate.
 - `scripts/verify-born-with.mjs`: validator invoked as
   `node scripts/verify-born-with.mjs [path]` (default
-  `.stagecraft/born-with.json`); exit 0 valid, exit 1 with reasons.
+  `.statecraft/born-with.json`); exit 0 valid, exit 1 with reasons.
 - `scripts/verify-born-with.test.ts` +
   `scripts/fixtures/born-with.example.json`: the acceptance suite and a
   well-formed fixture cert (a test artifact, not the repo's own
@@ -49,7 +49,7 @@ lineage design existed to kill.
 - Amends `template.toml` (owned by spec 009; edit both specs together):
   add the `[provenance]` table and bump `[contract].version` to `0.3.0`.
 
-The certificate *instance* (`.stagecraft/born-with.json`) exists only in
+The certificate *instance* (`.statecraft/born-with.json`) exists only in
 stamped repos, written by the factory at stamp time; the template repo
 itself carries no instance.
 
@@ -84,19 +84,19 @@ The certificate's canonical form is its JSON serialized with object keys
 recursively sorted lexicographically (byte order), UTF-8, no
 insignificant whitespace. Its identity hash is sha256 over those bytes.
 This matches the canonical-keysort-json crate's semantics
-(github.com/stagecraft-ing lineage: "recursive lexicographic sort of
+(github.com/statecraft-ing lineage: "recursive lexicographic sort of
 object keys at the serialization boundary") so Rust-side platform code
 and JS-side template code hash identically. The validator must print the
 hash on success; the factory records the same hash in its attestation
-ledger (stagecraft spec 008), which is what makes the repo-local cert
+ledger (statecraft spec 008), which is what makes the repo-local cert
 independently checkable against the platform's record.
 
 ## 5. template.toml [provenance] (contract 0.3.0)
 
 ```toml
 [provenance]
-cert_path = ".stagecraft/born-with.json"
-cert_schema = ".stagecraft/born-with.schema.json"
+cert_path = ".statecraft/born-with.json"
+cert_schema = ".statecraft/born-with.schema.json"
 verify = "node scripts/verify-born-with.mjs"
 postures = ["none", "assisted", "autonomous"]
 ```
@@ -122,16 +122,16 @@ which has no cert.
 
 ## 7. Out of scope
 
-- Emission (factory-side, stagecraft spec 005) and ledger recording
-  (stagecraft spec 008).
+- Emission (factory-side, statecraft spec 005) and ledger recording
+  (statecraft spec 008).
 - Ed25519 signing of certs: v1 certs are hash-anchored via the platform
   ledger, not self-signed. Signing is reserved for certVersion 2, whose
-  designed path is the vended pair from the stagecraft-ing lineage (OAP
+  designed path is the vended pair from the statecraft-ing lineage (OAP
   specs 219/220): the factory emits through tenant-emit with a
   platform-minted Ed25519 key delivered as a repo CI secret at repo
-  creation (the mint belongs to stagecraft specs 004/005), the stamped
+  creation (the mint belongs to statecraft specs 004/005), the stamped
   repo pins tenant-tail and re-verifies the certificate in its verify
-  workflow, and the platform ledger anchor (stagecraft spec 008) plays
+  workflow, and the platform ledger anchor (statecraft spec 008) plays
   the countersign role. v1 keeps a bespoke validator precisely because
   tenant-tail verifies the signed governance-certificate shape, not
   this unsigned v1 cert; pinning tenant-tail before certVersion 2

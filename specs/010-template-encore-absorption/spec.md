@@ -15,7 +15,7 @@ summary: >
   deployment, and repoInit seeding. This spec enumerates the absorption
   line items with their source locations and target shapes. When all four
   land here, template-encore retires as a chassis and the enrahitu repo is
-  the only template the Stagecraft factory stamps. LI-1 done
+  the only template the Statecraft factory stamps. LI-1 done
   2026-07-14 (born-green stamp proven); each item flips to done
   individually.
 ---
@@ -28,7 +28,7 @@ The consolidation decision (2026-07-14) makes enrahitu the single template
 chassis. "Everything template-encore provides can be absorbed" is true but
 not free; this spec is the ledger of what must actually move, so nothing
 transfers by assumption and nothing is silently dropped. Provenance:
-knowledge://stagecraft-ing/template-encore and OAP specs 197/198/199
+knowledge://statecrafting/template-encore and OAP specs 197/198/199
 (factory dependency swap), 203/210/220 (certification lineage).
 
 ## 2. Territory
@@ -69,7 +69,7 @@ completion; the implementing specs own the how.
   CoreLedger's Postgres-driver arm (spec 011) is exercised on every run
   alongside the libSQL default; the service is CI-side only and stays out
   of the stamped runtime.
-  Born-green proof: stagecraft-ing/enrahitu-stamp-smoke-1, a manual v0
+  Born-green proof: statecrafting/enrahitu-stamp-smoke-1, a manual v0
   stamp (spec 009 §3.2 factory-side mode: app_name slot into
   package.json + lockfile, registry/index regenerated), whose verify
   run 29369367571 succeeded on its initial commit with no repo-local
@@ -95,7 +95,7 @@ completion; the implementing specs own the how.
 
 ### LI-4: repoInit seeding
 
-- **Source**: stagecraft `repoInit.ts` seed + template-encore's produced
+- **Source**: statecraft `repoInit.ts` seed + template-encore's produced
   repo dependency discipline.
 - **Target**: the in-template `scaffold` verb (spec 009 §3.2 reserved).
   Seeding rules that must survive the move: produced-repo dependencies
@@ -107,5 +107,5 @@ completion; the implementing specs own the how.
 
 - Retiring template-encore's Git history (the repo is archived, not
   deleted; its history remains the provenance record).
-- factory-side stamping changes (owned by stagecraft's factory spec).
+- factory-side stamping changes (owned by statecraft's factory spec).
 - Any new capability that template-encore did not already have.

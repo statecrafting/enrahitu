@@ -19,10 +19,10 @@ const exampleCert = join(repoRoot, "scripts", "fixtures", "born-with.example.jso
 function makeTree(): string {
   const dir = mkdtempSync(join(tmpdir(), "stamp-"));
   mkdirSync(join(dir, "scripts"), { recursive: true });
-  mkdirSync(join(dir, ".stagecraft"), { recursive: true });
+  mkdirSync(join(dir, ".statecraft"), { recursive: true });
   cpSync(join(repoRoot, "scripts", "stamp.mjs"), join(dir, "scripts", "stamp.mjs"));
   cpSync(join(repoRoot, "scripts", "verify-born-with.mjs"), join(dir, "scripts", "verify-born-with.mjs"));
-  cpSync(join(repoRoot, ".stagecraft", "born-with.schema.json"), join(dir, ".stagecraft", "born-with.schema.json"));
+  cpSync(join(repoRoot, ".statecraft", "born-with.schema.json"), join(dir, ".statecraft", "born-with.schema.json"));
   cpSync(join(repoRoot, "template.toml"), join(dir, "template.toml"));
   // Both flavor directories, mimicking the chassis before pruning (spec 015).
   // A marker file in each proves the prune is recursive, not a shallow rmdir.
@@ -105,7 +105,7 @@ describe("stamp: happy path", () => {
     expect(readme).toContain(`enrahitu @ \`${"a".repeat(40)}\``);
 
     // The cert was placed and validated.
-    expect(readJson(dir, ".stagecraft/born-with.json").app.name).toBe("example-app");
+    expect(readJson(dir, ".statecraft/born-with.json").app.name).toBe("example-app");
     expect(stdout).toContain("(validated)");
 
     // No governed corpus in the fixture, so derived regeneration stands down.
@@ -219,6 +219,6 @@ describe("stamp: failing cert", () => {
     expect(status).not.toBe(0);
     expect(stderr).toContain("cert failed validation");
     // The rejected cert was rolled back, not left on disk.
-    expect(() => readJson(dir, ".stagecraft/born-with.json")).toThrow();
+    expect(() => readJson(dir, ".statecraft/born-with.json")).toThrow();
   });
 });

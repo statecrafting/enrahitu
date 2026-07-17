@@ -68,7 +68,7 @@ Dockerfile* text eol=lf
 # --- Stamped-tree slimming (spec 018) ---
 # The vendored Encore toolchain leaves the STAMPED tree but stays in this
 # repo to build the @enrahitu/toolchain packages. `git archive` (what the
-# Stagecraft factory uses to export a stamp, spec 005) honours export-ignore,
+# Statecraft factory uses to export a stamp, spec 005) honours export-ignore,
 # so these heavy build-source subtrees are excluded from every stamp. This
 # mirrors the docker build-context exclusions in .dockerignore. The encore.dev
 # JS runtime (vendor/encore/runtimes/js/encore.dev) is deliberately NOT

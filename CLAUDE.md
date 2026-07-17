@@ -9,7 +9,7 @@ the encore.dev JS runtime live in `vendor/encore/` and are driven
 directly via napi-rs; the `encore` CLI is not used anywhere (spec 008).
 One Docker image + one volume = a complete authenticated application,
 zero managed-infrastructure dependencies. It is also the template
-chassis stamped by the Stagecraft factory (spec 009 defines the
+chassis stamped by the Statecraft factory (spec 009 defines the
 versioned template contract; spec 010 tracks template-encore
 absorption). Lineage: formerly `enrahi` / `enrahi-kit`.
 The architecture thesis lives in `specs/001-enrahitu-architecture/spec.md`;
@@ -24,7 +24,7 @@ contract, packaging, governance, or chassis toolchain source.
 ```
 specs/       Feature specs (000-019), the authoritative design record
 standards/   spec-spine constitution, contract, templates
-template.toml  The versioned template contract the Stagecraft factory reads (spec 009)
+template.toml  The versioned template contract the Statecraft factory reads (spec 009)
 backend/     The Encore.ts app (spec 019):
   hiq/         Encore service over the addon (spec 002)
   core/        CoreLedger decorator data layer on libSQL/Turso (spec 003)
@@ -44,7 +44,7 @@ vendor/encore/   Encore @ v1.57.9: rust core, napi bindings, tsparser, encore.de
 
 ## Governance
 
-This repo is governed by [spec-spine](https://github.com/stagecraft-ing/spec-spine)
+This repo is governed by [spec-spine](https://github.com/statecrafting/spec-spine)
 (`spec-spine.toml`, owned by spec 000):
 
 - **Specs are the source of truth.** Every substantive change is bound to a

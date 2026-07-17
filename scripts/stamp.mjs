@@ -182,7 +182,7 @@ function selectFrontendFlavor(root, frontend) {
 function placeCert(root, certArg) {
   const src = resolve(process.cwd(), certArg);
   if (!existsSync(src)) throw new StampError("provenance", `--cert not found: ${src}`);
-  const dest = join(root, ".stagecraft", "born-with.json");
+  const dest = join(root, ".statecraft", "born-with.json");
   mkdirSync(dirname(dest), { recursive: true });
   copyFileSync(src, dest);
 

@@ -38,7 +38,7 @@ Development and early deployment cost nothing but a container host; scaling is
 
 ## Lineage
 
-- **stagecraft-ing/template-encore PR #40** proved Shape A: a napi-rs addon
+- **statecrafting/template-encore PR #40** proved Shape A: a napi-rs addon
   linking hiqlite runs in-process under `encore run` AND inside an
   `encore build docker` image (two tokio runtimes, separate dylibs, no
   contention). The spike's caveats drive our hardening:

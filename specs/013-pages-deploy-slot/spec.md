@@ -84,7 +84,7 @@ not part of the factory contract (spec 009 §Out of scope holds).
 
 ## 5. Out of scope
 
-- Publishing docs sites (that is stagecraft.ing's concern).
+- Publishing docs sites (that is statecraft.ing's concern).
 - Custom domains for stamped apps.
 - Any coupling to the factory contract or verify verb.
 

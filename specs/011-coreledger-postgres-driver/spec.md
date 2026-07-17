@@ -12,7 +12,7 @@ establishes:
   - "backend/core/ledger/postgres.test.ts"
 summary: >
   The Postgres LedgerDriver that spec 003 stages as future work. The forcing
-  function is the Stagecraft control plane: it is itself an EnRaHiTu app but
+  function is the Statecraft control plane: it is itself an EnRaHiTu app but
   carries webhook bursts, audit writes, and multi-tenant state, so it runs
   CoreLedger-on-Postgres while stamped customer apps run
   CoreLedger-on-libSQL/Turso. Same decorator surface, different driver; the
@@ -28,7 +28,7 @@ summary: >
 
 Spec 003 §1 promises "a future Postgres driver behind the same decorator
 surface when scale demands it." Scale now demands it, from an unexpected
-direction: not a stamped app outgrowing SQLite, but the Stagecraft control
+direction: not a stamped app outgrowing SQLite, but the Statecraft control
 plane (the platform that stamps the apps) choosing Postgres from day one.
 The control plane is the app most likely to hit SQLite-family limits first
 (webhook bursts, audit write volume, multi-tenant contention), and it

@@ -86,7 +86,7 @@ Skills live in `.claude/skills/`:
 
 This repo's backlog is its spec corpus: every spec with
 `implementation: pending` is a work order. One session implements one
-spec, start to finish. Build order (decided 2026-07-14: stagecraft's
+spec, start to finish. Build order (decided 2026-07-14: statecraft's
 app-shell import waits on the slimmed template, so 018/019 jump the
 queue): 018 (packaged chassis) then 019 (frontend/backend layout)
 FIRST; then 011 (Postgres driver), 012 (born-with provenance), 014
