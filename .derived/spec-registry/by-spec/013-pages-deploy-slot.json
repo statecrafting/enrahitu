@@ -26,6 +26,6 @@
     "summary": "An optional, off-by-default GitHub Pages workflow that stamped apps are born with: it publishes the built SPA (backend/web/dist) as a static preview site when the repo owner enables Pages. Absorption line item LI-3 of spec 010. Not a contract verb: it is CI-side, not factory-side. The workflow must be inert (skip cleanly, not fail) in repos where Pages is disabled, which is the default posture.\n",
     "title": "GitHub Pages deployment slot (LI-3)"
   },
-  "shardHash": "0595d03e9d913881ca9dd21b54557ce3116a5c9e5db67977102f3c6777287d1f",
+  "shardHash": "f05a9bfa5fc0ad010ffc4f7d1dd343acbde1ad923bf13ee87af6b84f046c5cfb",
   "specVersion": "1.1.0"
 }
