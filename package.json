@@ -14,6 +14,8 @@
   "scripts": {
     "dev": "enrahitu-dev",
     "build:app": "enrahitu-build",
+    "extract:model": "enrahitu-build && enrahitu-extract",
+    "check:model": "enrahitu-extract --check",
     "build:runtime": "ENCORE_VERSION=v1.57.9 cargo build --release --manifest-path vendor/encore/Cargo.toml -p encore-js-runtime -p encore-tsparser && node packages/toolchain/scripts/link-runtime.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
@@ -28,6 +30,7 @@
   "dependencies": {
     "@enrahitu/hiqlite-native": "file:./addon",
     "@libsql/client": "^0.17.4",
+    "@statecrafting/kernel-native": "^0.1.0",
     "encore.dev": "^1.57.9",
     "jsonwebtoken": "^9.0.3",
     "openid-client": "^6.8.4",

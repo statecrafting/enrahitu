@@ -152,8 +152,19 @@ publicly inspectable (Apache-2.0), so re-vendoring remains a
   when its current version is not already on npm, so a template-only
   release (no toolchain bump, e.g. the v0.2.0 feature release) is a clean
   no-op instead of a "cannot publish over previously published" failure.
-
-## 4. Acceptance
+- **Extraction stage (amended by spec 021, 2026-07-20)**: the toolchain
+  gains the app-model producer: `bin/extract.mjs` (bin
+  `enrahitu-extract`, with `--check` as the staleness gate) and
+  `lib/extract/` (protobuf meta decode, manifest merge and lowering,
+  verify, canonical hash and seal). To decode `.encore/build/meta` the
+  package carries the meta/schema `.proto` files copied verbatim from
+  `vendor/encore/proto` at the pinned upstream version (MPL-2.0 at file
+  level, spec 008; the vendored tsparser itself is not patched). New
+  runtime deps: `protobufjs` (decode), `ajv` (schema validation),
+  `typescript` (the import-graph walk of the verify step), and
+  `@statecrafting/kernel-native` (gate config hash and the
+  genesisPayload sealing oracle). The extraction behavior contract is
+  owned by spec 021; this spec owns only its packaging.
 
 In-repo (satisfied in this source tree):
 

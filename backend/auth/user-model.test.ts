@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import { runAsService } from "../kernel/adjudicate";
+
 import { getUserById, upsertUserFromProfile } from "./user-model";
 
+// Tests run outside request context, so kernel attribution is pinned to
+// the service under test (spec 021 §3.5: unattributable is denied).
+const asAuth = (fn: () => Promise<void>) => () => runAsService("auth", fn);
+
 describe("upsertUserFromProfile (temp-file ledger)", () => {
-  it("creates a user on first login and normalizes the email", async () => {
+  it("creates a user on first login and normalizes the email", asAuth(async () => {
     const user = await upsertUserFromProfile({
       ssoProvider: "mock",
       ssoProviderId: "mock-user",
@@ -16,9 +22,9 @@ describe("upsertUserFromProfile (temp-file ledger)", () => {
     expect(user.roles).toEqual(["user"]);
     expect(user.lastLoginAt).toBeInstanceOf(Date);
     expect(await getUserById(user.id)).not.toBeNull();
-  });
+  }));
 
-  it("updates the same row on repeat login regardless of email case", async () => {
+  it("updates the same row on repeat login regardless of email case", asAuth(async () => {
     const first = await upsertUserFromProfile({
       ssoProvider: "mock",
       ssoProviderId: "mock-admin",
@@ -39,5 +45,5 @@ describe("upsertUserFromProfile (temp-file ledger)", () => {
     expect(second.roles).toEqual(["user", "admin", "developer"]);
     expect(second.ssoProvider).toBe("rauthy");
     expect(second.updatedAt.getTime()).toBeGreaterThanOrEqual(first.updatedAt.getTime());
-  });
+  }));
 });

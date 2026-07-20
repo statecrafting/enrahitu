@@ -13,6 +13,7 @@
 import { api } from "encore.dev/api";
 import * as client from "openid-client";
 
+import { demand } from "../kernel/adjudicate";
 import { authCookieOptions } from "../lib/cookie-config";
 import { parseCookies, serializeCookie } from "../lib/cookies";
 import { env } from "../lib/env";
@@ -31,6 +32,10 @@ export function isRauthyConfigured(): boolean {
 
 function getConfig(): Promise<client.Configuration> {
   const issuer = new URL(env.rauthyIssuer!);
+  // Governed egress (spec 021 §3.5): the discovery round-trip leaves the
+  // process, adjudicated as http.egress on 'rauthy-issuer'. The issuer
+  // host is runtime config and never enters the model.
+  demand("http.egress", "rauthy-issuer", { attributes: { domain: issuer.hostname } });
   // Local development runs the whole loop over plain http on one origin;
   // openid-client refuses http unless explicitly allowed.
   const execute = issuer.protocol === "http:" ? [client.allowInsecureRequests] : [];
@@ -120,6 +125,10 @@ export const rauthyCallback = api.raw(
     const currentUrl = new URL(env.rauthyRedirectUri);
     currentUrl.search = requestUrl(req).search;
 
+    // The code-grant round-trip is a second egress to the issuer.
+    demand("http.egress", "rauthy-issuer", {
+      attributes: { domain: new URL(env.rauthyIssuer!).hostname },
+    });
     const tokens = await client.authorizationCodeGrant(config, currentUrl, {
       expectedState: state,
       pkceCodeVerifier: verifier,

@@ -76,3 +76,16 @@ template-encore `apps/api`, ported off Encore `SQLDatabase`/Postgres.
 - The rauthy OIDC driver and everything same-origin-IdP: spec 005.
 - MFA, WebAuthn, and account self-service: delegated to rauthy's own UI.
 - Multi-tenancy and organization modeling.
+
+## 5. Phase A seam (amended by spec 021, 2026-07-20)
+
+Three hooks land in this spec's territory under the governance seam:
+the secret accessors in `lib/secrets.ts` adjudicate `secret.read` of
+their specific secret name before returning material; the rate limiter
+consumes the governed hiq facade (its counter grants carry the
+`keyPrefix: "rl:"` constraint, and every call passes its bucket key);
+and the auth schema boot in `store.ts` runs inside a
+`runAsService("auth", ...)` scope so its module-eval DDL is attributed
+and adjudicated as `db.migrate`. Deny semantics follow the existing
+typed-error convention (`APIError.permissionDenied` with a
+`KERNEL_DENIED` detail code).

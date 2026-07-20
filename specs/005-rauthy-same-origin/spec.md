@@ -76,3 +76,14 @@ IdP. Fallback (not taken): exposing rauthy on a second port.
   in the container: spec 007.
 - Upstream identity federation (rauthy's own upstream providers).
 - The SPA login UX: spec 006.
+
+## 5. Phase A seam (amended by spec 021, 2026-07-20)
+
+The proxy's upstream `fetch` moves behind spec 021's governed egress
+facade: each proxied request adjudicates `http.egress` on resource
+`rauthy-upstream` (attribute: the target hostname) before leaving the
+process, and a deny answers 403 in the proxy's own raw-response style.
+The OIDC driver's two outbound round-trips (discovery, code grant)
+adjudicate `http.egress` on resource `rauthy-issuer` at the call site;
+the issuer host itself stays runtime config and never enters the model
+(spec 020 determinism rules).

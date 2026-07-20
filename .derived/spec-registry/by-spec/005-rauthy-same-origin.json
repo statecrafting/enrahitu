@@ -36,13 +36,14 @@
       "1. Purpose",
       "2. Territory",
       "3. Behavior",
-      "4. Out of scope"
+      "4. Out of scope",
+      "5. Phase A seam (amended by spec 021, 2026-07-20)"
     ],
     "specPath": "specs/005-rauthy-same-origin/spec.md",
     "status": "approved",
     "summary": "rauthy as the OIDC IdP, reached exclusively through the app's own origin: the idp service mounts /auth/* as a raw passthrough proxy onto rauthy (RAUTHY_UPSTREAM, default 127.0.0.1:8081), so issuer, callback, and SPA share one origin with no CORS. backend/auth/rauthy.ts is the OIDC authorization-code + PKCE driver (login redirect + callback) plugged into spec 004's driver registry. Dev runs rauthy via docker compose with the same declarative client bootstrap the container uses in prod.\n",
     "title": "rauthy behind a same-origin proxy + OIDC driver"
   },
-  "shardHash": "fab89b63f531c8161d24ed6b6f9ce0001c637e9124bb329c1ea9d71103a13dbf",
+  "shardHash": "b141509a265bea2146a5e43288002fa052149eaf7a49687b97381c95cf1c800b",
   "specVersion": "1.1.0"
 }

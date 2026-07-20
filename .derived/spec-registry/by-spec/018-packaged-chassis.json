@@ -27,7 +27,6 @@
       "1. Purpose",
       "2. Territory",
       "3. Behavior",
-      "4. Acceptance",
       "5. Out of scope",
       "6. Status"
     ],
@@ -36,6 +35,6 @@
     "summary": "The heavy invariants leave the template tree and become versioned npm packages with prebuilt binaries: @enrahitu/toolchain (the vendored Encore build drivers + encore-runtime.node + tsparser, per-platform) and @enrahitu/hiqlite-native (the addon, prebuilt). The template drops from ~780 tracked files to a surface a developer can read in one sitting, and a chassis upgrade becomes a devDependency bump instead of a tree re-import. Decided 2026-07-14 to land BEFORE statecraft's app-shell import (statecraft spec 002), so the first template consumer never duplicates the fat tree. The build contract is unchanged where it matters: a stamped app still builds with npm + cargo-free installs and NO proprietary tool; the Statecraft CLI never becomes a build daemon.\n",
     "title": "Package-distributed chassis: the toolchain leaves the tree"
   },
-  "shardHash": "f23af741f6c30639011c318b925d8384d4f3451ccb37c1397990a5a632368f6d",
+  "shardHash": "c6014c1ceebc165b8a5c9bb1d8aa8cb173c4d86867692d61e6d19b356f13097c",
   "specVersion": "1.1.0"
 }

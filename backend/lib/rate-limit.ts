@@ -15,7 +15,7 @@
  */
 import { APIError, middleware, type Middleware } from "encore.dev/api";
 
-import hiqlite, { ready as hiqReady } from "../hiq/init";
+import { counterAdd, counterDel } from "../kernel/hiq";
 
 import { logSecurityEvent } from "./logger";
 import { bucketKey, windowOrdinal } from "./rate-limit-window";
@@ -38,11 +38,10 @@ function clientKey(headers: Record<string, string | string[]>): string {
  */
 async function increment(tier: string, key: string): Promise<number | null> {
   try {
-    await hiqReady;
     const window = windowOrdinal();
-    const count = await hiqlite.counterAdd(bucketKey(tier, key, window), 1);
+    const count = await counterAdd(bucketKey(tier, key, window), 1);
     if (count === 1) {
-      void hiqlite.counterDel(bucketKey(tier, key, window - 1)).catch(() => {});
+      void counterDel(bucketKey(tier, key, window - 1)).catch(() => {});
     }
     return count;
   } catch {

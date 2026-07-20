@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { runAsService } from "../kernel/adjudicate";
 import { hashRefreshToken } from "../lib/jwt";
 
 import {
@@ -34,7 +35,11 @@ describe("hashRefreshToken", () => {
 describe("refresh-token store (temp-file ledger)", () => {
   const future = () => new Date(Date.now() + 60_000);
 
-  it("stores hash-only and finds the active token", async () => {
+  // Tests run outside request context, so kernel attribution is pinned to
+  // the service under test (spec 021 §3.5: unattributable is denied).
+  const asAuth = (fn: () => Promise<void>) => () => runAsService("auth", fn);
+
+  it("stores hash-only and finds the active token", asAuth(async () => {
     const id = await storeRefreshToken({
       userID: "user-1",
       token: "raw-token-a",
@@ -50,18 +55,18 @@ describe("refresh-token store (temp-file ledger)", () => {
     // The raw token never appears in the stored record.
     expect(active?.tokenHash).toBe(hashRefreshToken("raw-token-a"));
     expect(active?.tokenHash).not.toContain("raw-token-a");
-  });
+  }));
 
-  it("returns null for expired tokens", async () => {
+  it("returns null for expired tokens", asAuth(async () => {
     await storeRefreshToken({
       userID: "user-1",
       token: "raw-token-expired",
       expiresAt: new Date(Date.now() - 1000),
     });
     expect(await findActiveRefreshToken("raw-token-expired")).toBeNull();
-  });
+  }));
 
-  it("rotation: revoking with a replacement makes the old token inert", async () => {
+  it("rotation: revoking with a replacement makes the old token inert", asAuth(async () => {
     const oldId = await storeRefreshToken({
       userID: "user-2",
       token: "raw-token-old",
@@ -78,9 +83,9 @@ describe("refresh-token store (temp-file ledger)", () => {
     expect((await findActiveRefreshToken("raw-token-new"))?.id).toBe(newId);
     // Revoking twice is a no-op.
     await revokeRefreshToken(oldId);
-  });
+  }));
 
-  it("revokeAllUserTokens is logout-everywhere for one user only", async () => {
+  it("revokeAllUserTokens is logout-everywhere for one user only", asAuth(async () => {
     await storeRefreshToken({ userID: "user-3", token: "u3-a", expiresAt: future() });
     await storeRefreshToken({ userID: "user-3", token: "u3-b", expiresAt: future() });
     await storeRefreshToken({ userID: "user-4", token: "u4-a", expiresAt: future() });
@@ -89,5 +94,5 @@ describe("refresh-token store (temp-file ledger)", () => {
     expect(await findActiveRefreshToken("u3-a")).toBeNull();
     expect(await findActiveRefreshToken("u3-b")).toBeNull();
     expect(await findActiveRefreshToken("u4-a")).not.toBeNull();
-  });
+  }));
 });

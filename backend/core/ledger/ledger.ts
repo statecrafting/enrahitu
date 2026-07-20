@@ -15,33 +15,20 @@
  * - `ENRAHITU_LEDGER_POOL_SIZE`          Postgres pool max (default 10)
  */
 
+import { governDriver } from "../../kernel/governed-driver";
+
 import type { LedgerDriver, LedgerTx, SqlRow, SqlValue } from "./driver";
-import { LibsqlDriver } from "./libsql";
+import { rawDriverFromEnv } from "./from-env";
 import type { EntityCtor } from "./metadata";
 import { entityMeta } from "./metadata";
-import { PostgresDriver } from "./postgres";
 import { Repository } from "./repository";
 import { ensureSchema } from "./schema";
 
+// Every driver acquired through the facade is governed (spec 021 §3.5):
+// the raw driver exists only behind this wrap and in the enforcement
+// plane's own Decision store.
 function driverFromEnv(): LedgerDriver {
-  const url = process.env.ENRAHITU_LEDGER_URL ?? "file:./.data/ledger/enrahitu.db";
-  if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
-    return new PostgresDriver({
-      url,
-      poolSize: process.env.ENRAHITU_LEDGER_POOL_SIZE
-        ? Number(process.env.ENRAHITU_LEDGER_POOL_SIZE)
-        : undefined,
-    });
-  }
-  const syncUrl = process.env.ENRAHITU_LEDGER_SYNC_URL;
-  return new LibsqlDriver({
-    url,
-    syncUrl: syncUrl || undefined,
-    authToken: process.env.ENRAHITU_LEDGER_AUTH_TOKEN || undefined,
-    syncIntervalSecs: process.env.ENRAHITU_LEDGER_SYNC_INTERVAL_SECS
-      ? Number(process.env.ENRAHITU_LEDGER_SYNC_INTERVAL_SECS)
-      : undefined,
-  });
+  return governDriver(rawDriverFromEnv(), "app");
 }
 
 export class Ledger {

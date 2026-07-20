@@ -1,0 +1,53 @@
+{
+  "record": {
+    "created": "2026-07-20",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "002-in-process-hiqlite",
+      "003-coreledger",
+      "004-auth-core",
+      "005-rauthy-same-origin",
+      "008-vendored-encore-toolchain",
+      "018-packaged-chassis",
+      "020-app-model-contract"
+    ],
+    "establishes": [
+      {
+        "kind": "file",
+        "path": "app-manifest.json"
+      },
+      {
+        "kind": "file",
+        "path": "app-model.json"
+      },
+      {
+        "kind": "directory",
+        "path": "backend/kernel/"
+      }
+    ],
+    "id": "021-kernel-native-consumption",
+    "implementation": "complete",
+    "sectionHeadings": [
+      "021: Phase A: extraction, kernel adjudication, the live Decision ledger",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 The capability manifest",
+      "3.2 The extraction pipeline",
+      "3.3 The committed model and the staleness gate",
+      "3.4 Kernel boot",
+      "3.5 Adjudication at the Rust-routed seams",
+      "3.6 The Decision ledger",
+      "3.7 Enforcement honesty",
+      "3.8 The observability member",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/021-kernel-native-consumption/spec.md",
+    "status": "approved",
+    "summary": "Phase A of the enforcement seam (spec 001 section 4.6, item 1 of the section 5 sequencing): the substrate consumes @statecrafting/kernel-native 0.1.0 (statecrafting spec 004) at the existing napi boundary. Three deliverables. Extraction from day one: the toolchain drives the vendored tsparser, lowers encore meta plus the capability manifest (app-manifest.json, the authored ceiling) into app-model.json per spec 020, runs the verify step (observed usage subset-of declared, ban-list, sorted arrays, schema-valid), seals the gate config hash and the integrity hash, and the committed model is a governed derived artifact whose staleness fails the gate. The kernel at the napi boundary: boot is fail-closed on the nine refusals and write-once per process; the operations that already route through Rust (CoreLedger driver calls, hiqlite kv/counters, secret reads, governed egress) are adjudicated against the booted model; a deny surfaces as a typed error naming the capability. The Decision ledger live: the deploy genesis commits to the model hash; denials and human-granted overrides append as hash-linked Decisions; the chain re-verifies via the kernel. The whole TS tier gets attempt-deny-audit semantics with no new runtime machinery. Landing this closes statecrafting spec 004 acceptance item 3 (the first consumer builds green against the published package).\n",
+    "title": "Phase A: extraction, kernel-native adjudication, the live Decision ledger"
+  },
+  "shardHash": "5cf6875d6523d48f452218867cbbacdd25d6843ef225e3af7b90362a3635697c",
+  "specVersion": "1.1.0"
+}

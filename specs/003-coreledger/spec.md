@@ -59,3 +59,15 @@ module singleton), and the barrel `index.ts`.
 - Migrations beyond idempotent `ensureSchema()` table creation: the minimal
   forward-only migration runner is owned by spec 011.
 - Query-builder or relation features beyond the typed repository surface.
+
+## 5. Phase A seam (amended by spec 021, 2026-07-20)
+
+Driver selection moves to its own module (`from-env.ts`, exporting
+`rawDriverFromEnv()`), and the `Ledger` facade wraps the selected driver
+in spec 021's governed proxy before use: `query`/`execute`/`batch`/
+`transaction` adjudicate as `db.read`/`db.write`/`db.migrate`/`db.txn`
+on resource `app`, and interactive transactions re-wrap the inner tx so
+nothing escapes the seam. The raw driver remains constructible only for
+the enforcement plane itself (the spec 021 Decision store) and for
+driver unit tests; the extraction ban-list enforces that boundary. The
+decorator surface and both drivers are otherwise unchanged.

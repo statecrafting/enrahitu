@@ -11,7 +11,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 
-import { api } from "encore.dev/api";
+import { api, APIError, ErrCode } from "encore.dev/api";
+
+import { governedFetch } from "../kernel/egress";
 
 const UPSTREAM = process.env.RAUTHY_UPSTREAM ?? "http://127.0.0.1:8081";
 
@@ -58,7 +60,9 @@ async function proxyToRauthy(req: IncomingMessage, res: ServerResponse): Promise
 
   let upstream: Response;
   try {
-    upstream = await fetch(target, {
+    // Governed egress (spec 021 §3.5): adjudicated as http.egress on
+    // 'rauthy-upstream' before the request leaves the process.
+    upstream = await governedFetch("rauthy-upstream", target, {
       method,
       headers: forwardHeaders(req),
       // Readable.from re-wraps Encore's RawRequest before toWeb: RawRequest
@@ -74,7 +78,13 @@ async function proxyToRauthy(req: IncomingMessage, res: ServerResponse): Promise
       // duplex is required by undici for streaming request bodies.
       duplex: "half",
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof APIError && err.code === ErrCode.PermissionDenied) {
+      res.statusCode = 403;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ code: "kernel_denied", message: err.message }));
+      return;
+    }
     res.statusCode = 502;
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify({ code: "idp_unavailable", message: "rauthy upstream unreachable" }));
