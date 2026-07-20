@@ -1,0 +1,519 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://statecrafting.dev/contracts/app-model/0.1.0/app-model.schema.json",
+  "title": "app-model",
+  "description": "Language-neutral extracted model of a governed cell: what the app contains and what it is permitted to do. Draft v0.1; see 03-app-model-contract.md for prose, determinism rules, and pipeline. Static model only: never credentials, endpoints, timestamps, or environment values.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "app",
+    "source",
+    "extraction",
+    "types",
+    "resources",
+    "capabilities",
+    "services",
+    "trust",
+    "gate",
+    "ledger",
+    "observability",
+    "integrity"
+  ],
+  "properties": {
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "app-model" },
+        "version": { "$ref": "#/$defs/semver" }
+      }
+    },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "$ref": "#/$defs/slug" },
+        "org": { "$ref": "#/$defs/slug" }
+      }
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "contractVersion"],
+      "properties": {
+        "name": { "$ref": "#/$defs/slug" },
+        "version": { "$ref": "#/$defs/semver" },
+        "contractVersion": { "$ref": "#/$defs/semver" }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["certificateHash"],
+      "properties": {
+        "certificateHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "uncommittedChanges"],
+      "properties": {
+        "revision": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "uncommittedChanges": { "type": "boolean" }
+      }
+    },
+    "extraction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producers", "verified"],
+      "properties": {
+        "producers": {
+          "type": "array",
+          "minItems": 1,
+          "x-sortKey": "tool",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["tool", "version", "tier"],
+            "properties": {
+              "tool": { "type": "string" },
+              "version": { "type": "string" },
+              "tier": { "$ref": "#/$defs/tier" }
+            }
+          }
+        },
+        "verified": { "const": true }
+      }
+    },
+    "types": {
+      "type": "array",
+      "x-sortKey": "id",
+      "items": { "$ref": "#/$defs/typeDecl" }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "databases": {
+          "type": "array",
+          "x-sortKey": "name",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "engine"],
+            "properties": {
+              "name": { "$ref": "#/$defs/slug" },
+              "engine": { "enum": ["coreledger-libsql", "coreledger-postgres"] },
+              "migrations": {
+                "type": "array",
+                "x-ordered": "semantic",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["number", "filename"],
+                  "properties": {
+                    "number": { "type": "integer", "minimum": 1 },
+                    "filename": { "type": "string" },
+                    "description": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "kv": {
+          "type": "array",
+          "x-sortKey": "name",
+          "items": { "$ref": "#/$defs/namedResource" }
+        },
+        "counters": {
+          "type": "array",
+          "x-sortKey": "name",
+          "items": { "$ref": "#/$defs/namedResource" }
+        },
+        "topics": {
+          "type": "array",
+          "x-sortKey": "name",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "messageType", "delivery"],
+            "properties": {
+              "name": { "$ref": "#/$defs/slug" },
+              "messageType": { "$ref": "#/$defs/typeRef" },
+              "delivery": { "enum": ["at-least-once", "exactly-once"] },
+              "orderingKey": { "type": "string" }
+            }
+          }
+        },
+        "subscriptions": {
+          "type": "array",
+          "x-sortKey": "name",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "topic", "service"],
+            "properties": {
+              "name": { "$ref": "#/$defs/slug" },
+              "topic": { "$ref": "#/$defs/slug" },
+              "service": { "$ref": "#/$defs/slug" },
+              "maxConcurrency": { "type": "integer", "minimum": 1 }
+            }
+          }
+        },
+        "buckets": {
+          "type": "array",
+          "x-sortKey": "name",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name"],
+            "properties": {
+              "name": { "$ref": "#/$defs/slug" },
+              "versioned": { "type": "boolean" },
+              "public": { "type": "boolean" }
+            }
+          }
+        },
+        "secrets": {
+          "type": "array",
+          "x-sortKey": "name",
+          "description": "Secret NAMES only; values live in the runtime config plane, never here.",
+          "items": { "$ref": "#/$defs/namedResource" }
+        },
+        "crons": {
+          "type": "array",
+          "x-sortKey": "id",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "schedule", "endpoint"],
+            "properties": {
+              "id": { "$ref": "#/$defs/slug" },
+              "schedule": { "type": "string" },
+              "endpoint": { "$ref": "#/$defs/endpointRef" }
+            }
+          }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "x-sortKey": "id",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "resource"],
+        "properties": {
+          "id": { "$ref": "#/$defs/capId" },
+          "kind": { "$ref": "#/$defs/capKind" },
+          "resource": {
+            "type": "string",
+            "description": "Name of the granted resource within the kind's resource family, or '*' where the kind has no named resource (e.g. ledger.append)."
+          },
+          "constraints": {
+            "type": "object",
+            "description": "Kind-specific narrowing. Well-known v0.1 keys: tables, keyPrefix, domains, topics, tools. Per-kind schemas harden in a minor revision.",
+            "properties": {
+              "tables": { "type": "array", "x-sortKey": ".", "items": { "type": "string" } },
+              "keyPrefix": { "type": "string" },
+              "domains": { "type": "array", "x-sortKey": ".", "items": { "type": "string" } },
+              "topics": { "type": "array", "x-sortKey": ".", "items": { "type": "string" } },
+              "tools": { "type": "array", "x-sortKey": ".", "items": { "type": "string" } }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "services": {
+      "type": "array",
+      "x-sortKey": "name",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "tier", "capabilities", "endpoints"],
+        "properties": {
+          "name": { "$ref": "#/$defs/slug" },
+          "tier": { "$ref": "#/$defs/tier" },
+          "capabilities": {
+            "type": "array",
+            "x-sortKey": ".",
+            "description": "The service's declared ceiling: refs into the capability catalog.",
+            "items": { "$ref": "#/$defs/capId" }
+          },
+          "endpoints": {
+            "type": "array",
+            "x-sortKey": "name",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "path", "methods", "access"],
+              "properties": {
+                "name": { "$ref": "#/$defs/handlerName" },
+                "path": { "type": "string" },
+                "methods": {
+                  "type": "array",
+                  "x-sortKey": ".",
+                  "items": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] }
+                },
+                "access": { "enum": ["private", "public", "auth"] },
+                "requestType": { "$ref": "#/$defs/typeRef" },
+                "responseType": { "$ref": "#/$defs/typeRef" },
+                "streamingRequest": { "type": "boolean" },
+                "streamingResponse": { "type": "boolean" },
+                "raw": { "type": "boolean" },
+                "capabilities": {
+                  "type": "array",
+                  "x-sortKey": ".",
+                  "description": "Optional per-endpoint narrowing of the service ceiling (v0.1: optional; v0.2 aims to make this the verified default).",
+                  "items": { "$ref": "#/$defs/capId" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "x-sortKey": "name",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "service", "trust", "capabilities", "entry"],
+        "properties": {
+          "name": { "$ref": "#/$defs/slug" },
+          "service": { "$ref": "#/$defs/slug" },
+          "trust": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["initial", "direction"],
+            "properties": {
+              "initial": { "$ref": "#/$defs/trustLevel" },
+              "direction": { "enum": ["degrade-only", "bidirectional"] },
+              "ceiling": { "$ref": "#/$defs/trustLevel" }
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "x-sortKey": ".",
+            "items": { "$ref": "#/$defs/capId" }
+          },
+          "entry": {
+            "type": "string",
+            "description": "Repo-relative module path of the agent's behavior entry point."
+          }
+        }
+      }
+    },
+    "trust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["levels"],
+      "properties": {
+        "levels": {
+          "description": "Fixed trust-window vocabulary, severity order.",
+          "const": ["full", "restricted", "read-only", "suspended"]
+        },
+        "windowConfig": {
+          "type": "object",
+          "description": "Opaque pass-through to trust-window's WindowConfig; hashed as part of the model.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checks", "configHash"],
+      "properties": {
+        "checks": {
+          "type": "array",
+          "x-sortKey": ".",
+          "items": { "type": "string" }
+        },
+        "configHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordSchema", "signing"],
+      "description": "Ledger POLICY only. The genesis instance lives in the ledger itself, never here (no circularity).",
+      "properties": {
+        "recordSchema": { "type": "string", "examples": ["decision/v1"] },
+        "maxRecordBytes": { "type": "integer", "minimum": 1, "default": 1024 },
+        "signing": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "keyEnv"],
+          "properties": {
+            "algorithm": { "const": "ed25519" },
+            "keyEnv": { "type": "string", "examples": ["ATTEST_LEDGER_SIGNING_KEY"] }
+          }
+        }
+      }
+    },
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metricsPath", "otel"],
+      "properties": {
+        "metricsPath": { "type": "string", "default": "/metrics" },
+        "otel": { "type": "boolean" }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idp": { "enum": ["rauthy-embedded"] },
+        "operatorRole": { "type": "string" }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "hash"],
+      "description": "hash = sha256 of the canonical-keysort bytes of this document with the integrity member removed.",
+      "properties": {
+        "algorithm": { "const": "sha256-canonical-keysort-v1" },
+        "hash": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "handlerName": {
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z0-9_]*$",
+      "description": "Endpoint/handler identifier; camelCase is the TS-tier norm."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "tier": { "enum": ["ts", "rust"] },
+    "trustLevel": { "enum": ["full", "restricted", "read-only", "suspended"] },
+    "capId": {
+      "type": "string",
+      "pattern": "^cap\\.[a-z][a-z0-9_.-]*$"
+    },
+    "capKind": {
+      "enum": [
+        "db.read", "db.write", "db.txn", "db.migrate",
+        "kv.get", "kv.put", "kv.delete",
+        "counter.get", "counter.add", "counter.set", "counter.delete",
+        "lock.acquire",
+        "notify.publish", "notify.listen",
+        "pubsub.publish", "pubsub.subscribe",
+        "bucket.list", "bucket.read", "bucket.write", "bucket.delete", "bucket.sign",
+        "secret.read",
+        "ledger.append", "ledger.read", "ledger.verify",
+        "endpoint.call",
+        "http.egress",
+        "tool.invoke"
+      ]
+    },
+    "typeRef": {
+      "type": "string",
+      "pattern": "^t\\.[A-Za-z][A-Za-z0-9_.]*$",
+      "description": "Reference into the types table by id."
+    },
+    "endpointRef": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*\\.[a-z][a-zA-Z0-9_]*$",
+      "description": "service.endpoint qualified name."
+    },
+    "typeDecl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/typeRef" },
+        "name": { "type": "string" },
+        "doc": { "type": "string" },
+        "opaque": {
+          "type": "boolean",
+          "description": "v0.1 escape hatch: identity-by-hash only, no structure. Requires hash."
+        },
+        "hash": { "$ref": "#/$defs/sha256" },
+        "type": { "$ref": "#/$defs/typeNode" }
+      },
+      "oneOf": [
+        { "required": ["type"] },
+        { "required": ["opaque", "hash"] }
+      ]
+    },
+    "typeNode": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["builtin", "named", "struct", "list", "map", "option", "union", "literal"]
+        },
+        "builtin": {
+          "enum": [
+            "any", "bool", "int8", "int16", "int32", "int64",
+            "uint8", "uint16", "uint32", "uint64", "float32", "float64",
+            "string", "bytes", "time", "uuid", "json", "decimal"
+          ]
+        },
+        "ref": { "$ref": "#/$defs/typeRef" },
+        "typeArguments": {
+          "type": "array",
+          "x-ordered": "semantic",
+          "items": { "$ref": "#/$defs/typeNode" }
+        },
+        "fields": {
+          "type": "array",
+          "x-sortKey": "name",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "$ref": "#/$defs/typeNode" },
+              "optional": { "type": "boolean" },
+              "wire": { "enum": ["body", "header", "query", "cookie", "status"] },
+              "wireName": { "type": "string" }
+            }
+          }
+        },
+        "elem": { "$ref": "#/$defs/typeNode" },
+        "key": { "$ref": "#/$defs/typeNode" },
+        "value": { "$ref": "#/$defs/typeNode" },
+        "variants": {
+          "type": "array",
+          "x-ordered": "semantic",
+          "items": { "$ref": "#/$defs/typeNode" }
+        },
+        "literal": {
+          "type": ["string", "number", "boolean", "null"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "namedResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "$ref": "#/$defs/slug" }
+      }
+    }
+  }
+}

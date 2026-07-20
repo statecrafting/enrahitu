@@ -1,0 +1,138 @@
+{
+  "contract": { "name": "app-model", "version": "0.1.0" },
+  "app": { "name": "statecraft", "org": "statecrafting" },
+  "template": { "name": "enrahitu", "version": "0.9.0", "contractVersion": "0.5.0" },
+  "source": {
+    "revision": "e61cfd2a0000000000000000000000000000dead",
+    "uncommittedChanges": false
+  },
+  "extraction": {
+    "producers": [
+      { "tool": "cell-registry", "version": "0.1.0", "tier": "rust" },
+      { "tool": "tsparser-lowering", "version": "1.57.9+sc.0.1.0", "tier": "ts" }
+    ],
+    "verified": true
+  },
+  "types": [
+    {
+      "id": "t.CreateStampReq",
+      "name": "CreateStampReq",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "installationId", "type": { "kind": "builtin", "builtin": "int64" } },
+          { "name": "repoName", "type": { "kind": "builtin", "builtin": "string" } }
+        ]
+      }
+    },
+    {
+      "id": "t.CreateStampResp",
+      "name": "CreateStampResp",
+      "opaque": true,
+      "hash": "sha256:9c2f4b1de0a35577b6a1c07d8f2e94aa31bb02cd4ef05512c3a97d10b64f88e1"
+    }
+  ],
+  "resources": {
+    "databases": [
+      {
+        "name": "app",
+        "engine": "coreledger-postgres",
+        "migrations": [
+          { "number": 1, "filename": "0001_init.sql", "description": "baseline" }
+        ]
+      }
+    ],
+    "kv": [{ "name": "sessions" }],
+    "counters": [{ "name": "rate-limits" }],
+    "topics": [],
+    "subscriptions": [],
+    "buckets": [],
+    "secrets": [{ "name": "github-app-key" }],
+    "crons": []
+  },
+  "capabilities": [
+    {
+      "id": "cap.db.app.rw",
+      "kind": "db.write",
+      "resource": "app",
+      "constraints": { "tables": ["stamp_job", "tenant"] }
+    },
+    {
+      "id": "cap.egress.github",
+      "kind": "http.egress",
+      "resource": "*",
+      "constraints": { "domains": ["api.github.com"] }
+    },
+    {
+      "id": "cap.kv.sessions",
+      "kind": "kv.get",
+      "resource": "sessions"
+    },
+    {
+      "id": "cap.ledger.append",
+      "kind": "ledger.append",
+      "resource": "*"
+    },
+    {
+      "id": "cap.secret.github",
+      "kind": "secret.read",
+      "resource": "github-app-key"
+    }
+  ],
+  "services": [
+    {
+      "name": "factory",
+      "tier": "ts",
+      "capabilities": [
+        "cap.db.app.rw",
+        "cap.egress.github",
+        "cap.ledger.append",
+        "cap.secret.github"
+      ],
+      "endpoints": [
+        {
+          "name": "createStamp",
+          "path": "/factory/stamps",
+          "methods": ["POST"],
+          "access": "auth",
+          "requestType": "t.CreateStampReq",
+          "responseType": "t.CreateStampResp"
+        }
+      ]
+    },
+    {
+      "name": "gatekeeper",
+      "tier": "rust",
+      "capabilities": ["cap.ledger.append"],
+      "endpoints": []
+    }
+  ],
+  "agents": [
+    {
+      "name": "stamp-shepherd",
+      "service": "factory",
+      "trust": { "initial": "restricted", "direction": "degrade-only" },
+      "capabilities": ["cap.db.app.rw", "cap.ledger.append"],
+      "entry": "backend/factory/agents/stamp-shepherd.ts"
+    }
+  ],
+  "trust": {
+    "levels": ["full", "restricted", "read-only", "suspended"],
+    "windowConfig": { "windowSize": 50, "decay": 0.95 }
+  },
+  "gate": {
+    "checks": ["allowlist", "secrets"],
+    "configHash": "sha256:5f1e0d4c3b2a19087766554433221100ffeeddccbbaa99887766554433221100"
+  },
+  "ledger": {
+    "recordSchema": "decision/v1",
+    "maxRecordBytes": 1024,
+    "signing": { "algorithm": "ed25519", "keyEnv": "ATTEST_LEDGER_SIGNING_KEY" }
+  },
+  "observability": { "metricsPath": "/metrics", "otel": true },
+  "auth": { "idp": "rauthy-embedded", "operatorRole": "statecraft_operator" },
+  "integrity": {
+    "algorithm": "sha256-canonical-keysort-v1",
+    "hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

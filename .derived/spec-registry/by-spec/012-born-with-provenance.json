@@ -39,6 +39,6 @@
     "summary": "Every stamped app is born with a provenance certificate that states, at the moment of stamping, what it was stamped from and what agentic posture it was born under. The template owns the certificate's schema and its validator; the factory (statecraft) owns emission. This lands the reserved [provenance] contract table from spec 009 §3.3 and is absorption line item LI-2 of spec 010. Lineage: the born-with cert + agenticPostureBinding flow proven in the template-encore era; the design facts an implementer needs are inlined here, no external archive required.\n",
     "title": "Born-with certificate + agentic posture binding (LI-2)"
   },
-  "shardHash": "8337590ff49ef83b76231722b65df630b536935466ce446bafa3a12d184bcf42",
+  "shardHash": "fdbeec652afb922c276711fe53b4da74fb176d5bdd4ead314699a54a093f1cc8",
   "specVersion": "1.1.0"
 }

@@ -27,6 +27,6 @@
     "summary": "The single-container image (spec 007) currently ships arm64 only, matching the development Macs. Fleet targets (Hetzner x86 nodes, most customer clusters) need linux/amd64. This spec extends the cross-build pipeline (scripts/encore/build-runtime-linux.sh and scripts/docker-build.sh already take an arch argument) to produce and verify an amd64 image, and wires an optional CI path so the capability cannot silently rot. Owed item carried from the enrahi phase-7 close-out.\n",
     "title": "linux/amd64 image support (multi-arch packaging)"
   },
-  "shardHash": "6c3d4ee70d29723d4fb7e9c3c74226e69ce72f9bc954ce181987c6446031503a",
+  "shardHash": "ba7149548031fb8392ea7bbce28619203cbcf244ab9ddf54925e86161943badf",
   "specVersion": "1.1.0"
 }

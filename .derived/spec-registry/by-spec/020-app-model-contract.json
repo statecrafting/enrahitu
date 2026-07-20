@@ -1,0 +1,39 @@
+{
+  "record": {
+    "created": "2026-07-19",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "008-vendored-encore-toolchain",
+      "009-template-contract"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "contracts/"
+      }
+    ],
+    "id": "020-app-model-contract",
+    "implementation": "in-progress",
+    "sectionHeadings": [
+      "020: The app-model.json extraction contract",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 Design principles",
+      "3.2 Document tour (top-level members)",
+      "3.3 Capability kinds (v0.1 vocabulary)",
+      "3.4 Granularity (inherited limitation, named plan)",
+      "3.5 Determinism rules",
+      "3.6 The pipeline",
+      "3.7 Drift semantics",
+      "4. Named extensions (not in v0.1)",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/020-app-model-contract/spec.md",
+    "status": "approved",
+    "summary": "The build/run-time contract of a governed cell: one language-neutral app-model.json, extracted from source, describing what an app contains and what it is permitted to do. One model, two producers (the vendored tsparser for the TS tier; the Phase B Rust registry), hash-anchored via the family primitives, drift-enforced by the coupling gate, seeding the Decision ledger genesis. This spec owns the contract itself: the JSON Schema (contracts/app-model.schema.json), the worked example, the determinism rules, and the versioning discipline. It absorbs the grand-refactor v0.1 draft verbatim as its starting point, completing the ownership hand-off that draft names. The model is the sibling of template.toml (spec 009), never its replacement: the factory keeps reading template.toml and nothing else; the model is produced inside an app's own build, after stamping, and is consumed by the kernel, the ledger, the coupling gate, and the admin dashboard.\n",
+    "title": "The app-model.json extraction contract"
+  },
+  "shardHash": "3213b538d2fb585bf6390a97442385fdae61ee8c4f5351b04fedb6a8e7cb26a4",
+  "specVersion": "1.1.0"
+}
