@@ -17,8 +17,9 @@ const fixturePath = join(here, "fixtures", "born-with.example.json");
 const fixture = () => JSON.parse(readFileSync(fixturePath, "utf8"));
 
 // Golden hash (spec 012 §4/§6): the platform ledger anchors these same bytes,
-// so a change here is a deliberate break, not a refresh.
-const GOLDEN_SHA256 = "ad33056eec7e00f954da905b19062a7f0d8d559dc1e574fffda0929e570feb5b";
+// so a change here is a deliberate break, not a refresh. Last break: the
+// stagecraft -> statecraft rename of the fixture's org strings (PR #20).
+const GOLDEN_SHA256 = "c80bd8ee0eaf0911826fd6ab0445e9dd48bbf228e0ed6a668bef921bbef3da32";
 
 // Independent recursive key-sort + sha256, computed in the test with no shared
 // code with the validator, to cross-check the printed hash.
