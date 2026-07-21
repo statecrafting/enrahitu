@@ -10,6 +10,8 @@ import { join } from "node:path";
 
 import { secret } from "encore.dev/config";
 
+import { demand } from "../kernel/adjudicate";
+
 const jwtPrivateKey = secret("JWT_PRIVATE_KEY");
 const jwtPublicKey = secret("JWT_PUBLIC_KEY");
 const jwtRefreshPrivateKey = secret("JWT_REFRESH_PRIVATE_KEY");
@@ -24,6 +26,7 @@ const rauthyClientSecret = secret("RAUTHY_CLIENT_SECRET");
  * `npm run dev:idp-secret` from the committed dev bootstrap client).
  */
 export function rauthyClientSecretValue(): string {
+  demand("secret.read", "rauthy_client_secret");
   return withDevFileFallback(rauthyClientSecret(), "rauthy-client-secret");
 }
 
@@ -41,15 +44,22 @@ function withDevFileFallback(value: string, pemFile: string): string {
   }
 }
 
+// Every accessor adjudicates secret.read of its specific secret before
+// releasing material (spec 021 §3.5); model resource names are the
+// lowercase form of the encore binding.
 export function accessPrivateKey(): string {
+  demand("secret.read", "jwt_private_key");
   return withDevFileFallback(jwtPrivateKey(), "access-private.pem");
 }
 export function accessPublicKey(): string {
+  demand("secret.read", "jwt_public_key");
   return withDevFileFallback(jwtPublicKey(), "access-public.pem");
 }
 export function refreshPrivateKey(): string {
+  demand("secret.read", "jwt_refresh_private_key");
   return withDevFileFallback(jwtRefreshPrivateKey(), "refresh-private.pem");
 }
 export function refreshPublicKey(): string {
+  demand("secret.read", "jwt_refresh_public_key");
   return withDevFileFallback(jwtRefreshPublicKey(), "refresh-public.pem");
 }

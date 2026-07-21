@@ -73,6 +73,10 @@ jobs:
         run: npm run build:runtime
       - name: Build app (generates encore.gen)
         run: npm run build:app
+      # The app-model staleness gate (spec 021 §3.3): the committed model
+      # must match recomputation from this tree; exit 2 fails the job.
+      - name: Model staleness gate
+        run: npx enrahitu-extract --check
       - name: Verify (contract verb)
         env:
           TEST_POSTGRES_URL: postgres://postgres:postgres@localhost:5432/enrahitu_test

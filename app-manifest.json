@@ -1,0 +1,109 @@
+{
+  "app": { "name": "enrahitu", "org": "statecrafting" },
+  "capabilities": [
+    { "id": "cap.counter.add", "kind": "counter.add", "resource": "counters" },
+    { "id": "cap.counter.get", "kind": "counter.get", "resource": "counters" },
+    {
+      "id": "cap.counter.rate-limit.add",
+      "kind": "counter.add",
+      "resource": "counters",
+      "constraints": { "keyPrefix": "rl:" }
+    },
+    {
+      "id": "cap.counter.rate-limit.delete",
+      "kind": "counter.delete",
+      "resource": "counters",
+      "constraints": { "keyPrefix": "rl:" }
+    },
+    { "id": "cap.db.app.migrate", "kind": "db.migrate", "resource": "app" },
+    { "id": "cap.db.app.read", "kind": "db.read", "resource": "app" },
+    { "id": "cap.db.app.txn", "kind": "db.txn", "resource": "app" },
+    { "id": "cap.db.app.write", "kind": "db.write", "resource": "app" },
+    { "id": "cap.egress.rauthy-issuer", "kind": "http.egress", "resource": "rauthy-issuer" },
+    { "id": "cap.egress.rauthy-upstream", "kind": "http.egress", "resource": "rauthy-upstream" },
+    { "id": "cap.kv.cache.delete", "kind": "kv.delete", "resource": "cache" },
+    { "id": "cap.kv.cache.get", "kind": "kv.get", "resource": "cache" },
+    { "id": "cap.kv.cache.put", "kind": "kv.put", "resource": "cache" },
+    { "id": "cap.secret.jwt-private", "kind": "secret.read", "resource": "jwt_private_key" },
+    { "id": "cap.secret.jwt-public", "kind": "secret.read", "resource": "jwt_public_key" },
+    {
+      "id": "cap.secret.jwt-refresh-private",
+      "kind": "secret.read",
+      "resource": "jwt_refresh_private_key"
+    },
+    {
+      "id": "cap.secret.jwt-refresh-public",
+      "kind": "secret.read",
+      "resource": "jwt_refresh_public_key"
+    },
+    { "id": "cap.secret.rauthy-client", "kind": "secret.read", "resource": "rauthy_client_secret" }
+  ],
+  "services": {
+    "auth": {
+      "tier": "ts",
+      "capabilities": [
+        "cap.counter.rate-limit.add",
+        "cap.counter.rate-limit.delete",
+        "cap.db.app.migrate",
+        "cap.db.app.read",
+        "cap.db.app.txn",
+        "cap.db.app.write",
+        "cap.egress.rauthy-issuer",
+        "cap.secret.jwt-private",
+        "cap.secret.jwt-public",
+        "cap.secret.jwt-refresh-private",
+        "cap.secret.jwt-refresh-public",
+        "cap.secret.rauthy-client"
+      ]
+    },
+    "health": {
+      "tier": "ts",
+      "capabilities": ["cap.db.app.read"]
+    },
+    "hiq": {
+      "tier": "ts",
+      "capabilities": [
+        "cap.counter.add",
+        "cap.counter.get",
+        "cap.kv.cache.delete",
+        "cap.kv.cache.get",
+        "cap.kv.cache.put"
+      ]
+    },
+    "idp": {
+      "tier": "ts",
+      "capabilities": ["cap.egress.rauthy-upstream"]
+    },
+    "lib": {
+      "tier": "ts",
+      "role": "library",
+      "capabilities": []
+    },
+    "web": {
+      "tier": "ts",
+      "capabilities": []
+    }
+  },
+  "resources": {
+    "counters": [{ "name": "counters" }],
+    "databases": [{ "name": "app", "engine": "coreledger-libsql" }],
+    "kv": [{ "name": "cache" }],
+    "secrets": [
+      { "name": "jwt_private_key" },
+      { "name": "jwt_public_key" },
+      { "name": "jwt_refresh_private_key" },
+      { "name": "jwt_refresh_public_key" },
+      { "name": "rauthy_client_secret" }
+    ]
+  },
+  "agents": [],
+  "trust": { "levels": ["full", "restricted", "read-only", "suspended"] },
+  "gate": { "checks": ["secrets"] },
+  "ledger": {
+    "recordSchema": "decision/v1",
+    "maxRecordBytes": 1024,
+    "signing": { "algorithm": "ed25519", "keyEnv": "ENRAHITU_LEDGER_SIGNING_KEY" }
+  },
+  "observability": { "metricsPath": "/metrics", "otel": false },
+  "auth": { "idp": "rauthy-embedded", "operatorRole": "enrahitu_operator" }
+}

@@ -1,0 +1,427 @@
+{
+  "agents": [],
+  "app": {
+    "name": "enrahitu",
+    "org": "statecrafting"
+  },
+  "auth": {
+    "idp": "rauthy-embedded",
+    "operatorRole": "enrahitu_operator"
+  },
+  "capabilities": [
+    {
+      "id": "cap.counter.add",
+      "kind": "counter.add",
+      "resource": "counters"
+    },
+    {
+      "id": "cap.counter.get",
+      "kind": "counter.get",
+      "resource": "counters"
+    },
+    {
+      "constraints": {
+        "keyPrefix": "rl:"
+      },
+      "id": "cap.counter.rate-limit.add",
+      "kind": "counter.add",
+      "resource": "counters"
+    },
+    {
+      "constraints": {
+        "keyPrefix": "rl:"
+      },
+      "id": "cap.counter.rate-limit.delete",
+      "kind": "counter.delete",
+      "resource": "counters"
+    },
+    {
+      "id": "cap.db.app.migrate",
+      "kind": "db.migrate",
+      "resource": "app"
+    },
+    {
+      "id": "cap.db.app.read",
+      "kind": "db.read",
+      "resource": "app"
+    },
+    {
+      "id": "cap.db.app.txn",
+      "kind": "db.txn",
+      "resource": "app"
+    },
+    {
+      "id": "cap.db.app.write",
+      "kind": "db.write",
+      "resource": "app"
+    },
+    {
+      "id": "cap.egress.rauthy-issuer",
+      "kind": "http.egress",
+      "resource": "rauthy-issuer"
+    },
+    {
+      "id": "cap.egress.rauthy-upstream",
+      "kind": "http.egress",
+      "resource": "rauthy-upstream"
+    },
+    {
+      "id": "cap.kv.cache.delete",
+      "kind": "kv.delete",
+      "resource": "cache"
+    },
+    {
+      "id": "cap.kv.cache.get",
+      "kind": "kv.get",
+      "resource": "cache"
+    },
+    {
+      "id": "cap.kv.cache.put",
+      "kind": "kv.put",
+      "resource": "cache"
+    },
+    {
+      "id": "cap.secret.jwt-private",
+      "kind": "secret.read",
+      "resource": "jwt_private_key"
+    },
+    {
+      "id": "cap.secret.jwt-public",
+      "kind": "secret.read",
+      "resource": "jwt_public_key"
+    },
+    {
+      "id": "cap.secret.jwt-refresh-private",
+      "kind": "secret.read",
+      "resource": "jwt_refresh_private_key"
+    },
+    {
+      "id": "cap.secret.jwt-refresh-public",
+      "kind": "secret.read",
+      "resource": "jwt_refresh_public_key"
+    },
+    {
+      "id": "cap.secret.rauthy-client",
+      "kind": "secret.read",
+      "resource": "rauthy_client_secret"
+    }
+  ],
+  "contract": {
+    "name": "app-model",
+    "version": "0.1.0"
+  },
+  "extraction": {
+    "producers": [
+      {
+        "tier": "ts",
+        "tool": "enrahitu-extract",
+        "version": "0.1.0"
+      }
+    ],
+    "verified": true
+  },
+  "gate": {
+    "checks": [
+      "secrets"
+    ],
+    "configHash": "sha256:801f914badea9b738bdec5cb08168f4b278b57f1fb54f3ee75df0f3b2467c145"
+  },
+  "integrity": {
+    "algorithm": "sha256-canonical-keysort-v1",
+    "hash": "sha256:ce4e75b43d0bae562043baee62b1c2235123e0b9f78c645ab930b000128a8523"
+  },
+  "ledger": {
+    "maxRecordBytes": 1024,
+    "recordSchema": "decision/v1",
+    "signing": {
+      "algorithm": "ed25519",
+      "keyEnv": "ENRAHITU_LEDGER_SIGNING_KEY"
+    }
+  },
+  "observability": {
+    "metricsPath": "/metrics",
+    "otel": false
+  },
+  "resources": {
+    "counters": [
+      {
+        "name": "counters"
+      }
+    ],
+    "databases": [
+      {
+        "engine": "coreledger-libsql",
+        "name": "app"
+      }
+    ],
+    "kv": [
+      {
+        "name": "cache"
+      }
+    ],
+    "secrets": [
+      {
+        "name": "jwt_private_key"
+      },
+      {
+        "name": "jwt_public_key"
+      },
+      {
+        "name": "jwt_refresh_private_key"
+      },
+      {
+        "name": "jwt_refresh_public_key"
+      },
+      {
+        "name": "rauthy_client_secret"
+      }
+    ]
+  },
+  "services": [
+    {
+      "capabilities": [
+        "cap.counter.rate-limit.add",
+        "cap.counter.rate-limit.delete",
+        "cap.db.app.migrate",
+        "cap.db.app.read",
+        "cap.db.app.txn",
+        "cap.db.app.write",
+        "cap.egress.rauthy-issuer",
+        "cap.secret.jwt-private",
+        "cap.secret.jwt-public",
+        "cap.secret.jwt-refresh-private",
+        "cap.secret.jwt-refresh-public",
+        "cap.secret.rauthy-client"
+      ],
+      "endpoints": [
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "csrfToken",
+          "path": "/api/v1/auth/csrf-token",
+          "raw": true
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "drivers",
+          "path": "/api/v1/auth/drivers"
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "login",
+          "path": "/api/v1/auth/login",
+          "raw": true
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "POST"
+          ],
+          "name": "logout",
+          "path": "/api/v1/auth/logout",
+          "raw": true
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "me",
+          "path": "/api/v1/auth/me"
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "mockLogin",
+          "path": "/api/v1/auth/mock/login",
+          "raw": true
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "rauthyCallback",
+          "path": "/api/v1/auth/rauthy/callback",
+          "raw": true
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "rauthyLogin",
+          "path": "/api/v1/auth/rauthy/login",
+          "raw": true
+        },
+        {
+          "access": "public",
+          "methods": [
+            "POST"
+          ],
+          "name": "refresh",
+          "path": "/api/v1/auth/refresh",
+          "raw": true
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "status",
+          "path": "/api/v1/auth/status",
+          "raw": true
+        }
+      ],
+      "name": "auth",
+      "tier": "ts"
+    },
+    {
+      "capabilities": [
+        "cap.db.app.read"
+      ],
+      "endpoints": [
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "health",
+          "path": "/health"
+        }
+      ],
+      "name": "health",
+      "tier": "ts"
+    },
+    {
+      "capabilities": [
+        "cap.counter.add",
+        "cap.counter.get",
+        "cap.kv.cache.delete",
+        "cap.kv.cache.get",
+        "cap.kv.cache.put"
+      ],
+      "endpoints": [
+        {
+          "access": "public",
+          "methods": [
+            "POST"
+          ],
+          "name": "counterAdd",
+          "path": "/hiq/counter/:key/add"
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "counterGet",
+          "path": "/hiq/counter/:key"
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "health",
+          "path": "/hiq/health"
+        },
+        {
+          "access": "public",
+          "methods": [
+            "DELETE"
+          ],
+          "name": "kvDel",
+          "path": "/hiq/kv/:key"
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "kvGet",
+          "path": "/hiq/kv/:key"
+        },
+        {
+          "access": "public",
+          "methods": [
+            "POST"
+          ],
+          "name": "kvPut",
+          "path": "/hiq/kv"
+        }
+      ],
+      "name": "hiq",
+      "tier": "ts"
+    },
+    {
+      "capabilities": [
+        "cap.egress.rauthy-upstream"
+      ],
+      "endpoints": [
+        {
+          "access": "public",
+          "methods": [
+            "DELETE",
+            "GET",
+            "HEAD",
+            "OPTIONS",
+            "PATCH",
+            "POST",
+            "PUT"
+          ],
+          "name": "proxy",
+          "path": "/auth/*rest",
+          "raw": true
+        }
+      ],
+      "name": "idp",
+      "tier": "ts"
+    },
+    {
+      "capabilities": [],
+      "endpoints": [],
+      "name": "lib",
+      "tier": "ts"
+    },
+    {
+      "capabilities": [],
+      "endpoints": [
+        {
+          "access": "public",
+          "methods": [
+            "GET",
+            "HEAD"
+          ],
+          "name": "spa",
+          "path": "/!path"
+        }
+      ],
+      "name": "web",
+      "tier": "ts"
+    }
+  ],
+  "source": {
+    "revision": "f1051125047c994336dad3c9128d3a57085f7c63",
+    "uncommittedChanges": false
+  },
+  "trust": {
+    "levels": [
+      "full",
+      "restricted",
+      "read-only",
+      "suspended"
+    ]
+  },
+  "types": []
+}

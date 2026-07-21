@@ -312,6 +312,10 @@ absorbed). Follow-up specs, in dependency order:
 
 1. **kernel-native**: `@statecrafting/kernel-native` at the napi
    boundary; the Decision ledger; Phase A enforcement semantics.
+   Landed as **spec 021** (2026-07-20): extraction from day one, the
+   kernel booted fail-closed from the committed model, the live
+   Decision ledger, and the root manifest's kernel-native dependency
+   plus the `extract:model` / `check:model` scripts ride with it.
 2. **Frontend / dashboard / observability implementation specs**: the
    React-only convergence (§4.3), `frontend-admin` (§4.4), and the
    `/metrics` + OTel contract (§4.5) as buildable specs, realigning

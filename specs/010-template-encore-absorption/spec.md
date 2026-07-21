@@ -74,6 +74,11 @@ completion; the implementing specs own the how.
   package.json + lockfile, registry/index regenerated), whose verify
   run 29369367571 succeeded on its initial commit with no repo-local
   changes. The smoke repo is kept public as evidence.
+- **Amendment (spec 021, 2026-07-20)**: the verify workflow gains the
+  app-model staleness gate after the app build (`enrahitu-extract
+  --check`, exit 2 on a committed model that no longer matches
+  recomputation), so the governed derived artifact of spec 021 rides
+  the same born-green gate a stamped app inherits.
 
 ### LI-2: Born-with certificate + agentic posture
 

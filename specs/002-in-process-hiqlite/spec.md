@@ -77,6 +77,17 @@ across platforms (the transitive emnapi optional tree), which would break
 `file:./addon` dependency and the locally built (gitignored) `.node`;
 publishing is additive, not a replacement for the in-tree dev path.
 
+## 6. Phase A seam (amended by spec 021, 2026-07-20)
+
+The raw addon is no longer imported by consumers directly. `hiq/init.ts`
+keeps the module-load `init()` side effect and remains the only importer
+of `@enrahitu/hiqlite-native`, but its default export is consumed solely
+by the governed facade `backend/kernel/hiq.ts` (spec 021), which
+adjudicates every kv/counter operation against the app model before
+crossing into Rust. The `hiq` service endpoints and the rate limiter
+(spec 004) call the facade, never the addon; the extraction ban-list
+enforces both rules at build time.
+
 The addon meta manifest carries a `repository` field pointing at this repo
 (`github.com/statecrafting/enrahitu`): `npm publish --provenance` rejects a
 package whose `repository.url` does not match the GitHub source recorded in

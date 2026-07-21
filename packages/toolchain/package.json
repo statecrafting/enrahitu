@@ -14,6 +14,7 @@
   "bin": {
     "enrahitu-dev": "bin/dev.mjs",
     "enrahitu-build": "bin/build.mjs",
+    "enrahitu-extract": "bin/extract.mjs",
     "enrahitu-toolchain": "bin/version.mjs"
   },
   "exports": {
@@ -27,11 +28,16 @@
   "files": [
     "bin",
     "lib",
+    "proto",
     "scripts",
     "README.md"
   ],
   "dependencies": {
-    "esbuild": "^0.27.3"
+    "@statecrafting/kernel-native": "^0.1.0",
+    "ajv": "^8.17.1",
+    "esbuild": "^0.27.3",
+    "protobufjs": "^7.5.4",
+    "typescript": "^6.0.3"
   },
   "optionalDependencies": {
     "@enrahitu/toolchain-darwin-arm64": "0.1.0",

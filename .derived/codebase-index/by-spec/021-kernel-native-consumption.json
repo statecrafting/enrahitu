@@ -1,0 +1,73 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "002-in-process-hiqlite",
+      "003-coreledger",
+      "004-auth-core",
+      "005-rauthy-same-origin",
+      "008-vendored-encore-toolchain",
+      "018-packaged-chassis",
+      "020-app-model-contract"
+    ],
+    "implementingPaths": [
+      {
+        "path": "app-manifest.json",
+        "source": "spec-edge"
+      },
+      {
+        "path": "app-model.json",
+        "source": "spec-edge"
+      },
+      {
+        "path": "backend/kernel/",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "backend/kernel/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "backend/kernel/"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "app-manifest.json"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "app-manifest.json"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "app-model.json"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "app-model.json"
+        }
+      }
+    ],
+    "specId": "021-kernel-native-consumption",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "952de38c456c2496df7ae336e26755995c64d781a7a9c9d1b8feabd27b6b6872"
+}

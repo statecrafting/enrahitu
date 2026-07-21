@@ -25,13 +25,14 @@
       "2. Territory",
       "3. Behavior",
       "4. Out of scope",
-      "5. Publishing (amended by spec 018, 2026-07-14)"
+      "5. Publishing (amended by spec 018, 2026-07-14)",
+      "6. Phase A seam (amended by spec 021, 2026-07-20)"
     ],
     "specPath": "specs/002-in-process-hiqlite/spec.md",
     "status": "approved",
     "summary": "The hiqlite runtime embedded in the Node process: a napi-rs cdylib (@enrahitu/hiqlite-native) exposing init/health, TTL'd KV, and counters, plus the thin `hiq` Encore service that starts the node at service load and fronts the addon over HTTP. Replaces Redis for cache and rate-limit state with zero extra processes.\n",
     "title": "In-process hiqlite via a napi-rs native addon"
   },
-  "shardHash": "fa72cfe8603b1cd072d6ad44e7e742fbf90b8302e9ba863626c87efbf67f912b",
+  "shardHash": "00c18fdc865308d487e3af6787b05c986e0cfd0f04f2869f7aa896021f0b39f3",
   "specVersion": "1.1.0"
 }

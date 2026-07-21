@@ -1,13 +1,22 @@
 import { api } from "encore.dev/api";
 
-import hiqlite, { ready } from "./init";
+// The governed facade is the only path to the addon (spec 021 §3.5,
+// spec 002 §6); it awaits the raft election internally. Named imports are
+// deliberate: the extraction usage walk attributes exact kinds from them.
+import {
+  counterAdd as hiqCounterAdd,
+  counterGet as hiqCounterGet,
+  health as hiqHealth,
+  kvDel as hiqKvDel,
+  kvGet as hiqKvGet,
+  kvPut as hiqKvPut,
+} from "../kernel/hiq";
 
 // GET /hiq/health : the addon is loaded and hiqlite is up in-process.
 export const health = api(
   { expose: true, method: "GET", path: "/hiq/health" },
   async (): Promise<{ status: string }> => {
-    await ready;
-    return { status: await hiqlite.health() };
+    return { status: await hiqHealth() };
   },
 );
 
@@ -21,8 +30,7 @@ interface KvPutParams {
 export const kvPut = api(
   { expose: true, method: "POST", path: "/hiq/kv" },
   async ({ key, value, ttlSecs }: KvPutParams): Promise<{ ok: true }> => {
-    await ready;
-    await hiqlite.kvPut(key, value, ttlSecs ?? null);
+    await hiqKvPut(key, value, ttlSecs ?? null);
     return { ok: true };
   },
 );
@@ -36,8 +44,7 @@ interface KvGetResponse {
 export const kvGet = api(
   { expose: true, method: "GET", path: "/hiq/kv/:key" },
   async ({ key }: { key: string }): Promise<KvGetResponse> => {
-    await ready;
-    return { key, value: await hiqlite.kvGet(key) };
+    return { key, value: await hiqKvGet(key) };
   },
 );
 
@@ -45,8 +52,7 @@ export const kvGet = api(
 export const kvDel = api(
   { expose: true, method: "DELETE", path: "/hiq/kv/:key" },
   async ({ key }: { key: string }): Promise<{ ok: true }> => {
-    await ready;
-    await hiqlite.kvDel(key);
+    await hiqKvDel(key);
     return { ok: true };
   },
 );
@@ -60,8 +66,7 @@ interface CounterAddParams {
 export const counterAdd = api(
   { expose: true, method: "POST", path: "/hiq/counter/:key/add" },
   async ({ key, delta }: CounterAddParams): Promise<{ key: string; value: number }> => {
-    await ready;
-    return { key, value: await hiqlite.counterAdd(key, delta ?? 1) };
+    return { key, value: await hiqCounterAdd(key, delta ?? 1) };
   },
 );
 
@@ -69,7 +74,6 @@ export const counterAdd = api(
 export const counterGet = api(
   { expose: true, method: "GET", path: "/hiq/counter/:key" },
   async ({ key }: { key: string }): Promise<{ key: string; value: number | null }> => {
-    await ready;
-    return { key, value: await hiqlite.counterGet(key) };
+    return { key, value: await hiqCounterGet(key) };
   },
 );
