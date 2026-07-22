@@ -63,8 +63,11 @@ cp -R backend/web/dist "$WORKTREE/backend/web/dist"
 # flavor directory (the template carries them all, spec 015) so the tsparser
 # app walk never sees their unresolvable imports. The e2e/ suite (spec 017)
 # is dropped for the same reason: its @playwright/test import is a devDep,
-# absent under `npm ci --omit=dev`.
-rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-react" "$WORKTREE/e2e"
+# absent under `npm ci --omit=dev`. Likewise the vitest configs since the
+# published-toolchain repoint (spec 018): they import @statecrafting/toolchain
+# (a devDep) to resolve the runtime for tests, and tests never run in the image.
+rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-react" "$WORKTREE/e2e" \
+  "$WORKTREE/vitest.config.ts" "$WORKTREE/vitest.setup.ts"
 
 echo "==> production node_modules"
 (cd "$WORKTREE" && npm ci --omit=dev --no-fund --no-audit >/dev/null)
@@ -85,26 +88,33 @@ echo "==> app bundle + metadata (@statecrafting/toolchain)"
 echo "==> target-arch native binaries (@statecrafting)"
 TC_VER="$(node -p "require('$ROOT/node_modules/@statecrafting/toolchain/package.json').version")"
 HIQ_VER="$(cd "$WORKTREE" && node -p "require('@statecrafting/hiqlite-native/package.json').version")"
+KER_VER="$(cd "$WORKTREE" && node -p "require('@statecrafting/kernel-native/package.json').version")"
 SCRATCH="$(mktemp -d /tmp/enrahitu-bins-XXXXXX)"
 (cd "$SCRATCH" && npm init -y >/dev/null 2>&1 && \
   npm install --no-save --force --no-fund --no-audit \
     "@statecrafting/toolchain-${TC_TRIPLE}@${TC_VER}" \
     "@statecrafting/hiqlite-native-${NAPI_TRIPLE}@${HIQ_VER}" \
+    "@statecrafting/kernel-native-${NAPI_TRIPLE}@${KER_VER}" \
     "$LIBSQL_PKG" >/dev/null)
 
 RUNTIME_NODE="$SCRATCH/node_modules/@statecrafting/toolchain-${TC_TRIPLE}/encore-runtime.node"
 HIQ_DIR="$SCRATCH/node_modules/@statecrafting/hiqlite-native-${NAPI_TRIPLE}"
+KER_DIR="$SCRATCH/node_modules/@statecrafting/kernel-native-${NAPI_TRIPLE}"
 ADDON_NODE="$(ls "$HIQ_DIR"/*.node 2>/dev/null | head -1 || true)"
-if [ ! -f "$RUNTIME_NODE" ] || [ -z "$ADDON_NODE" ] || [ ! -f "$ADDON_NODE" ]; then
+KERNEL_NODE="$(ls "$KER_DIR"/*.node 2>/dev/null | head -1 || true)"
+if [ ! -f "$RUNTIME_NODE" ] || [ -z "$ADDON_NODE" ] || [ ! -f "$ADDON_NODE" ] \
+  || [ -z "$KERNEL_NODE" ] || [ ! -f "$KERNEL_NODE" ]; then
   echo "missing target-arch native binary under $SCRATCH:" >&2
   echo "  runtime: $RUNTIME_NODE" >&2
   echo "  addon:   ${ADDON_NODE:-<none found>}" >&2
+  echo "  kernel:  ${KERNEL_NODE:-<none found>}" >&2
   exit 1
 fi
 
 # A mismatched native artifact must fail the build, not the first request
-# (spec 016): both the addon .node and the runtime must be this arch's ELF.
-for artifact in "$RUNTIME_NODE" "$ADDON_NODE"; do
+# (spec 016): the addon and kernel .node files and the runtime must all be
+# this arch's ELF.
+for artifact in "$RUNTIME_NODE" "$ADDON_NODE" "$KERNEL_NODE"; do
   if ! file -b "$artifact" | grep -q "$ELF_ARCH"; then
     echo "arch mismatch: $artifact is not a $ELF_ARCH ELF (expected for $ARCH)" >&2
     file "$artifact" >&2 || true
@@ -120,6 +130,9 @@ cp "$RUNTIME_NODE" "$WORKTREE/docker/encore-runtime.node"
 mkdir -p "$WORKTREE/node_modules/@statecrafting"
 rm -rf "$WORKTREE/node_modules/@statecrafting/hiqlite-native-${NAPI_TRIPLE}"
 cp -R "$HIQ_DIR" "$WORKTREE/node_modules/@statecrafting/"
+# The kernel addon (spec 021) resolves per-platform the same way.
+rm -rf "$WORKTREE/node_modules/@statecrafting/kernel-native-${NAPI_TRIPLE}"
+cp -R "$KER_DIR" "$WORKTREE/node_modules/@statecrafting/"
 # The linux libsql binding, copied in for the same host-agnostic reason: inside
 # a macOS tree npm classifies the platform-mismatched binding as a satisfied
 # optional of libsql and silently no-ops, even with --force / --os / --cpu.

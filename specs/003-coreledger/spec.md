@@ -71,3 +71,11 @@ nothing escapes the seam. The raw driver remains constructible only for
 the enforcement plane itself (the spec 021 Decision store) and for
 driver unit tests; the extraction ban-list enforces that boundary. The
 decorator surface and both drivers are otherwise unchanged.
+
+Amended by spec 022 (2026-07-22): the facade's `driverFromEnv()` wraps
+the governed driver in the observability instrumentation outermost
+(`instrumentDriver(governDriver(raw, "app"), "app")`), so operation
+counters and spans cover adjudication plus the operation and a kernel
+deny surfaces as an errored child span. The Decision store keeps the
+raw, uninstrumented driver: the enforcement plane's audit trail is not
+traffic.

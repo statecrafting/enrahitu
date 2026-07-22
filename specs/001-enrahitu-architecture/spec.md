@@ -214,6 +214,12 @@ the operator's choice per cell: the in-substrate admin dashboard
 substrate never imposes a monitoring stack, and no cell's choice
 constrains any other's.
 
+Delivered by **spec 022** (2026-07-22): `backend/obs/` carries the
+registry, the tracer, and the bounded in-process trace buffer; the
+health service (this spec's territory) mounts the observation
+middleware like every instrumented sibling, and the model records
+`observability.otel: true` by extraction.
+
 ### 4.6 app-model.json and the phased seam
 
 Every cell carries `app-model.json`: the language-neutral, extracted,

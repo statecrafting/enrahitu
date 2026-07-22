@@ -35,6 +35,8 @@ backend/     The Encore.ts app (spec 019):
   idp/         Same-origin /auth/* passthrough proxy onto rauthy (spec 005)
   web/         Encore static service serving the built SPA (spec 006)
   health/      Liveness + decorator canary (spec 001)
+  kernel/      Kernel-native adjudication + the Decision ledger (spec 021)
+  obs/         /metrics, OTel tracer, bounded trace buffer (spec 022)
 frontend/    Vue 3 + Vite SPA source, builds into backend/web/dist (spec 006)
 docker/      Single-container packaging: Dockerfiles, entrypoint, first-boot (specs 007/008)
 scripts/     docker-build.sh (007), generate-keys.ts (004), sync-dev-rauthy-secret.mjs (005)

@@ -89,3 +89,12 @@ and the auth schema boot in `store.ts` runs inside a
 and adjudicated as `db.migrate`. Deny semantics follow the existing
 typed-error convention (`APIError.permissionDenied` with a
 `KERNEL_DENIED` detail code).
+
+## 6. Observability seam (amended by spec 022, 2026-07-22)
+
+The auth service's middleware chain gains spec 022's `obsMiddleware`
+outermost (`[obsMiddleware, securityHeaders, csrfMiddleware,
+apiRateLimit]`): request spans and the metrics families measure the
+whole chain, including CSRF rejections and rate-limit 429s. The
+middleware is measurement only; auth semantics, ordering of the
+existing three, and the CSRF exemptions are unchanged.

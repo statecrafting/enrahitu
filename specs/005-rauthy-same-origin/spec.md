@@ -87,3 +87,18 @@ The OIDC driver's two outbound round-trips (discovery, code grant)
 adjudicate `http.egress` on resource `rauthy-issuer` at the call site;
 the issuer host itself stays runtime config and never enters the model
 (spec 020 determinism rules).
+
+## 6. Observability seam (amended by spec 022, 2026-07-22)
+
+The idp service mounts spec 022's `obsMiddleware` (its only
+middleware): the `/auth/*` passthrough gets a request span and rides
+the request metrics as service `idp`, endpoint `proxy`, a static
+label pair. The deliberate no-auth-middlewares posture is unchanged:
+observation adds no session, CSRF, or header behavior, and rauthy
+still manages its own.
+
+With observation mounted, the proxy handler awaits the response-body
+pipe (`stream/promises.pipeline`) instead of resolving at pipe start:
+the span and duration histogram measure the flushed response, and a
+mid-stream upstream failure rejects into the handler (response
+destroyed) rather than leaking an unhandled stream error.

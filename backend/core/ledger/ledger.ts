@@ -16,6 +16,7 @@
  */
 
 import { governDriver } from "../../kernel/governed-driver";
+import { instrumentDriver } from "../../obs/instrument";
 
 import type { LedgerDriver, LedgerTx, SqlRow, SqlValue } from "./driver";
 import { rawDriverFromEnv } from "./from-env";
@@ -26,9 +27,10 @@ import { ensureSchema } from "./schema";
 
 // Every driver acquired through the facade is governed (spec 021 §3.5):
 // the raw driver exists only behind this wrap and in the enforcement
-// plane's own Decision store.
+// plane's own Decision store. Instrumentation wraps outermost (spec 022):
+// operation spans and counters cover adjudication plus the operation.
 function driverFromEnv(): LedgerDriver {
-  return governDriver(rawDriverFromEnv(), "app");
+  return instrumentDriver(governDriver(rawDriverFromEnv(), "app"), "app");
 }
 
 export class Ledger {

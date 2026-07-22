@@ -42,13 +42,14 @@
       "1. Purpose",
       "2. Territory",
       "3. Behavior",
-      "4. Out of scope"
+      "4. Out of scope",
+      "Amendment (2026-07-22): repoint fallout in the image path (via spec 022)"
     ],
     "specPath": "specs/007-single-container-packaging/spec.md",
     "status": "approved",
     "summary": "The deliverable image: one container running rauthy (loopback :8081) and the Encore app (:8080) under a die-together entrypoint, all durable state on a single /data volume, every secret self-provisioned at first boot. scripts/docker-build.sh builds from a clean git worktree of HEAD, injects the cross-built addon, the built SPA, and production node_modules, runs `encore build docker`, asserts the base-image entrypoint, and layers rauthy + the entrypoint on top.\n",
     "title": "Single-container packaging: app + rauthy in one image"
   },
-  "shardHash": "87aa21dbd33ca71993415c5cf93d08055cf09506943ffe6cbaa56761709988a0",
+  "shardHash": "6045e93906efd241aac832b9ef7798659115a21874b836d81ab0569ab6903a9e",
   "specVersion": "1.1.0"
 }

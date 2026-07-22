@@ -34,7 +34,12 @@ curl localhost:4000/hiq/health
 curl -X POST localhost:4000/hiq/kv -H 'content-type: application/json' \
   -d '{"key":"hello","value":"world","ttlSecs":60}'
 curl localhost:4000/hiq/kv/hello
+curl localhost:4000/metrics   # Prometheus text format, always on (spec 022)
 ```
+
+OTel traces are on in-process (a bounded recent-trace buffer the spec 023
+admin dashboard reads); set `OTEL_EXPORTER_OTLP_ENDPOINT` to ship spans to
+a collector. Unset means no exporter and no outbound connection.
 
 Requires Node >= 24. The toolchain and the hiqlite addon arrive as prebuilt
 per-platform binaries, so no Rust, cargo, or protoc is needed. The Encore CLI

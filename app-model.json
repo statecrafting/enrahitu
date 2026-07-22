@@ -115,7 +115,7 @@
       {
         "tier": "ts",
         "tool": "enrahitu-extract",
-        "version": "0.2.0"
+        "version": "0.3.0"
       }
     ],
     "verified": true
@@ -128,7 +128,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:92067749fdebafdead1e311800e4ae61d5473769d903c31c1eea7b422bac5d62"
+    "hash": "sha256:609cc78a8dc2026c7266de23f7c08dc08a8e29ca5e5566acdd54057df4b041a5"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -140,7 +140,7 @@
   },
   "observability": {
     "metricsPath": "/metrics",
-    "otel": false
+    "otel": true
   },
   "resources": {
     "counters": [
@@ -400,6 +400,22 @@
         {
           "access": "public",
           "methods": [
+            "GET"
+          ],
+          "name": "metrics",
+          "path": "/metrics",
+          "raw": true
+        }
+      ],
+      "name": "obs",
+      "tier": "ts"
+    },
+    {
+      "capabilities": [],
+      "endpoints": [
+        {
+          "access": "public",
+          "methods": [
             "GET",
             "HEAD"
           ],
@@ -412,7 +428,7 @@
     }
   ],
   "source": {
-    "revision": "9f96ce7ebfbb2c054498a16fa1e3b4897033d380",
+    "revision": "5a3af4b1cb07f332f85a6fc057c714b271fbae87",
     "uncommittedChanges": true
   },
   "trust": {

@@ -4,9 +4,13 @@
 # clean git worktree with production node_modules, the built SPA, the compiled
 # bundle under .encore/build, and the target-arch encore-runtime.node injected
 # at docker/encore-runtime.node).
-FROM node:24-slim
+# trixie-slim, not (bookworm) slim: the published @statecrafting platform
+# carriers build their .node binaries on ubuntu-24.04 runners (glibc 2.39),
+# and bookworm's glibc 2.36 refuses to load them (ERR_DLOPEN_FAILED).
+# Trixie ships glibc 2.41.
+FROM node:24-trixie-slim
 
-# node:24-slim ships no system CA store; the encore-built image injected
+# node slim images ship no system CA store; the encore-built image injected
 # one. Both rauthy (outbound HTTPS at startup) and the app (Turso sync)
 # need it.
 RUN apt-get update -qq \

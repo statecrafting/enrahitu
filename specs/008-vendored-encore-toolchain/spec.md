@@ -122,3 +122,13 @@ This spec drops the `vendor/encore/` edge and keeps `infra.config.dev.json` and
 `docker/Dockerfile.base`, which stay here and which this change still edits. It
 remains the design record of why Encore is vendored (rust core + js runtime via
 napi-rs, no CLI); that reasoning is now realized in the @statecrafting package.
+
+## Amendment (2026-07-22): the base image follows the published carriers' glibc
+
+`docker/Dockerfile.base` moves from `node:24-slim` (bookworm, glibc 2.36)
+to `node:24-trixie-slim` (glibc 2.41): the published @statecrafting
+platform carriers build their native binaries on ubuntu-24.04 runners
+(glibc 2.39), and the pre-repoint bookworm cross-build path left with the
+vendored toolchain, so the base must satisfy the carriers as shipped.
+Details in spec 007's repoint-fallout amendment (2026-07-22); surfaced by
+spec 022's packaged-image acceptance check.

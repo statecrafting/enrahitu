@@ -44,7 +44,9 @@ describe("kernel boot (spec 021 §3.4)", () => {
   });
 
   it("refuses a model whose integrity hash does not match its content", () => {
-    const out = bootInChild(`(m) => { m.observability.otel = true; }`);
+    // Invert rather than set: the committed model records otel: true since
+    // spec 022, and only a real mutation breaks the hash.
+    const out = bootInChild(`(m) => { m.observability.otel = !m.observability.otel; }`);
     expect(out).toMatch(/^REFUSED: kernel-native boot: integrity mismatch/);
   });
 
