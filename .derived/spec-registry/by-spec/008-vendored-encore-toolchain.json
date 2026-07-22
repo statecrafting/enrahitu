@@ -25,13 +25,14 @@
       "2. Territory",
       "3. Behavior",
       "4. Out of scope",
-      "Amendment (2026-07-21): vendor/encore leaves; the toolchain is a published package"
+      "Amendment (2026-07-21): vendor/encore leaves; the toolchain is a published package",
+      "Amendment (2026-07-22): the base image follows the published carriers' glibc"
     ],
     "specPath": "specs/008-vendored-encore-toolchain/spec.md",
     "status": "approved",
     "summary": "The enrahitu fork point: the Encore runtime is vendored (upstream encoredev/encore @ v1.57.9) and driven directly via napi-rs, removing the encore CLI from every flow. vendor/encore/ carries the rust core (runtimes/core), the napi bindings crate (runtimes/js, built into encore-runtime.node), the TS parser/compiler (tsparser, the tsparser-encore binary), miniredis (a core path dependency), and the published encore.dev JS runtime package (the app's encore.dev dep is a file: link into it). The build drivers (build, dev run, esbuild bundling, infra-config augmentation, linux cross-build) were relocated to @enrahitu/toolchain (packages/toolchain/, spec 018); this spec retains the vendored source of record they build from.\n",
     "title": "Vendored Encore toolchain: rust core + js runtime via napi-rs, no CLI"
   },
-  "shardHash": "c030142d4a5f5136bda592343b2a7fd5d126134bd305edb27da67ba6613dd3fb",
+  "shardHash": "390e6bdf008e9979f755f70f5c184bdc8ddd621bfc5801aa4a082b3f7a2a3ae1",
   "specVersion": "1.1.0"
 }
