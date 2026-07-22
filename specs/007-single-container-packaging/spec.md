@@ -112,14 +112,23 @@ prerequisites.
 - TLS termination: external (reverse proxy / platform), signalled via the
   `https` public URL.
 
-## Amendment (2026-07-22): worktree prune of the vitest configs (via spec 022)
+## Amendment (2026-07-22): repoint fallout in the image path (via spec 022)
 
-The published-toolchain repoint (spec 018, PR #25) made the root
-`vitest.config.ts`/`vitest.setup.ts` import `@statecrafting/toolchain`
-to resolve the test runtime; the toolchain is a devDependency, absent
-in the image worktree's `npm ci --omit=dev` install, so the tsparser
-app walk failed to resolve it and the image build broke (unnoticed:
-`image.yml` runs on cron/dispatch, and the last green run predates the
-repoint). `docker-build.sh` now prunes both vitest files from the
-worktree alongside the frontend flavors and `e2e/`: tests never run in
-the image. Surfaced by spec 022's packaged-image acceptance check.
+The published-toolchain repoint (spec 018, PR #25) broke the packaged
+image twice over, unnoticed because `image.yml` runs on cron/dispatch
+and its last green run predates the repoint. Both surfaced by spec
+022's packaged-image acceptance check:
+
+- **Build**: the root `vitest.config.ts`/`vitest.setup.ts` now import
+  `@statecrafting/toolchain` (a devDependency, absent in the image
+  worktree's `npm ci --omit=dev` install), so the tsparser app walk
+  failed to resolve them. `docker-build.sh` prunes both vitest files
+  from the worktree alongside the frontend flavors and `e2e/`: tests
+  never run in the image.
+- **Boot**: the published platform carriers build their `.node`
+  binaries on ubuntu-24.04 runners (glibc 2.39); the base image was
+  bookworm-based `node:24-slim` (glibc 2.36), which refuses to load
+  them (`ERR_DLOPEN_FAILED`). Before the repoint the binaries were
+  cross-built in bookworm; now the published carriers are the source
+  of truth, so the base moves to `node:24-trixie-slim` (glibc 2.41)
+  to match them.
