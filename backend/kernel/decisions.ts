@@ -10,7 +10,7 @@
  * are serialized in-process; denial appends are fire-and-forget so the
  * audit record never adds availability coupling to the request path.
  */
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 import { buildRecord, genesisPayload, verifyChain } from "@statecrafting/kernel-native";
 
@@ -123,7 +123,11 @@ async function initUnlocked(): Promise<void> {
   initialized = true;
 }
 
-async function appendUnlocked(idPrefix: string, decision: EffectDecisionPayload): Promise<void> {
+async function appendUnlocked(
+  idPrefix: string,
+  decision: EffectDecisionPayload,
+  explicitId?: string,
+): Promise<void> {
   const d = store();
   const head = await d.query(
     `SELECT seq, record_hash FROM kernel_decisions ORDER BY seq DESC LIMIT 1`,
@@ -131,7 +135,7 @@ async function appendUnlocked(idPrefix: string, decision: EffectDecisionPayload)
   // The chain is anchored to the booted model (spec 021 §3.6).
   const prevHash = head[0] ? String(head[0].record_hash) : receipt.modelHash;
   const seq = head[0] ? Number(head[0].seq) + 1 : 1;
-  const id = `${idPrefix}-${String(seq).padStart(6, "0")}`;
+  const id = explicitId ?? `${idPrefix}-${String(seq).padStart(6, "0")}`;
   const record = JSON.parse(
     buildRecord(prevHash, id, new Date().toISOString(), JSON.stringify(decision)),
   ) as LedgerRecord;
@@ -147,20 +151,33 @@ export function ensureDecisionLedger(): Promise<void> {
 }
 
 /** Append one Decision (awaitable; used for overrides and tests). */
-export function appendDecision(decision: EffectDecisionPayload): Promise<void> {
+export function appendDecision(decision: EffectDecisionPayload, explicitId?: string): Promise<void> {
   return enqueue(async () => {
     await initUnlocked();
-    await appendUnlocked("decision", decision);
+    await appendUnlocked("decision", decision, explicitId);
   });
 }
 
-/** Fire-and-forget denial append from the request path (spec 021 §3.6). */
+/**
+ * The denial record id, generated before the append so the request path
+ * (and the observability tier, spec 022) knows it synchronously: ids are
+ * the store's to supply (spec 021 §3.6), and a time-plus-entropy id needs
+ * no round trip. The chain's ordering authority stays the table seq.
+ */
+function newDenialId(): string {
+  return `decision-${Date.now().toString(36)}-${randomBytes(4).toString("hex")}`;
+}
+
+/**
+ * Fire-and-forget denial append from the request path (spec 021 §3.6).
+ * Returns the record id the append will carry.
+ */
 export function recordDenial(input: {
   service: string;
   capability: CapabilityRef;
   attributes?: Record<string, unknown>;
   result: Adjudication;
-}): void {
+}): string {
   const payload: EffectDecisionPayload = {
     modelHash: input.result.modelHash,
     gateConfigHash: input.result.configHash,
@@ -175,10 +192,12 @@ export function recordDenial(input: {
     reason: input.result.decision.reason,
     checkIds: input.result.decision.checkIds,
   };
-  void appendDecision(payload).catch(() => {
+  const decisionId = newDenialId();
+  void appendDecision(payload, decisionId).catch(() => {
     // The deny already blocked the operation; a failed audit append must
     // not take the request path down with it.
   });
+  return decisionId;
 }
 
 /** All records in chain order, as attest-ledger native shapes. */

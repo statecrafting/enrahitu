@@ -1,14 +1,4 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '022-observability-contract' directory unit 'backend/obs/' is not a directory",
-        "path": "backend/obs/"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "001-enrahitu-architecture",
@@ -16,10 +6,19 @@
       "019-two-directory-layout",
       "021-kernel-native-consumption"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "backend/obs/",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "backend/obs/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -32,5 +31,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "8d87b74fc5b92b208c9f73b19bf23ae7038ef078ae2aafdeea9c0075a6e71971"
+  "shardHash": "7e27e233516141ba3efef89c53d26b15104424131c23e5ed1ea7603be01edc62"
 }

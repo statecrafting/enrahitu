@@ -107,3 +107,10 @@ keeps that edge and drops only `addon/`. The build-time import ban that kept raw
 addon imports out of everything but `backend/hiq/init.ts` now lives in the
 published toolchain's extractor and targets the new specifier. No spec retires:
 this remains the design record of the in-process hiqlite capability.
+
+## Amendment (2026-07-22): observability seam (spec 022)
+
+The hiq service mounts spec 022's `obsMiddleware` (its only
+middleware): every `/hiq/*` endpoint gets a request span and the
+request metrics families. Facade semantics and the kernel adjudication
+seam are unchanged.

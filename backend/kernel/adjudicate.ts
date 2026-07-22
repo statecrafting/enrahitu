@@ -17,6 +17,7 @@ import { APIError } from "encore.dev/api";
 import { adjudicate as kernelAdjudicate } from "@statecrafting/kernel-native";
 
 import { recordDenial } from "./decisions";
+import { notifyDenial } from "./observe";
 
 const serviceScope = new AsyncLocalStorage<string>();
 
@@ -70,7 +71,15 @@ export function demand(kind: string, resource: string, opts: DemandOptions = {})
   const result = JSON.parse(kernelAdjudicate(JSON.stringify(request))) as Adjudication;
   if (result.decision.outcome === "allow") return;
 
-  recordDenial({ service, capability, attributes: opts.attributes, result });
+  const decisionId = recordDenial({ service, capability, attributes: opts.attributes, result });
+  notifyDenial({
+    decisionId,
+    service,
+    capability,
+    outcome: result.decision.outcome === "degrade" ? "degrade" : "deny",
+    reason: result.decision.reason,
+    checkIds: result.decision.checkIds,
+  });
   throw APIError.permissionDenied(
     `capability ${kind} on '${resource}' denied for service '${service || "<unattributed>"}': ${result.decision.reason}`,
   ).withDetails({
@@ -79,5 +88,6 @@ export function demand(kind: string, resource: string, opts: DemandOptions = {})
     resource,
     service,
     reason: result.decision.reason,
+    decisionId,
   });
 }

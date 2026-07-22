@@ -63,8 +63,11 @@ cp -R backend/web/dist "$WORKTREE/backend/web/dist"
 # flavor directory (the template carries them all, spec 015) so the tsparser
 # app walk never sees their unresolvable imports. The e2e/ suite (spec 017)
 # is dropped for the same reason: its @playwright/test import is a devDep,
-# absent under `npm ci --omit=dev`.
-rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-react" "$WORKTREE/e2e"
+# absent under `npm ci --omit=dev`. Likewise the vitest configs since the
+# published-toolchain repoint (spec 018): they import @statecrafting/toolchain
+# (a devDep) to resolve the runtime for tests, and tests never run in the image.
+rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-react" "$WORKTREE/e2e" \
+  "$WORKTREE/vitest.config.ts" "$WORKTREE/vitest.setup.ts"
 
 echo "==> production node_modules"
 (cd "$WORKTREE" && npm ci --omit=dev --no-fund --no-audit >/dev/null)

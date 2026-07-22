@@ -111,3 +111,15 @@ prerequisites.
   script accepts `arm64`/`amd64` per invocation).
 - TLS termination: external (reverse proxy / platform), signalled via the
   `https` public URL.
+
+## Amendment (2026-07-22): worktree prune of the vitest configs (via spec 022)
+
+The published-toolchain repoint (spec 018, PR #25) made the root
+`vitest.config.ts`/`vitest.setup.ts` import `@statecrafting/toolchain`
+to resolve the test runtime; the toolchain is a devDependency, absent
+in the image worktree's `npm ci --omit=dev` install, so the tsparser
+app walk failed to resolve it and the image build broke (unnoticed:
+`image.yml` runs on cron/dispatch, and the last green run predates the
+repoint). `docker-build.sh` now prunes both vitest files from the
+worktree alongside the frontend flavors and `e2e/`: tests never run in
+the image. Surfaced by spec 022's packaged-image acceptance check.

@@ -3,7 +3,7 @@ id: "022-observability-contract"
 title: "The observability contract: /metrics + OTel, in the substrate"
 status: approved
 created: "2026-07-21"
-implementation: pending
+implementation: complete
 depends_on:
   - "001-enrahitu-architecture"
   - "008-vendored-encore-toolchain"
@@ -94,6 +94,37 @@ with OTLP export as the operator-facing escape hatch.
   observes the wiring, not because anyone edited JSON. The golden
   fixtures and hash anchors regenerate through the sanctioned
   pipeline; a hand-edited model still fails the coupling gate.
+
+### 3.4 Implementation notes (2026-07-22)
+
+Design points fixed at implementation time, recorded so the prose above
+reads precisely:
+
+- **Decision correlation mechanism.** Denial record ids are generated
+  synchronously in the store before the fire-and-forget append (ids are
+  the store's to supply, spec 021 §3.6), and the kernel announces the
+  denial through a registrable observer hook (`backend/kernel/observe.ts`)
+  that the tracer subscribes to: the enforcement plane imports nothing
+  from `backend/obs/`, and the active span gains
+  `enrahitu.decision.id`/`outcome`/`capability`/`reason`. The typed
+  `KERNEL_DENIED` error carries `decisionId` too.
+- **The query surface is a module, not an API.** `backend/obs/traces.ts`
+  exports `listTraces`/`getTrace`/`onTrace` as plain in-process functions,
+  the same convention as `backend/kernel/` and `backend/lib/`: nothing to
+  expose, nothing to gate, and spec 023's admin service imports it
+  directly.
+- **The OTLP exporter's egress sits outside the kernel egress facade.**
+  Operator-enabled infrastructure telemetry configured by env is not
+  app-tier behavior; the ban-list governs `backend/` source, and no
+  `backend/` code performs the export I/O itself.
+- **The web static service is not instrumented.** Static asset serving is
+  not an API request; `web` keeps its no-middleware posture (spec 006
+  caching), and `obs` does not measure itself (a scrape must not fill the
+  buffer with self-observation).
+- **Extraction semantics.** The observed flip is toolchain 0.3.0
+  (statecrafting spec 002 amendment, 2026-07-22): `otel` is observed from
+  the wiring anchor `backend/obs/tracer.ts`, and the manifest's
+  declaration must agree with the observation or extraction fails.
 
 ## 4. Acceptance
 

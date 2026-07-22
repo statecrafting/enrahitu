@@ -354,3 +354,29 @@ states what the cell does, not what the roadmap intends.
 - Multi-node operation and the trust ladder's live scoring: no agents
   exist in this cell's model yet; the machinery boots but stays
   dormant until a spec declares an agent.
+
+## Amendment (2026-07-22): the observability seam lands (spec 022)
+
+Spec 022 delivers the wiring §3.8 deferred; four facts here move with it:
+
+- **§3.2 lowering**: `observability.otel` no longer joins from the
+  manifest. Toolchain 0.3.0 (statecrafting spec 002 amendment,
+  2026-07-22) observes the wiring anchor `backend/obs/tracer.ts` through
+  the same import-walk machinery and emits the observed value;
+  a new verify rule fails extraction when the manifest declaration
+  disagrees. `metricsPath` and every other observability member still
+  join from the manifest.
+- **§3.6 ids**: denial record ids are generated synchronously
+  (time plus entropy, `decision-<ts36>-<hex8>`) before the
+  fire-and-forget append, so the request path knows the id it is
+  refused under; the seq-derived form remains for genesis and awaited
+  appends, and the chain's ordering authority stays the table seq.
+  `demand()` announces each denial (with its id) through
+  `backend/kernel/observe.ts`, a registrable one-observer hook the
+  observability tier subscribes to; the kernel imports nothing from
+  `backend/obs/`, and the typed deny's details gain `decisionId`.
+- **§3.8**: the model now records `{metricsPath: "/metrics",
+  otel: true}`, extracted, exactly as this section promised.
+- **The manifest** gains the `obs` service (no capabilities: the signal
+  plane demands nothing) and declares `observability.otel: true` to
+  match the observation.
