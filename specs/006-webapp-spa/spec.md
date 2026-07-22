@@ -56,3 +56,13 @@ single-container thesis: the app serves its own UI.
 - An interactive rauthy password-login browser click-through remains owed
   from phase 4 verification (rauthy's PoW-gated login form resists headless
   testing); tracked as a verification gap, not a code gap.
+
+## Amendment (2026-07-22): dist-admin joins the web directory (spec 023)
+
+`backend/web/` carries a second built-bundle directory,
+`backend/web/dist-admin/` (the operator dashboard, built by
+`npm run build:web-admin` from `frontend-admin/`), tracked as a dev
+placeholder only, exactly like `dist/`. The web service itself does not
+serve it: `backend/admin/` streams it behind the operator-role gate
+(spec 023 §3.2); the `/!path` fallback and the SPA's own serving are
+unchanged.

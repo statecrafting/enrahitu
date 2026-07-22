@@ -24,13 +24,14 @@
       "1. Purpose",
       "2. Territory",
       "3. Behavior",
-      "4. Out of scope"
+      "4. Out of scope",
+      "Amendment (2026-07-22): dist-admin joins the web directory (spec 023)"
     ],
     "specPath": "specs/006-webapp-spa/spec.md",
     "status": "approved",
     "summary": "The minimal frontend: a Vue 3 + Vite SPA (login, OIDC callback handoff, /me, logout) built from frontend/ into backend/web/dist, and the `web` Encore service that serves the built bundle as static files from the app's own origin. No separate frontend host: the same container serves UI, API, and IdP.\n",
     "title": "Minimal Vue SPA served by the app itself"
   },
-  "shardHash": "dcaf04da5a7604d6b46653c19a79953083fe9a0350400bbc947dc563635e7b40",
+  "shardHash": "5b5089a3dd4db8a5a2e855933d3b037ea958090d5c077af815c49949ee4a44c7",
   "specVersion": "1.1.0"
 }

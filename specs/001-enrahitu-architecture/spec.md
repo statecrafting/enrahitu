@@ -351,3 +351,10 @@ file level (spec 008).
   (downstream repo; its thesis consumes this one).
 - Kubernetes/Helm deployment artifacts: none exist here; deployment is
   fleet-owned by design (spec 009 §3.2).
+
+## Amendment (2026-07-22): root excludes gain frontend-admin (spec 023)
+
+`tsconfig.json` and `vitest.config.ts` (this spec's establishes) exclude
+`frontend-admin/` like the two frontend flavors: the dashboard package
+typechecks and builds under its own manifest (`npm run build:web-admin`),
+never under the root compiler run.

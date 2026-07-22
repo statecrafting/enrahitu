@@ -98,3 +98,20 @@ apiRateLimit]`): request spans and the metrics families measure the
 whole chain, including CSRF rejections and rate-limit 429s. The
 middleware is measurement only; auth semantics, ordering of the
 existing three, and the CSRF exemptions are unchanged.
+
+## 7. Admin gate seams (amended by spec 023, 2026-07-22)
+
+Four lib/auth seams move with the operator dashboard:
+
+- `lib/jwt.ts` splits verification out: `lib/jwt-verify.ts` holds
+  `verifyAccessToken` (+ ISSUER/AUDIENCE and the claims type) and imports
+  only the public-key accessor, so a service that merely verifies
+  sessions declares `secret.read` on `jwt_public_key` alone.
+  `lib/jwt.ts` re-exports it; issuance and refresh handling stay put.
+- `lib/roles.ts` gains `operatorRole()`: the model's `auth.operatorRole`
+  (stamp-time truth), so a stamped app gates on its own name.
+- `lib/env.ts` gains `adminUiEnabled` (`ADMIN_UI_ENABLED`, default true):
+  the spec 023 runtime kill switch.
+- The mock driver gains a fourth principal (`operator@example.com`)
+  holding the model's operator role, so the gate is exercisable without
+  a real IdP.

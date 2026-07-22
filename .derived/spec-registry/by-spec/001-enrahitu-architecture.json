@@ -46,13 +46,14 @@
       "4.7 Dependency posture",
       "4.8 Lineage",
       "5. Sequencing",
-      "6. Out of scope"
+      "6. Out of scope",
+      "Amendment (2026-07-22): root excludes gain frontend-admin (spec 023)"
     ],
     "specPath": "specs/001-enrahitu-architecture/spec.md",
     "status": "approved",
     "summary": "The architecture thesis and the app shell, rewritten ground-up on 2026-07-19 from the grand-refactor realignment. enrahitu is the substrate for governed cells: Encore.ts is kept as the application framework while its managed-infrastructure coupling stays severed (in-process hiqlite, CoreLedger on libSQL/Turso, rauthy inside the app image), and every app built on it is a self-contained governed cell carrying embedded identity, embedded consensus, durable state behind one decorator data layer, a non-negotiable observability contract (Prometheus /metrics + OTel), and one extracted, hash-anchored model (app-model.json, spec 020) of what it contains and what it is permitted to do. The frontend converges React-only: frontend (the user-facing SPA) plus frontend-admin (the flag-gated admin dashboard, gated on the <app>_operator role convention). Enforcement phases in behind the model (Phase A: extraction, kernel adjudication, Decision ledger; Phase B: the Rust effect tier). One Docker image plus one volume is a complete authenticated, observable, governed application. This spec owns the repo-shell units (Encore app manifest, TypeScript and test configuration, the health service) and anchors the root package; subsystems are governed by specs 002-019 and the follow-up specs this rewrite sequences. This repository is enrahitu (EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso; formerly enrahi / enrahi-kit): the Encore toolchain is vendored and driven directly via napi-rs (spec 008), and the repo doubles as the template chassis the Statecraft factory stamps (spec 009).\n",
     "title": "enrahitu: the self-contained governed cell substrate"
   },
-  "shardHash": "a1a8fb2d5e5c977ee2011d2539fdcbf0263d85686c260d72dcdb77d80e54ae39",
+  "shardHash": "e37ec605b6d0c929dad48a9e5569373b6eeb88eaf674a16629d4063b0cc3408b",
   "specVersion": "1.1.0"
 }

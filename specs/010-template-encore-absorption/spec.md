@@ -114,3 +114,7 @@ completion; the implementing specs own the how.
   deleted; its history remains the provenance record).
 - factory-side stamping changes (owned by statecraft's factory spec).
 - Any new capability that template-encore did not already have.
+
+Amended by spec 023 (2026-07-22): the verify workflow installs the
+`frontend-admin/` package alongside the two frontend flavors (parse-walk
+resolution, same as spec 015's flavor installs) and caches its lockfile.

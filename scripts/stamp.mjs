@@ -81,7 +81,22 @@ export function readSlots(templateTomlPath) {
     .filter(Boolean);
   const frontendDefault = frontendLine?.match(/default\s*=\s*"([^"]*)"/)?.[1] ?? null;
 
-  return { appNamePattern: pattern, orgRequired, frontendAllowed, frontendDefault };
+  const adminLine = slotLine(slots, "admin");
+  const adminAllowedRaw = adminLine?.match(/allowed\s*=\s*\[([^\]]*)\]/)?.[1] ?? "";
+  const adminAllowed = adminAllowedRaw
+    .split(",")
+    .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+    .filter(Boolean);
+  const adminDefault = adminLine?.match(/default\s*=\s*"([^"]*)"/)?.[1] ?? null;
+
+  return {
+    appNamePattern: pattern,
+    orgRequired,
+    frontendAllowed,
+    frontendDefault,
+    adminAllowed,
+    adminDefault,
+  };
 }
 
 export function validateSlots(slots, values) {
@@ -97,8 +112,12 @@ export function validateSlots(slots, values) {
   if (slots.frontendAllowed.length > 0 && !slots.frontendAllowed.includes(frontend)) {
     problems.push(`--frontend "${frontend}" is not in the allowed list [${slots.frontendAllowed.join(", ")}]`);
   }
+  const admin = values.admin ?? slots.adminDefault ?? "on";
+  if (slots.adminAllowed.length > 0 && !slots.adminAllowed.includes(admin)) {
+    problems.push(`--admin "${admin}" is not in the allowed list [${slots.adminAllowed.join(", ")}]`);
+  }
   if (problems.length > 0) throw new StampError("validate slots", problems.join("; "));
-  return { ...values, frontend };
+  return { ...values, frontend, admin };
 }
 
 // --- Steps ------------------------------------------------------------------
@@ -176,6 +195,53 @@ function selectFrontendFlavor(root, frontend) {
   return { chosenDir, pruned, rewrote };
 }
 
+// Keep or prune the admin slot (spec 023 §3.1): unlike the frontend flavor's
+// N-way choice, this is a boolean over a directory PAIR (the dashboard source
+// and its backend data plane) plus the built-bundle directory, the two admin
+// script keys, and the app-manifest.json service entry (so a later
+// `extract:model` in the stamped repo stays consistent with the pruned tree;
+// the committed model itself regenerates on the stamped repo's first build,
+// per the staleness gate). Idempotent: a re-run finds everything already gone.
+const ADMIN_PRUNE_DIRS = ["frontend-admin", join("backend", "admin"), join("backend", "web", "dist-admin")];
+const ADMIN_SCRIPT_KEYS = ["build:web-admin", "dev:web-admin"];
+
+function selectAdminSlot(root, admin) {
+  if (admin !== "off") return { kept: true, pruned: [], rewrote: false };
+
+  const pruned = [];
+  for (const dir of ADMIN_PRUNE_DIRS) {
+    const abs = join(root, dir);
+    if (existsSync(abs)) {
+      rmSync(abs, { recursive: true, force: true });
+      pruned.push(dir);
+    }
+  }
+
+  const pkgPath = join(root, "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
+  let rewrote = false;
+  if (pkg.scripts) {
+    for (const key of ADMIN_SCRIPT_KEYS) {
+      if (key in pkg.scripts) {
+        delete pkg.scripts[key];
+        rewrote = true;
+      }
+    }
+  }
+  if (rewrote) writeJson(pkgPath, pkg);
+
+  const manifestPath = join(root, "app-manifest.json");
+  if (existsSync(manifestPath)) {
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    if (manifest.services && "admin" in manifest.services) {
+      delete manifest.services.admin;
+      writeJson(manifestPath, manifest);
+      rewrote = true;
+    }
+  }
+  return { kept: false, pruned, rewrote };
+}
+
 // Place the born-with cert and validate it through the template-owned validator
 // (spec 012). A failing cert fails the stamp; the placed copy is rolled back so
 // a failed stamp never leaves a known-bad cert on disk. Spec 014 §3.4.
@@ -245,6 +311,7 @@ function writeStampedSection(root, info) {
     `- app: \`${info.appName}\``,
     `- org: \`${info.org}\``,
     `- frontend: \`${info.frontend}\``,
+    `- admin: \`${info.admin}\``,
     `- template: enrahitu @ \`${info.templateCommit}\``,
     `- stamped: ${info.date}`,
     "",
@@ -254,7 +321,8 @@ function writeStampedSection(root, info) {
 
 // --- CLI --------------------------------------------------------------------
 const USAGE = `Usage: node scripts/stamp.mjs --app-name <name> --org <org> \\
-  [--frontend vue] [--cert <path-to-born-with.json>] [--stamped-from <template-commit-sha>]
+  [--frontend vue] [--admin on|off] [--cert <path-to-born-with.json>] \\
+  [--stamped-from <template-commit-sha>]
 
 Stamp a fresh clone of the enrahitu template into a named app (spec 014).`;
 
@@ -271,6 +339,7 @@ function parseArgs(argv) {
       case "--app-name": out.appName = next(); break;
       case "--org": out.org = next(); break;
       case "--frontend": out.frontend = next(); break;
+      case "--admin": out.admin = next(); break;
       case "--cert": out.cert = next(); break;
       case "--stamped-from": out.stampedFrom = next(); break;
       case "-h":
@@ -293,6 +362,7 @@ export function main(argv, now = new Date()) {
 
   substituteAppName(repoRoot, values.appName);
   const flavor = selectFrontendFlavor(repoRoot, values.frontend);
+  const adminSlot = selectAdminSlot(repoRoot, values.admin);
   const certDest = args.cert ? placeCert(repoRoot, args.cert) : null;
   const derived = regenerateDerived(repoRoot);
   const templateCommit = resolveTemplateCommit(repoRoot, args.stampedFrom);
@@ -301,6 +371,7 @@ export function main(argv, now = new Date()) {
     appName: values.appName,
     org: values.org,
     frontend: values.frontend,
+    admin: values.admin,
     templateCommit,
     date,
   });
@@ -311,6 +382,11 @@ export function main(argv, now = new Date()) {
     `  frontend -> ${flavor.chosenDir}/${
       flavor.pruned.length ? ` (pruned ${flavor.pruned.join(", ")})` : ""
     }${flavor.rewrote ? "; build:web/dev:web repointed" : ""}`,
+  );
+  console.log(
+    adminSlot.kept
+      ? "  admin -> on (dashboard kept)"
+      : `  admin -> off${adminSlot.pruned.length ? ` (pruned ${adminSlot.pruned.join(", ")})` : " (already pruned)"}`,
   );
   if (certDest) console.log(`  provenance cert -> ${certDest} (validated)`);
   console.log(

@@ -1,19 +1,4 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '023-frontend-admin' directory unit 'frontend-admin/' is not a directory",
-        "path": "frontend-admin/"
-      },
-      {
-        "code": "W-001",
-        "message": "spec '023-frontend-admin' directory unit 'backend/admin/' is not a directory",
-        "path": "backend/admin/"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "001-enrahitu-architecture",
@@ -24,10 +9,23 @@
       "019-two-directory-layout",
       "022-observability-contract"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "backend/admin/",
+        "source": "spec-edge"
+      },
+      {
+        "path": "frontend-admin/",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "backend/admin/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -36,7 +34,11 @@
         }
       },
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "frontend-admin/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -49,5 +51,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "e9c84064a9d5f0a4022b8c815b3ff0e0b13345729372d797c7eff9036db35f39"
+  "shardHash": "f7e17844c62584e01669a1c1b29da4d9746bcdc53cfd8b3a68c5557e1fb47580"
 }

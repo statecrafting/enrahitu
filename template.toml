@@ -13,8 +13,9 @@ license = "Apache-2.0"
 # a breaking change to this file's shape bumps the major. v0.2 added the
 # optional [requires].toolchain key (spec 018); v0.3 added the [provenance]
 # table (spec 012); v0.4 added the scaffold verb (spec 014); v0.5 added the
-# react-rr7 frontend flavor (spec 015). Each is a minor bump per spec 009 §3.1.
-version = "0.5.0"
+# react-rr7 frontend flavor (spec 015); v0.6 added the admin slot (spec 023).
+# Each is a minor bump per spec 009 §3.1.
+version = "0.6.0"
 
 [requires]
 node = ">=24"
@@ -25,7 +26,7 @@ node = ">=24"
 # the prebuilt addon (statecrafting spec 003). The template and a stamped app
 # consume the same published packages; neither builds Encore or the addon from
 # source, so no Rust or protoc toolchain is required to build.
-toolchain = "^0.2"
+toolchain = "^0.3"
 
 [slots]
 # Values the factory substitutes at stamp time.
@@ -36,6 +37,12 @@ org = { required = true }
 # vue -> frontend/, react-rr7 -> frontend-react/. The chassis carries every
 # flavor; a stamped app carries exactly one.
 frontend = { default = "vue", allowed = ["vue", "react-rr7"] }
+# admin (contract v0.6, spec 023): whether the stamped app carries the
+# flag-gated operator dashboard (frontend-admin/ + backend/admin/, served
+# same-origin under /admin, gated on the <app>_operator role). "off" prunes
+# both directories; ADMIN_UI_ENABLED=false is the separate runtime kill
+# switch where stamped on.
+admin = { default = "on", allowed = ["on", "off"] }
 
 [verbs]
 # Commands the factory runs inside a stamped repo. Exit code is the verdict.

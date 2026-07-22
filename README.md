@@ -37,9 +37,14 @@ curl localhost:4000/hiq/kv/hello
 curl localhost:4000/metrics   # Prometheus text format, always on (spec 022)
 ```
 
-OTel traces are on in-process (a bounded recent-trace buffer the spec 023
-admin dashboard reads); set `OTEL_EXPORTER_OTLP_ENDPOINT` to ship spans to
+OTel traces are on in-process (a bounded recent-trace buffer the admin
+dashboard reads); set `OTEL_EXPORTER_OTLP_ENDPOINT` to ship spans to
 a collector. Unset means no exporter and no outbound connection.
+
+The flag-gated operator dashboard (spec 023) serves same-origin at
+`/admin` (build it with `npm run build:web-admin`), gated server-side on
+the `enrahitu_operator` role; `ADMIN_UI_ENABLED=false` is the runtime
+kill switch, and the template.toml `admin` slot prunes it at stamp time.
 
 Requires Node >= 24. The toolchain and the hiqlite addon arrive as prebuilt
 per-platform binaries, so no Rust, cargo, or protoc is needed. The Encore CLI

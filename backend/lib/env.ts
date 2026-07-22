@@ -47,6 +47,10 @@ export const env = {
   frontendUrl: strOr("FRONTEND_URL", "http://localhost:5173"),
   logPii: bool("LOG_PII", false),
 
+  // The admin dashboard runtime kill switch (spec 023 §3.1): false serves
+  // 404 on /admin and /api/admin/* even where the stamp kept the slot.
+  adminUiEnabled: bool("ADMIN_UI_ENABLED", true),
+
   // rauthy (OIDC) non-secret config; provider metadata is discovered from
   // RAUTHY_ISSUER (.well-known/openid-configuration). In the enrahitu container
   // the issuer is same-origin, served through the idp proxy (Phase 3).

@@ -114,3 +114,16 @@ intentionally absent from v0 rather than present-but-lying.
   one chassis for now.
 - Slot substitution mechanics inside the factory (owned by statecraft's
   factory spec, which consumes this contract).
+
+## Amendment (2026-07-22): contract v0.6, the admin slot (spec 023)
+
+`[slots]` gains `admin = { default = "on", allowed = ["on", "off"] }`: an
+additive minor bump to **0.6.0** per §3.1. The slot decides whether a stamp
+carries the flag-gated operator dashboard pair (`frontend-admin/` +
+`backend/admin/`, spec 023); the scaffold verb's keep-or-prune implements
+it (spec 014 amendment of the same date). `[requires].toolchain` moves to
+`"^0.3"` in the same edit: the app-model extractor's observability
+derivation (statecrafting spec 002 amendment, consumed by spec 022) is the
+toolchain the chassis actually builds with. Cross-repo: the factory's
+reader (statecraft spec 005) tolerates or adopts 0.6 before pinning a
+template release that carries it (spec 023 acceptance 4).

@@ -30,6 +30,24 @@ function makeTree(): string {
   mkdirSync(join(dir, "frontend-react"), { recursive: true });
   writeFileSync(join(dir, "frontend", "marker.txt"), "vue flavor\n");
   writeFileSync(join(dir, "frontend-react", "marker.txt"), "react flavor\n");
+  // The admin slot pair + built bundle (spec 023).
+  mkdirSync(join(dir, "frontend-admin"), { recursive: true });
+  mkdirSync(join(dir, "backend", "admin"), { recursive: true });
+  mkdirSync(join(dir, "backend", "web", "dist-admin"), { recursive: true });
+  writeFileSync(join(dir, "frontend-admin", "marker.txt"), "admin spa\n");
+  writeFileSync(join(dir, "backend", "admin", "marker.txt"), "admin service\n");
+  writeFileSync(join(dir, "backend", "web", "dist-admin", "index.html"), "placeholder\n");
+  writeFileSync(
+    join(dir, "app-manifest.json"),
+    `${JSON.stringify(
+      {
+        app: { name: "enrahitu", org: "statecrafting" },
+        services: { admin: { tier: "ts", capabilities: [] }, web: { tier: "ts", capabilities: [] } },
+      },
+      null,
+      2,
+    )}\n`,
+  );
   writeFileSync(
     join(dir, "package.json"),
     `${JSON.stringify(
@@ -41,6 +59,8 @@ function makeTree(): string {
           dev: "enrahitu-dev",
           "build:web": "npm --prefix frontend run build",
           "dev:web": "npm --prefix frontend run dev",
+          "build:web-admin": "npm --prefix frontend-admin run build",
+          "dev:web-admin": "npm --prefix frontend-admin run dev",
         },
       },
       null,
@@ -197,6 +217,54 @@ describe("stamp: frontend flavor selection", () => {
     expect(readJson(dir, "package.json").scripts["build:web"]).toBe(
       "npm --prefix frontend-react run build",
     );
+  });
+});
+
+describe("stamp: admin slot (spec 023)", () => {
+  it("keeps the admin pair by default and records it in the lineage", () => {
+    const dir = tree();
+    const { status, stdout } = stamp(dir, HAPPY);
+    expect(status).toBe(0);
+    expect(stdout).toContain("admin -> on");
+    expect(dirExists(dir, "frontend-admin")).toBe(true);
+    expect(dirExists(dir, "backend/admin")).toBe(true);
+    expect(readJson(dir, "package.json").scripts["build:web-admin"]).toBeDefined();
+    expect(readText(dir, "README.md")).toContain("- admin: `on`");
+  });
+
+  it("prunes both directories, the bundle, the scripts, and the manifest entry when off", () => {
+    const dir = tree();
+    const { status, stdout } = stamp(dir, [...HAPPY, "--admin", "off"]);
+    expect(status).toBe(0);
+    expect(stdout).toContain("admin -> off");
+    expect(dirExists(dir, "frontend-admin")).toBe(false);
+    expect(dirExists(dir, "backend/admin")).toBe(false);
+    expect(dirExists(dir, "backend/web/dist-admin")).toBe(false);
+    // The rest of backend/ survives the prune.
+    expect(dirExists(dir, "backend/web")).toBe(true);
+    const pkg = readJson(dir, "package.json");
+    expect(pkg.scripts["build:web-admin"]).toBeUndefined();
+    expect(pkg.scripts["dev:web-admin"]).toBeUndefined();
+    expect(pkg.scripts["build:web"]).toBeDefined();
+    const manifest = readJson(dir, "app-manifest.json");
+    expect(manifest.services.admin).toBeUndefined();
+    expect(manifest.services.web).toBeDefined();
+    expect(readText(dir, "README.md")).toContain("- admin: `off`");
+  });
+
+  it("rejects a value outside the allowed list", () => {
+    const dir = tree();
+    const { status, stderr } = stamp(dir, [...HAPPY, "--admin", "maybe"]);
+    expect(status).not.toBe(0);
+    expect(stderr).toContain('--admin "maybe" is not in the allowed list');
+  });
+
+  it("is idempotent: a second --admin off run finds everything already pruned", () => {
+    const dir = tree();
+    expect(stamp(dir, [...HAPPY, "--admin", "off"]).status).toBe(0);
+    const again = stamp(dir, [...HAPPY, "--admin", "off"]);
+    expect(again.status).toBe(0);
+    expect(again.stdout).toContain("admin -> off (already pruned)");
   });
 });
 

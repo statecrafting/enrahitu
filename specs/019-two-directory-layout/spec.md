@@ -154,3 +154,13 @@ Neither is producible from this source repo; the layout's docker impact
 (`backend/web/dist`, and `docker-build.sh` updated to copy it and drop
 `frontend/` from the worktree) is resolved at parse time and covered by the
 local build. Marked complete on maintainer direction.
+
+## Amendment (2026-07-22): the deliberate third sibling (spec 023)
+
+The two-directory claim gains its planned exception: `frontend-admin/`
+(the operator dashboard SPA) joins `frontend/` as a top-level sibling,
+flag-gated by the template.toml `admin` slot and prunable at stamp time
+together with its `backend/admin/` data plane. Everything else about the
+layout is unchanged: backend concerns stay under `backend/` (the admin
+service included), and the dashboard builds into `backend/web/dist-admin/`
+the same way the SPA builds into `backend/web/dist/`.
