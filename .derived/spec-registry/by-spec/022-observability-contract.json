@@ -1,0 +1,36 @@
+{
+  "record": {
+    "created": "2026-07-21",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "008-vendored-encore-toolchain",
+      "019-two-directory-layout",
+      "021-kernel-native-consumption"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "backend/obs/"
+      }
+    ],
+    "id": "022-observability-contract",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "022: The observability contract",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 Metrics",
+      "3.2 Traces",
+      "3.3 The model tells the truth",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/022-observability-contract/spec.md",
+    "status": "approved",
+    "summary": "Builds the observability contract that spec 001 section 4.5 declares and spec 021 section 3.8 deliberately deferred: every enrahitu app exposes a Prometheus /metrics endpoint and OTel traces as a non-negotiable substrate capability, recorded truthfully in app-model.json (observability.otel flips to true). The substrate has no Encore daemon (spec 008 vendored the toolchain without the CLI), so traces must live somewhere the app itself owns: alongside the OTLP exporter (off by default, env-configured) the app keeps a bounded in-process trace buffer that downstream surfaces (the spec 023 admin dashboard) query same-origin. The contract deliberately stops at the signals: what scrapes /metrics or receives OTLP is the operator's choice per cell, never a template stack choice.\n",
+    "title": "The observability contract: /metrics + OTel, in the substrate"
+  },
+  "shardHash": "c70f5634766051652188e897727676f3ee6794b817fa00cdb45e2d223a2a24c8",
+  "specVersion": "1.1.0"
+}

@@ -1,0 +1,45 @@
+{
+  "record": {
+    "created": "2026-07-21",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "004-auth-core",
+      "005-rauthy-same-origin",
+      "009-template-contract",
+      "015-react-rr7-flavor",
+      "019-two-directory-layout",
+      "022-observability-contract"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "frontend-admin/"
+      },
+      {
+        "kind": "directory",
+        "path": "backend/admin/"
+      }
+    ],
+    "id": "023-frontend-admin",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "023: frontend-admin",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 The flag (stamp-time and runtime)",
+      "3.2 The gate",
+      "3.3 The data plane",
+      "3.4 The surfaces (v1)",
+      "3.5 Provenance rules for the lift",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/023-frontend-admin/spec.md",
+    "status": "approved",
+    "summary": "The first-class admin dashboard spec 001 section 4.4 promises: an encore.dev-style operator surface, recreated from the dashapp reference (~/DevWork/dashapp), served same-origin by the app itself, gated server-side on the <app>_operator role, and flag-gated so the end-user of a stamped app chooses whether it exists at all. dashapp talked WebSocket JSON-RPC to the Encore daemon; the substrate has no daemon, so the dashboard's data plane is a new backend/admin service reading the app's own truth: app-model.json and the runtime route registry for the catalog and API explorer, the spec 022 trace buffer for traces. The lift is a recreation, not a copy: dashapp's own code is relicensed into the template by its author, while every Encore-owned asset (fonts, logos, wordmarks, Go snippets, generated protobuf types, brand design tokens) is excluded and replaced. statecraft adopts the result as its platform operator dashboard (statecraft spec 012); every stamped app inherits it at stamp time.\n",
+    "title": "frontend-admin: the flag-gated admin dashboard"
+  },
+  "shardHash": "714ba429a69cfabcd5ce457d49e8d7e90b6440db5fd6a0d977a901c30c5af351",
+  "specVersion": "1.1.0"
+}

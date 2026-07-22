@@ -1,0 +1,53 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '023-frontend-admin' directory unit 'frontend-admin/' is not a directory",
+        "path": "frontend-admin/"
+      },
+      {
+        "code": "W-001",
+        "message": "spec '023-frontend-admin' directory unit 'backend/admin/' is not a directory",
+        "path": "backend/admin/"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "004-auth-core",
+      "005-rauthy-same-origin",
+      "009-template-contract",
+      "015-react-rr7-flavor",
+      "019-two-directory-layout",
+      "022-observability-contract"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "backend/admin/"
+        }
+      },
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "frontend-admin/"
+        }
+      }
+    ],
+    "specId": "023-frontend-admin",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "c6c86bc5d3fe3b00646c246c51e5120f1a40de15bbf365049006055bf0868e01"
+}
