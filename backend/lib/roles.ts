@@ -6,6 +6,18 @@
  */
 import { APIError } from "encore.dev/api";
 
+import { modelJson } from "../kernel/boot";
+
+/**
+ * The <app>_operator role convention (spec 001 §4.4, spec 023): read from
+ * the booted model's auth.operatorRole so a stamped app gates on its own
+ * name, never on a string frozen at template time.
+ */
+export function operatorRole(): string {
+  const model = JSON.parse(modelJson) as { auth?: { operatorRole?: string } };
+  return model.auth?.operatorRole ?? "enrahitu_operator";
+}
+
 export function hasRole(roles: string[], required: string | string[]): boolean {
   const needed = Array.isArray(required) ? required : [required];
   if (needed.length === 0) return true;

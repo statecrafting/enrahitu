@@ -11,25 +11,18 @@ import { createHash, randomUUID } from "node:crypto";
 import jwt from "jsonwebtoken";
 import type { JwtPayload } from "jsonwebtoken";
 
-import {
-  accessPrivateKey,
-  accessPublicKey,
-  refreshPrivateKey,
-  refreshPublicKey,
-} from "./secrets";
+import { accessPrivateKey, refreshPrivateKey, refreshPublicKey } from "./secrets";
 
-const ISSUER = "enrahitu";
-const AUDIENCE = "enrahitu-spa";
+import { AUDIENCE, ISSUER } from "./jwt-verify";
+
+// Verification lives in jwt-verify.ts (public key only, spec 023 gate);
+// re-exported here so issuance-side consumers keep one import surface.
+export { verifyAccessToken } from "./jwt-verify";
+export type { AccessTokenClaims } from "./jwt-verify";
+import type { AccessTokenClaims } from "./jwt-verify";
+
 const ACCESS_TTL_SECONDS = 15 * 60;
 const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;
-
-export interface AccessTokenClaims {
-  userID: string;
-  email: string;
-  name: string;
-  roles: string[];
-  ssoProvider: string;
-}
 
 export interface RefreshTokenClaims {
   userID: string;
@@ -72,21 +65,6 @@ export async function signRefreshToken(userID: string): Promise<SignedRefreshTok
     expiresIn: REFRESH_TTL_SECONDS,
   });
   return { token, jti, expiresAt: new Date(Date.now() + REFRESH_TTL_SECONDS * 1000) };
-}
-
-export async function verifyAccessToken(token: string): Promise<AccessTokenClaims> {
-  const payload = jwt.verify(token, accessPublicKey(), {
-    algorithms: ["RS256"],
-    issuer: ISSUER,
-    audience: AUDIENCE,
-  }) as JwtPayload;
-  return {
-    userID: typeof payload.sub === "string" ? payload.sub : "",
-    email: typeof payload.email === "string" ? payload.email : "",
-    name: typeof payload.name === "string" ? payload.name : "",
-    roles: Array.isArray(payload.roles) ? (payload.roles as string[]) : [],
-    ssoProvider: typeof payload.ssoProvider === "string" ? payload.ssoProvider : "",
-  };
 }
 
 export async function verifyRefreshToken(token: string): Promise<RefreshTokenClaims> {

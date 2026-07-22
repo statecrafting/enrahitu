@@ -1,11 +1,13 @@
 /**
- * Mock SSO driver (development/test only). Provides three principals so each
- * default role can be exercised without a real IdP. Disabled in production.
+ * Mock SSO driver (development/test only). Provides four principals so each
+ * default role, including the operator plane (spec 023), can be exercised
+ * without a real IdP. Disabled in production.
  */
 import { api } from "encore.dev/api";
 
 import { env } from "../lib/env";
 import { withinAuthRateLimit } from "../lib/rate-limit";
+import { operatorRole } from "../lib/roles";
 
 import { clientIp, redirect, requestUrl, userAgent } from "./http";
 import { finalizeLogin, frontendUrl } from "./service";
@@ -39,6 +41,16 @@ const MOCK_USERS: SSOProfile[] = [
     name: "Devon Developer",
     roles: ["user", "developer"],
     attributes: { department: "Engineering" },
+  },
+  {
+    ssoProvider: "mock",
+    ssoProviderId: "mock-operator",
+    email: "operator@example.com",
+    name: "Ollie Operator",
+    // The model's own operator role (spec 023): enrahitu_operator here,
+    // <app>_operator in a stamped cell.
+    roles: ["user", operatorRole()],
+    attributes: { department: "Operations" },
   },
 ];
 

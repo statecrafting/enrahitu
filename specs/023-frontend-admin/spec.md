@@ -3,7 +3,7 @@ id: "023-frontend-admin"
 title: "frontend-admin: the flag-gated admin dashboard"
 status: approved
 created: "2026-07-21"
-implementation: pending
+implementation: complete
 depends_on:
   - "001-enrahitu-architecture"
   - "004-auth-core"
@@ -128,6 +128,18 @@ Two facts force a recreation rather than a lift-and-rename:
   kernel's ordinary adjudication like any other request; the admin
   surface grants no bypass.
 
+  Amended 2026-07-22 (implementation): the caller is a dashboard
+  (frontend) concern, not a `backend/admin/` endpoint. The daemon's
+  `api-call` existed because dashapp's browser was a different origin
+  from the app; here the dashboard is same-origin and the browser
+  already holds the operator's session cookie, so the caller issues a
+  plain credentialed `fetch` to the target endpoint and measures
+  status/body/timing itself. A server-side replay would be strictly
+  worse: it would forward cookies through a second hop and need an
+  egress-seam exception (`fetch` in `backend/` is ban-listed outside
+  the kernel facade). Adjudication and tracing see the operator's
+  real request either way.
+
 ### 3.4 The surfaces (v1)
 
 Recreated from dashapp, in priority order: **Overview** (new, the
@@ -174,6 +186,16 @@ WebSocket transport (plain HTTP + SSE here).
    truthfully; hand-editing it still fails the gate.
 6. Verify verbs and spec-spine gates green; the packaged image serves
    the dashboard identically to the dev run.
+
+### 4.1 Status (2026-07-22)
+
+Acceptance 4's cross-repo arm holds by tolerance: the statecraft
+factory's reader supports the whole major-0 contract range
+(`>=0.1.0 <1.0.0`, statecraft spec 005 §4), so contract 0.6.0 passes it
+unchanged, and an older reader that ignores the `admin` slot stamps
+with the default (`on`). Statecraft's own pinned-template fixture and
+its adoption of the dashboard remain statecraft spec 012's work, out of
+scope here (§5).
 
 ## 5. Out of scope
 

@@ -42,6 +42,12 @@ fi
 
 echo "==> building SPA"
 npm run build:web
+# The admin dashboard bundle (spec 023): built when the slot is present; a
+# stamped app with admin = "off" carries neither the directory nor the script.
+if [ -d frontend-admin ]; then
+  echo "==> building admin dashboard"
+  npm run build:web-admin
+fi
 
 WORKTREE="$(mktemp -d /tmp/enrahitu-image-XXXXXX)"
 SCRATCH=""
@@ -58,6 +64,10 @@ git worktree add --detach "$WORKTREE" HEAD >/dev/null
 echo "==> injecting SPA build"
 rm -rf "$WORKTREE/backend/web/dist"
 cp -R backend/web/dist "$WORKTREE/backend/web/dist"
+if [ -d frontend-admin ] && [ -d backend/web/dist-admin ]; then
+  rm -rf "$WORKTREE/backend/web/dist-admin"
+  cp -R backend/web/dist-admin "$WORKTREE/backend/web/dist-admin"
+fi
 # The SPA source is not part of the image (backend/web/dist is prebuilt) and
 # its devDependencies are not installed in the worktree; drop every frontend
 # flavor directory (the template carries them all, spec 015) so the tsparser
@@ -66,8 +76,8 @@ cp -R backend/web/dist "$WORKTREE/backend/web/dist"
 # absent under `npm ci --omit=dev`. Likewise the vitest configs since the
 # published-toolchain repoint (spec 018): they import @statecrafting/toolchain
 # (a devDep) to resolve the runtime for tests, and tests never run in the image.
-rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-react" "$WORKTREE/e2e" \
-  "$WORKTREE/vitest.config.ts" "$WORKTREE/vitest.setup.ts"
+rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-react" "$WORKTREE/frontend-admin" \
+  "$WORKTREE/e2e" "$WORKTREE/vitest.config.ts" "$WORKTREE/vitest.setup.ts"
 
 echo "==> production node_modules"
 (cd "$WORKTREE" && npm ci --omit=dev --no-fund --no-audit >/dev/null)

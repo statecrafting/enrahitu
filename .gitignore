@@ -309,6 +309,11 @@ encore.gen/
 !backend/web/dist/
 backend/web/dist/*
 !backend/web/dist/index.html
+# Same pattern for the admin dashboard bundle (frontend-admin/ builds here,
+# spec 023): track only the dev placeholder.
+!backend/web/dist-admin/
+backend/web/dist-admin/*
+!backend/web/dist-admin/index.html
 ### enrahitu
 # The vendored encore.dev JS runtime is the published npm artifact: its
 # built dist/ IS the runtime and must be tracked. The Node template's

@@ -21,13 +21,14 @@
       "3.1 Contract shape (v0.1)",
       "3.2 Verb semantics",
       "3.3 Provenance hooks",
-      "4. Out of scope"
+      "4. Out of scope",
+      "Amendment (2026-07-22): contract v0.6, the admin slot (spec 023)"
     ],
     "specPath": "specs/009-template-contract/spec.md",
     "status": "approved",
     "summary": "The explicit, versioned interface between this template and the Statecraft factory. The factory learns how to stamp, verify, and package an app from this chassis by reading template.toml and nothing else. This replaces the implicit coupling that plagued the factory-encore / template-encore pair, where the shared assumption (the encore CLI, plus folklore about repo layout) lived in two codebases at once and drift surfaced only at stamp time. v0 shipped the contract file with verify and package verbs live; scaffold landed with the repoInit absorption (spec 014, contract 0.4.0) and deploy is permanently fleet-owned.\n",
     "title": "The versioned template contract (template.toml)"
   },
-  "shardHash": "9e4ab5450dd6fd557976f6a4dc8482fcd0b9f05a0291296d504facb41e7de609",
+  "shardHash": "f818087b26950ed0017d69a41d279a90fb3c316cf6212210d1a67d374e3ebd27",
   "specVersion": "1.1.0"
 }

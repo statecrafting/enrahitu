@@ -380,3 +380,11 @@ Spec 022 delivers the wiring §3.8 deferred; four facts here move with it:
 - **The manifest** gains the `obs` service (no capabilities: the signal
   plane demands nothing) and declares `observability.otel: true` to
   match the observation.
+
+## Amendment (2026-07-22b): the admin service joins the manifest (spec 023)
+
+`app-manifest.json` gains the `admin` service with the narrow ceiling
+`["cap.secret.jwt-public"]`: the dashboard gate verifies access tokens
+(public key only, through the spec 004 jwt-verify split) and demands
+nothing else. The model re-extracts under the same pipeline; a stamp
+with `admin = "off"` removes the entry at scaffold time (spec 014).

@@ -23,6 +23,8 @@
     "dev:idp-secret": "node scripts/sync-dev-rauthy-secret.mjs",
     "dev:web": "npm --prefix frontend run dev",
     "build:web": "npm --prefix frontend run build",
+    "dev:web-admin": "npm --prefix frontend-admin run dev",
+    "build:web-admin": "npm --prefix frontend-admin run build",
     "test:e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "dependencies": {

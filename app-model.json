@@ -128,7 +128,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:609cc78a8dc2026c7266de23f7c08dc08a8e29ca5e5566acdd54057df4b041a5"
+    "hash": "sha256:6255918de6823eb0e2aaaa0c394dff4e7b5d707caeff8ac36be71aa4df033b17"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -178,6 +178,74 @@
     ]
   },
   "services": [
+    {
+      "capabilities": [
+        "cap.secret.jwt-public"
+      ],
+      "endpoints": [
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "adminAssets",
+          "path": "/admin/*rest",
+          "raw": true
+        },
+        {
+          "access": "public",
+          "methods": [
+            "GET"
+          ],
+          "name": "adminIndex",
+          "path": "/admin",
+          "raw": true
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "catalog",
+          "path": "/api/admin/catalog"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "overview",
+          "path": "/api/admin/overview"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "traceDetail",
+          "path": "/api/admin/traces/:id"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "traceStream",
+          "path": "/api/admin/traces/stream/live",
+          "raw": true
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "traces",
+          "path": "/api/admin/traces"
+        }
+      ],
+      "name": "admin",
+      "tier": "ts"
+    },
     {
       "capabilities": [
         "cap.counter.rate-limit.add",
@@ -428,7 +496,7 @@
     }
   ],
   "source": {
-    "revision": "5a3af4b1cb07f332f85a6fc057c714b271fbae87",
+    "revision": "8b53b7711e8b64ca78fb7d306e822bee513974ad",
     "uncommittedChanges": true
   },
   "trust": {

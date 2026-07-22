@@ -37,7 +37,9 @@ backend/     The Encore.ts app (spec 019):
   health/      Liveness + decorator canary (spec 001)
   kernel/      Kernel-native adjudication + the Decision ledger (spec 021)
   obs/         /metrics, OTel tracer, bounded trace buffer (spec 022)
+  admin/       Operator dashboard data plane + gated /admin serving (spec 023)
 frontend/    Vue 3 + Vite SPA source, builds into backend/web/dist (spec 006)
+frontend-admin/  React+RR7 operator dashboard, builds into backend/web/dist-admin (spec 023)
 docker/      Single-container packaging: Dockerfiles, entrypoint, first-boot (specs 007/008)
 scripts/     docker-build.sh (007), generate-keys.ts (004), sync-dev-rauthy-secret.mjs (005)
 .derived/    Compiler output (committed shards; build-meta.json gitignored)
@@ -71,6 +73,7 @@ npm run typecheck      # tsc --noEmit
 npm test               # vitest (runtime resolved from the toolchain platform package)
 npm run dev:idp        # dev rauthy via docker compose (spec 005)
 npm run build:web      # build the SPA into backend/web/dist
+npm run build:web-admin  # build the operator dashboard into backend/web/dist-admin
 scripts/docker-build.sh arm64                 # the full single-container image (specs 007/008)
 
 spec-spine compile    # specs -> .derived/spec-registry/by-spec/

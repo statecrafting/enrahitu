@@ -143,3 +143,17 @@ benign: an absent standalone package and an unimplemented `establishes` unit
 are index-render diagnostics, not `compile`/`index`/`lint` failures, so the
 stamped app's spine gates stay green without the stamp editing governance
 files. Verified empirically before the change.
+
+## Amendment (2026-07-22): the admin slot keep-or-prune (spec 023)
+
+`scripts/stamp.mjs` gains `--admin on|off` (default from template.toml,
+contract v0.6). Unlike the frontend flavor's N-way directory choice, this
+is a boolean over a pair plus their artifacts: `off` prunes
+`frontend-admin/`, `backend/admin/`, and `backend/web/dist-admin/`, drops
+the `build:web-admin`/`dev:web-admin` script keys, and removes the
+`admin` entry from `app-manifest.json` services so a later extraction in
+the stamped repo agrees with the pruned tree (the committed model itself
+regenerates on the stamped repo's first build under the staleness gate;
+stamping stays install-free per §3.2). The lineage marker records the
+slot value. Idempotent like every other step: a re-run finds everything
+already pruned.

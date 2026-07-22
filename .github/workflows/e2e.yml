@@ -35,11 +35,13 @@ jobs:
             package-lock.json
             frontend/package-lock.json
             frontend-react/package-lock.json
+            frontend-admin/package-lock.json
       - run: npm ci
       # Both flavors: the Encore parse walk (build:app) resolves every flavor's
       # vite.config imports (same reason as verify.yml).
       - run: npm --prefix frontend ci
       - run: npm --prefix frontend-react ci
+      - run: npm --prefix frontend-admin ci
       - name: Build app (generates encore.gen)
         run: npm run build:app
       - name: Build the SPA (-> backend/web/dist)

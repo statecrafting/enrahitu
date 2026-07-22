@@ -39,6 +39,10 @@
     { "id": "cap.secret.rauthy-client", "kind": "secret.read", "resource": "rauthy_client_secret" }
   ],
   "services": {
+    "admin": {
+      "tier": "ts",
+      "capabilities": ["cap.secret.jwt-public"]
+    },
     "auth": {
       "tier": "ts",
       "capabilities": [

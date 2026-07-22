@@ -14,5 +14,5 @@
       "~encore/*": ["./encore.gen/*"]
     }
   },
-  "exclude": ["node_modules", "encore.gen", "frontend", "frontend-react", "e2e", ".encore"]
+  "exclude": ["node_modules", "encore.gen", "frontend", "frontend-react", "frontend-admin", "e2e", ".encore"]
 }

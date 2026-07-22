@@ -138,3 +138,12 @@ and its last green run predates the repoint. Both surfaced by spec
   `@statecrafting/kernel-native-<triple>` and the app failed at boot.
   The step now fetches and injects the kernel carrier identically,
   and the ELF arch check covers it.
+
+## Amendment (2026-07-22b): the admin bundle in the image (spec 023)
+
+`docker-build.sh` builds the operator dashboard (`npm run build:web-admin`)
+when `frontend-admin/` is present (a stamped app with admin = "off"
+carries neither the directory nor the script), injects
+`backend/web/dist-admin/` into the worktree beside the SPA dist, and
+prunes the `frontend-admin/` source with the other frontend directories.
+`backend/admin/` ships with `backend/` as live service code.

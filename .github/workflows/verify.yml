@@ -45,6 +45,7 @@ jobs:
             package-lock.json
             frontend/package-lock.json
             frontend-react/package-lock.json
+            frontend-admin/package-lock.json
       - run: npm ci
       # The template carries every frontend flavor (spec 015); the Encore parse
       # walk (build:app) resolves each flavor's vite.config imports, so both
@@ -52,6 +53,7 @@ jobs:
       # (the scaffold verb prunes the rest), so its CI installs just the survivor.
       - run: npm --prefix frontend ci
       - run: npm --prefix frontend-react ci
+      - run: npm --prefix frontend-admin ci
       - name: Build app (generates encore.gen)
         run: npm run build:app
       # The app-model staleness gate (spec 021 §3.3): the committed model

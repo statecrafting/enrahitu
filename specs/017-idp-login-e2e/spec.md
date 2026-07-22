@@ -83,3 +83,8 @@ especially before stamped apps put this flow in front of customers.
   its UI behavior).
 - Running e2e inside the packaged container image (a later hardening
   spec may combine 016 + 017 into an image-level smoke).
+
+Amended by spec 023 (2026-07-22): the e2e workflow installs the
+`frontend-admin/` package alongside the two flavors, for the same
+parse-walk reason the flavors are installed (the Encore tsparser
+resolves every frontend directory's vite.config imports).

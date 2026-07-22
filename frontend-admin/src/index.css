@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* Own token set (spec 023 §3.5): no Encore fonts, logos, or brand colors.
+   A neutral dark operator console; system font stack, one restrained accent. */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --color-bg: #05070a;
+  --color-surface: #0d1117;
+  --color-surface-2: #131b26;
+  --color-border: #1f2733;
+  --color-text: #e5e9f0;
+  --color-muted: #8a94a6;
+  --color-accent: #4fb8ae;
+  --color-accent-soft: #123332;
+  --color-ok: #3ecf8e;
+  --color-warn: #e0a63e;
+  --color-error: #f2555a;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply m-0 bg-bg font-sans text-text antialiased;
+  }
+
+  ::selection {
+    @apply bg-accent/30;
+  }
+}

@@ -28,6 +28,6 @@
     "summary": "template-encore (the previous chassis, stamped by factory-encore) still owns four capabilities this template does not have: born-green CI workflows, the born-with certificate + agentic posture flow, Pages deployment, and repoInit seeding. This spec enumerates the absorption line items with their source locations and target shapes. When all four land here, template-encore retires as a chassis and the enrahitu repo is the only template the Statecraft factory stamps. LI-1 done 2026-07-14 (born-green stamp proven); each item flips to done individually.\n",
     "title": "Absorb template-encore's remaining value, then retire it"
   },
-  "shardHash": "c4fd57c6633f39fe66cdcbac02b1f82b4b61ae45a59cfd9c2588a2546f6231ff",
+  "shardHash": "11fdfb63425a2200d841e06b043b34ef08b87ab9aab8afff08c8aa4fc4e4100c",
   "specVersion": "1.1.0"
 }
