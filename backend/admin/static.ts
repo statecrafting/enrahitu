@@ -12,6 +12,7 @@
  */
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { extname, join, normalize, sep } from "node:path";
+import { pipeline } from "node:stream/promises";
 
 import { api } from "encore.dev/api";
 
@@ -90,14 +91,13 @@ async function serveAdmin(
     "Cache-Control",
     filePath.includes(`${sep}assets${sep}`) ? "private, max-age=31536000, immutable" : "no-store",
   );
-  await new Promise<void>((done, fail) => {
-    const stream = createReadStream(filePath);
-    stream.on("error", fail);
-    res.on("close", done);
-    stream.pipe(res);
-  }).catch(() => {
+  // pipeline destroys the read stream on a client abort (a bare pipe would
+  // leak the fd) and rejects on a mid-stream read error.
+  try {
+    await pipeline(createReadStream(filePath), res);
+  } catch {
     res.destroy();
-  });
+  }
 }
 
 export const adminIndex = api.raw(
