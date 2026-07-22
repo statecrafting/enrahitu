@@ -10,6 +10,7 @@
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 import { api, APIError, ErrCode } from "encore.dev/api";
 
@@ -100,7 +101,22 @@ async function proxyToRauthy(req: IncomingMessage, res: ServerResponse): Promise
   if (setCookies.length > 0) res.setHeader("Set-Cookie", setCookies);
 
   if (upstream.body) {
-    Readable.fromWeb(upstream.body as import("node:stream/web").ReadableStream).pipe(res);
+    // Awaited so the handler resolves when the response has flushed, not
+    // when the pipe starts: the obs middleware's span and duration
+    // histogram (spec 022) measure the real request, and a mid-stream
+    // upstream failure rejects here instead of leaking an unhandled
+    // 'error' event.
+    try {
+      await pipeline(
+        Readable.fromWeb(upstream.body as import("node:stream/web").ReadableStream),
+        res,
+      );
+    } catch {
+      // Headers are already sent; nothing to salvage beyond ending the
+      // response. The client sees the truncation; the span records the
+      // duration up to the failure.
+      res.destroy();
+    }
   } else {
     res.end();
   }

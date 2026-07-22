@@ -96,3 +96,9 @@ the request metrics as service `idp`, endpoint `proxy`, a static
 label pair. The deliberate no-auth-middlewares posture is unchanged:
 observation adds no session, CSRF, or header behavior, and rauthy
 still manages its own.
+
+With observation mounted, the proxy handler awaits the response-body
+pipe (`stream/promises.pipeline`) instead of resolving at pipe start:
+the span and duration histogram measure the flushed response, and a
+mid-stream upstream failure rejects into the handler (response
+destroyed) rather than leaking an unhandled stream error.

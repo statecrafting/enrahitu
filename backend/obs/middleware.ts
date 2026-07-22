@@ -79,6 +79,10 @@ export const obsMiddleware = middleware(async (req, next) => {
       },
     },
     async (span: Span) => {
+      // Known limitation: typed handlers expose no status getter on their
+      // HandlerResponse, so a typed endpoint overriding its success status
+      // would still label 2xx here. No typed endpoint does that today; raw
+      // endpoints report their real status via rawResponse.
       let statusCode = 200;
       try {
         const resp = await next(req);
