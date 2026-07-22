@@ -132,3 +132,9 @@ and its last green run predates the repoint. Both surfaced by spec
   cross-built in bookworm; now the published carriers are the source
   of truth, so the base moves to `node:24-trixie-slim` (glibc 2.41)
   to match them.
+- **Kernel addon injection**: the target-arch injection step predates
+  spec 021 and only knew the toolchain runtime, hiqlite addon, and
+  libsql binding; a host-arch build left the image without
+  `@statecrafting/kernel-native-<triple>` and the app failed at boot.
+  The step now fetches and injects the kernel carrier identically,
+  and the ELF arch check covers it.
