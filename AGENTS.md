@@ -36,7 +36,7 @@ picked up on the next init.
    - `spec-spine index check`: staleness gate for the codebase index (non-fatal)
    - `spec-spine registry status-report --json --nonzero-only`: lifecycle counts
    - `spec-spine registry list --ids-only`: spec inventory (for latest-spec detection)
-   - `ls backend frontend addon docker packages vendor/encore`: application surface discovery (services + lib + core live under `backend/`; SPA under `frontend/`; spec 019)
+   - `ls backend frontend docker`: application surface discovery (services + lib + core live under `backend/`; SPA under `frontend/`; spec 019)
    - `ls docs/`: docs surface
    - `git log --oneline -10`: recent history
    - `git diff --stat HEAD~1`: last change summary

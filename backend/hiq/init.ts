@@ -1,6 +1,6 @@
 // The native addon (CJS napi-rs module). Default-import then destructure is
 // the safest ESM<-CJS interop for napi's generated index.js.
-import hiqlite from "@enrahitu/hiqlite-native";
+import hiqlite from "@statecrafting/hiqlite-native";
 
 // Start the embedded hiqlite node at service load, not lazily on the first
 // request (spike caveat #5: election takes ~2.5s and cold requests reset).

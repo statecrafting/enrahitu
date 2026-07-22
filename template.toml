@@ -18,13 +18,14 @@ version = "0.5.0"
 
 [requires]
 node = ">=24"
-# The packaged build toolchain (spec 018), consumed by a stamped app as a
-# devDependency (@enrahitu/toolchain): the vendored Encore build drivers plus
-# prebuilt per-platform encore-runtime.node / tsparser-encore binaries. Its
-# @enrahitu/hiqlite-native companion carries the prebuilt addon.
-toolchain = "^0.1"
-# Rust + protoc are template-development requirements only; stamped apps
-# consume the prebuilt addon and vendored-runtime artifacts (specs 002/008).
+# The packaged build toolchain (statecrafting spec 002), consumed as a
+# devDependency (@statecrafting/toolchain): the Encore build drivers, the
+# app-model extractor, and prebuilt per-platform encore-runtime.node /
+# tsparser-encore binaries. Its @statecrafting/hiqlite-native companion carries
+# the prebuilt addon (statecrafting spec 003). The template and a stamped app
+# consume the same published packages; neither builds Encore or the addon from
+# source, so no Rust or protoc toolchain is required to build.
+toolchain = "^0.2"
 
 [slots]
 # Values the factory substitutes at stamp time.

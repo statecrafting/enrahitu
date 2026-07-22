@@ -9,63 +9,10 @@
       "008-vendored-encore-toolchain",
       "009-template-contract"
     ],
-    "implementingPaths": [
-      {
-        "path": ".github/workflows/publish.yml",
-        "source": "spec-edge"
-      },
-      {
-        "path": "packages/",
-        "source": "spec-edge"
-      },
-      {
-        "path": "packages/toolchain",
-        "source": "manifest-metadata"
-      },
-      {
-        "path": "packages/toolchain-darwin-arm64",
-        "source": "manifest-metadata"
-      },
-      {
-        "path": "packages/toolchain-linux-arm64",
-        "source": "manifest-metadata"
-      },
-      {
-        "path": "packages/toolchain-linux-x64",
-        "source": "manifest-metadata"
-      }
-    ],
-    "resolvedUnits": [
-      {
-        "locations": [
-          {
-            "file": "packages/"
-          }
-        ],
-        "ownership": true,
-        "sourceField": "establishes",
-        "unit": {
-          "kind": "directory",
-          "path": "packages/"
-        }
-      },
-      {
-        "locations": [
-          {
-            "file": ".github/workflows/publish.yml"
-          }
-        ],
-        "ownership": true,
-        "sourceField": "establishes",
-        "unit": {
-          "kind": "file",
-          "path": ".github/workflows/publish.yml"
-        }
-      }
-    ],
+    "implementingPaths": [],
     "specId": "018-packaged-chassis",
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "5a6dc96220cf87ed3fade70f7513ff0972d4903cb68480ff346952d84b8828ff"
+  "shardHash": "98b400d24aeb209b8323ba9b26883994c6c75a9c22b4d8131b39ab5db70266ce"
 }

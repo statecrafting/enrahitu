@@ -57,7 +57,10 @@ function makeTree(): string {
         requires: true,
         packages: {
           "": { name: "enrahitu", version: "0.1.0" },
-          addon: { name: "@enrahitu/hiqlite-native", version: "0.1.0" },
+          "node_modules/@statecrafting/hiqlite-native": {
+            name: "@statecrafting/hiqlite-native",
+            version: "0.1.0",
+          },
         },
       },
       null,
@@ -121,8 +124,10 @@ describe("stamp: lockfile name sync", () => {
     const lock = readJson(dir, "package-lock.json");
     expect(lock.name).toBe("my-app");
     expect(lock.packages[""].name).toBe("my-app");
-    // The addon crate is chassis, not the app: its name must be untouched.
-    expect(lock.packages.addon.name).toBe("@enrahitu/hiqlite-native");
+    // The hiqlite addon is chassis, not the app: its name must be untouched.
+    expect(lock.packages["node_modules/@statecrafting/hiqlite-native"].name).toBe(
+      "@statecrafting/hiqlite-native",
+    );
   });
 });
 

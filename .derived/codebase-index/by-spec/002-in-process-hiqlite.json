@@ -5,32 +5,11 @@
     ],
     "implementingPaths": [
       {
-        "path": "addon",
-        "source": "manifest-metadata"
-      },
-      {
-        "path": "addon/",
-        "source": "spec-edge"
-      },
-      {
         "path": "backend/hiq/",
         "source": "spec-edge"
       }
     ],
     "resolvedUnits": [
-      {
-        "locations": [
-          {
-            "file": "addon/"
-          }
-        ],
-        "ownership": true,
-        "sourceField": "establishes",
-        "unit": {
-          "kind": "directory",
-          "path": "addon/"
-        }
-      },
       {
         "locations": [
           {
@@ -49,5 +28,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "442e7e54645729865540773537f5643de01d0997ed7f1b67b0a0bfa64b38512e"
+  "shardHash": "4eac3270f975c7aa47205d8ecca66facc830c1965fa43934b252c9ce8687db8e"
 }

@@ -7,7 +7,7 @@
     "spec": "001-enrahitu-architecture"
   },
   "type": "module",
-  "description": "EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso/libSQL with the Encore runtime vendored (rust core + js runtime via napi-rs, no encore CLI): a self-contained, single-container application core with zero managed-infrastructure dependencies.",
+  "description": "EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso/libSQL on the @statecrafting build toolchain (Encore rust core + js runtime via napi-rs, no encore CLI): a self-contained, single-container application core with zero managed-infrastructure dependencies.",
   "engines": {
     "node": ">=24"
   },
@@ -16,20 +16,18 @@
     "build:app": "enrahitu-build",
     "extract:model": "enrahitu-build && enrahitu-extract",
     "check:model": "enrahitu-extract --check",
-    "build:runtime": "ENCORE_VERSION=v1.57.9 cargo build --release --manifest-path vendor/encore/Cargo.toml -p encore-js-runtime -p encore-tsparser && node packages/toolchain/scripts/link-runtime.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "generate-keys": "tsx scripts/generate-keys.ts",
     "dev:idp": "docker compose -f docker/compose.dev.yml up -d && node scripts/sync-dev-rauthy-secret.mjs",
     "dev:idp-secret": "node scripts/sync-dev-rauthy-secret.mjs",
-    "build:addon": "npm --prefix addon run build",
     "dev:web": "npm --prefix frontend run dev",
     "build:web": "npm --prefix frontend run build",
     "test:e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "dependencies": {
-    "@enrahitu/hiqlite-native": "file:./addon",
     "@libsql/client": "^0.17.4",
+    "@statecrafting/hiqlite-native": "^0.1.0",
     "@statecrafting/kernel-native": "^0.1.0",
     "encore.dev": "^1.57.9",
     "jsonwebtoken": "^9.0.3",
@@ -37,8 +35,8 @@
     "pg": "^8.22.0"
   },
   "devDependencies": {
-    "@enrahitu/toolchain": "file:./packages/toolchain",
     "@playwright/test": "^1.61.1",
+    "@statecrafting/toolchain": "^0.2.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.0.1",
     "@types/pg": "^8.20.0",

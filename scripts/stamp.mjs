@@ -115,8 +115,8 @@ function writeJson(path, value) {
 }
 
 // Substitute the app name in package.json (root "name") and package-lock.json
-// (root "name" and the packages[""] entry). Substrate names (@enrahitu/*, the
-// addon crate) are the chassis, not the app, and are deliberately left intact.
+// (root "name" and the packages[""] entry). Substrate names (@statecrafting/*,
+// the hiqlite addon) are the chassis, not the app, and are deliberately left intact.
 // v0 stamping edits no dependencies, so there is no npm install: were that to
 // change, the refresh must be `npm install --package-lock-only` from the
 // committed lock, never a full install (which prunes linux platform optionals

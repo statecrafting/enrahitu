@@ -7,9 +7,7 @@
 // together in a real browser engine.
 //
 // PREREQUISITES (from a clean checkout):
-//   npm ci && npm --prefix addon ci && npm --prefix frontend ci
-//   npm run build:addon        # hiqlite-native addon
-//   npm run build:runtime      # vendored Encore runtime (encore-runtime.node)
+//   npm ci && npm --prefix frontend ci
 //   npm run build:app          # app bundle + meta (.encore/build)
 //   npm run build:web          # the SPA into backend/web/dist (served at :4000)
 //   npx playwright install chromium

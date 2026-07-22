@@ -7,12 +7,12 @@
 > wins.
 >
 > **enrahitu** (EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso; formerly
-> enrahi / enrahi-kit) vendors the Encore toolchain
-> (spec 008): `vendor/encore/` carries upstream encoredev/encore @ v1.57.9
-> (the rust runtime core, the napi-rs JS bindings built into
-> `encore-runtime.node`, the `tsparser-encore` parser/compiler, and the
-> published `encore.dev` JS runtime), and `@enrahitu/toolchain`
-> (`packages/toolchain/`, spec 018) drives it. Dev
+> enrahi / enrahi-kit) builds on the Encore toolchain (spec 008), consumed as
+> the published `@statecrafting/toolchain` package: upstream encoredev/encore
+> @ v1.57.9 (the rust runtime core and the napi-rs JS bindings built into
+> `encore-runtime.node`, the `tsparser-encore` parser/compiler) delivered as
+> prebuilt per-platform binaries, with the `encore.dev` JS runtime from the
+> registry. Dev
 > runs, typechecking, tests, and image builds work without the `encore`
 > CLI; every phase-0-through-5 behavior below is otherwise unchanged.
 
@@ -59,7 +59,7 @@ Development and early deployment cost nothing but a container host; scaling is
 
 | Component | Where | Role |
 |-----------|-------|------|
-| `addon/` (`@enrahitu/hiqlite-native`) | Rust, napi-rs cdylib | in-process hiqlite: `init`, `health`, `kvPut/kvGet/kvDel` (TTL), `counterAdd/Get/Set/Del`. hiqlite `=0.14.0`, features `cache,counters,macros` (no SQLite-C). Env: `ENRAHITU_HIQ_*`. |
+| `@statecrafting/hiqlite-native` (npm dep) | Rust, napi-rs cdylib | in-process hiqlite: `init`, `health`, `kvPut/kvGet/kvDel` (TTL), `counterAdd/Get/Set/Del`. hiqlite `=0.14.0`, features `cache,counters,macros` (no SQLite-C). Env: `ENRAHITU_HIQ_*`. |
 | `backend/hiq/` | Encore service | thin API over the addon; starts the node at service load (`backend/hiq/init.ts`) |
 | `backend/core/` | library | CoreLedger: stage-3 `@Entity`/`@Column` decorators, `LedgerDriver` interface, libSQL driver (local file + Turso replica), `ensureSchema()`, typed repositories (Phase 1) |
 | `backend/auth/` | Encore service | mock + rauthy OIDC drivers, JWT cookies, refresh rotation, CSRF, roles, audit on CoreLedger; rate limiting on hiqlite counters (Phase 2) |

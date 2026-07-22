@@ -9,7 +9,6 @@ depends_on:
 amends:
   - "007-single-container-packaging"
 establishes:
-  - { kind: directory, path: "vendor/encore/" }
   - "infra.config.dev.json"
   - "docker/Dockerfile.base"
 summary: >
@@ -103,3 +102,23 @@ version skew, no dependence on Encore's release pipeline.
 - Dev-mode hot reload (`encore run`'s watcher); `npm run dev` rebuilds on
   invocation. A watch mode is future work.
 - Windows hosts.
+
+## Amendment (2026-07-21): vendor/encore leaves; the toolchain is a published package
+
+`vendor/encore/` is deleted from this tree. The Encore build drivers and the
+`encore-runtime.node` / `tsparser-encore` binaries this spec described are now
+consumed as the published `@statecrafting/toolchain@^0.2.0` (statecrafting spec
+002), which is the source of record they build from. Two consequences for the
+app tree:
+
+- `encore.dev` no longer resolves through a `file:` link into
+  `vendor/encore/runtimes/js/encore.dev`; it is a normal registry dependency
+  (`encore.dev@^1.57.9`, the same upstream package the vendor tree carried).
+- `vitest.config.ts` and `scripts/docker-build.sh` no longer read a vendored
+  binary path; they resolve the runtime through the toolchain's own resolver
+  and, for the image, from the published per-platform packages.
+
+This spec drops the `vendor/encore/` edge and keeps `infra.config.dev.json` and
+`docker/Dockerfile.base`, which stay here and which this change still edits. It
+remains the design record of why Encore is vendored (rust core + js runtime via
+napi-rs, no CLI); that reasoning is now realized in the @statecrafting package.

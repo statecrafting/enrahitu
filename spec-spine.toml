@@ -17,21 +17,16 @@ specs_dir     = "specs"
 derived_dir   = ".derived"
 standards_dir = "standards/spec"
 # Single npm package at the root (no workspaces; key decision 1 in spec 001).
-# The napi addon and the SPA flavors carry their own manifests outside any
-# workspace, so they are declared standalone. The chassis carries every frontend
-# flavor (spec 015): frontend/ (vue) and frontend-react/ (react-rr7); the
-# scaffold verb prunes to one at stamp time. The addon is also a standalone Rust
-# crate (no root Cargo workspace exists). The chassis toolchain and its
-# per-platform binary carriers (spec 018) are file:-linked, not workspaced.
-standalone_rust_workspaces = ["addon"]
+# The SPA flavors carry their own manifests outside any workspace, so they are
+# declared standalone. The chassis carries every frontend flavor (spec 015):
+# frontend/ (vue) and frontend-react/ (react-rr7); the scaffold verb prunes to
+# one at stamp time. The build toolchain and the hiqlite addon are now consumed
+# as published @statecrafting packages (statecrafting specs 002/003), no longer
+# vendored here, so no Rust crate or toolchain package is declared standalone.
+standalone_rust_workspaces = []
 standalone_npm_packages = [
-  "addon",
   "frontend",
   "frontend-react",
-  "packages/toolchain",
-  "packages/toolchain-darwin-arm64",
-  "packages/toolchain-linux-x64",
-  "packages/toolchain-linux-arm64",
 ]
 
 [index]

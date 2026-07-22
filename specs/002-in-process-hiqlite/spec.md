@@ -9,7 +9,6 @@ origin:
 depends_on:
   - "001-enrahitu-architecture"
 establishes:
-  - { kind: directory, path: "addon/" }
   - { kind: directory, path: "backend/hiq/" }
 summary: >
   The hiqlite runtime embedded in the Node process: a napi-rs cdylib
@@ -95,3 +94,16 @@ the signed provenance bundle. `napi create-npm-dirs` copies `repository` into
 each generated `@enrahitu/hiqlite-native-<triple>` manifest, so it is declared
 once in `addon/package.json`; the generated `addon/npm/` tree is a build
 artifact and gitignored.
+
+## Amendment (2026-07-21): the addon moves to @statecrafting/hiqlite-native
+
+The napi addon left this tree. `addon/` is deleted here and the hiqlite
+capability is now consumed as the published `@statecrafting/hiqlite-native`
+(statecrafting spec 003), a byte-identical move of the same Rust crate under a
+scope that describes its ownership: the addon is shared substrate for enrahitu
+and statecraft, not enrahitu's alone. `backend/hiq/init.ts` imports the new
+specifier; `backend/hiq/` (the `hiq` service + facade) stays here, so this spec
+keeps that edge and drops only `addon/`. The build-time import ban that kept raw
+addon imports out of everything but `backend/hiq/init.ts` now lives in the
+published toolchain's extractor and targets the new specifier. No spec retires:
+this remains the design record of the in-process hiqlite capability.
