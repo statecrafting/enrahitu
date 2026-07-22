@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { transformWithEsbuild, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
-import { augmentInfraConfig } from "@enrahitu/toolchain/augment-infra";
+import { augmentInfraConfig } from "@statecrafting/toolchain/augment-infra";
+import { runtimeLib as resolveRuntimeLib } from "@statecrafting/toolchain/resolve";
 
 /**
  * Vitest 4 transforms TS via oxc (rolldown-vite), which cannot lower stage-3
@@ -27,17 +28,15 @@ function stage3Decorators(): Plugin {
 
 /**
  * Unit tests import Encore primitives (APIError, middleware), so the napi
- * binding needs ENCORE_RUNTIME_LIB. In enrahitu it is the vendored,
- * cargo-built runtime (npm run build:runtime), not the Encore CLI's copy.
- * Falls back to undefined when unbuilt, so pure tests still run.
+ * binding needs ENCORE_RUNTIME_LIB. There is no vendor/ tree; the toolchain's
+ * own resolver locates the runtime in the installed platform package
+ * (@statecrafting/toolchain-<platform>), matching how enrahitu-dev/enrahitu-build
+ * find it. Falls back to undefined when the platform package is absent, so pure
+ * tests still run.
  */
 function encoreRuntimeLib(): string | undefined {
   if (process.env.ENCORE_RUNTIME_LIB) return process.env.ENCORE_RUNTIME_LIB;
-  const vendored = resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    "vendor/encore/target/release/encore-runtime.node",
-  );
-  return existsSync(vendored) ? vendored : undefined;
+  return resolveRuntimeLib({ cwd: dirname(fileURLToPath(import.meta.url)) }) ?? undefined;
 }
 
 const runtimeLib = encoreRuntimeLib();
@@ -49,7 +48,7 @@ const runtimeLib = encoreRuntimeLib();
  * the kit does not require (and CI does not have). When the app has been
  * built (npm run build:app), point every test worker at the compiled app
  * meta and the augmented infra config, exactly as the enrahitu-dev runner
- * (@enrahitu/toolchain) does for `encore run`. Without a prior build this returns {} so pure
+ * (@statecrafting/toolchain) does for `encore run`. Without a prior build this returns {} so pure
  * tests still run; runtime-touching tests then need the CLI daemon.
  */
 function encoreTestEnv(): Record<string, string> {
@@ -70,7 +69,6 @@ export default defineConfig({
     include: ["**/*.test.ts"],
     exclude: [
       "node_modules/**",
-      "addon/**",
       "frontend/**",
       "frontend-react/**",
       "encore.gen/**",

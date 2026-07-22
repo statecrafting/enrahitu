@@ -1,6 +1,0 @@
-export { foo } from "./foo";
-
--- foo.ts --
-export interface foo {
-  bar: string;
-}

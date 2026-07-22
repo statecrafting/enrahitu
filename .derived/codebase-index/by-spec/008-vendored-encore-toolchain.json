@@ -14,26 +14,9 @@
       {
         "path": "infra.config.dev.json",
         "source": "spec-edge"
-      },
-      {
-        "path": "vendor/encore/",
-        "source": "spec-edge"
       }
     ],
     "resolvedUnits": [
-      {
-        "locations": [
-          {
-            "file": "vendor/encore/"
-          }
-        ],
-        "ownership": true,
-        "sourceField": "establishes",
-        "unit": {
-          "kind": "directory",
-          "path": "vendor/encore/"
-        }
-      },
       {
         "locations": [
           {
@@ -65,5 +48,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "fb202e8bf19395b03af9092e745d943a0130c1e95bacea78f74d1ea3809befd5"
+  "shardHash": "048e23fa8f5463c33d00f9f12de5dfdbe7a4203a65782856f10c0f86857d4a55"
 }

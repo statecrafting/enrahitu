@@ -43,34 +43,15 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            addon/package-lock.json
             frontend/package-lock.json
             frontend-react/package-lock.json
-      - name: Install protoc
-        run: sudo apt-get update -q && sudo apt-get install -y -q protobuf-compiler
-      - name: Cache cargo (vendored runtime + addon)
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            vendor/encore/target
-            addon/target
-          key: cargo-${{ runner.os }}-${{ hashFiles('vendor/encore/Cargo.lock', 'addon/Cargo.lock') }}
-          restore-keys: |
-            cargo-${{ runner.os }}-
       - run: npm ci
-      - run: npm --prefix addon ci
       # The template carries every frontend flavor (spec 015); the Encore parse
       # walk (build:app) resolves each flavor's vite.config imports, so both
       # flavor packages are installed here. A stamped app keeps only one flavor
       # (the scaffold verb prunes the rest), so its CI installs just the survivor.
       - run: npm --prefix frontend ci
       - run: npm --prefix frontend-react ci
-      - name: Build hiqlite-native addon
-        run: npm run build:addon
-      - name: Build vendored Encore runtime
-        run: npm run build:runtime
       - name: Build app (generates encore.gen)
         run: npm run build:app
       # The app-model staleness gate (spec 021 §3.3): the committed model

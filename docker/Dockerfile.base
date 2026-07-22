@@ -1,8 +1,8 @@
 # enrahitu app base image: replaces the `encore build docker` output with
-# the same layout, assembled from the vendored toolchain's artifacts.
-# Build via scripts/docker-build.sh, which prepares the context (a clean git
-# worktree with production node_modules, the built SPA, the compiled bundle
-# under .encore/build, and the cross-built linux encore-runtime.node injected
+# the same layout, assembled from the @statecrafting toolchain's prebuilt
+# artifacts. Build via scripts/docker-build.sh, which prepares the context (a
+# clean git worktree with production node_modules, the built SPA, the compiled
+# bundle under .encore/build, and the target-arch encore-runtime.node injected
 # at docker/encore-runtime.node).
 FROM node:24-slim
 
@@ -14,8 +14,8 @@ RUN apt-get update -qq \
   && rm -rf /var/lib/apt/lists/*
 
 # The app tree: bundle at .encore/build/combined/combined/main.mjs, external
-# packages resolved from /workspace/node_modules (encore.dev symlinks into
-# vendor/encore/runtimes/js/encore.dev inside this tree).
+# packages (encore.dev, the hiqlite addon, the kernel) resolved from
+# /workspace/node_modules, installed from the registry by `npm ci --omit=dev`.
 COPY . /workspace
 
 # The Encore runtime surface, matching the encore-built image layout:

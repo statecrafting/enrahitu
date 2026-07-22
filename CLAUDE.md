@@ -3,9 +3,9 @@
 ## Project Overview
 
 enrahitu (**EnRaHiTu**: **En**core.ts + **ra**uthy + **hi**qlite +
-**Tu**rso) is a self-contained application substrate with the Encore
-toolchain vendored: the rust runtime core, the TS parser/compiler, and
-the encore.dev JS runtime live in `vendor/encore/` and are driven
+**Tu**rso) is a self-contained application substrate on the published
+`@statecrafting/toolchain`: the Encore rust runtime core and TS
+parser/compiler arrive as prebuilt per-platform binaries and are driven
 directly via napi-rs; the `encore` CLI is not used anywhere (spec 008).
 One Docker image + one volume = a complete authenticated application,
 zero managed-infrastructure dependencies. It is also the template
@@ -19,7 +19,9 @@ The architecture thesis lives in `specs/001-enrahitu-architecture/spec.md`;
 
 The two-directory layout (spec 019): every Encore.ts concern lives under
 `backend/`, the SPA under `frontend/`; everything else at the root is
-contract, packaging, governance, or chassis toolchain source.
+contract, packaging, or governance. The build toolchain and the hiqlite
+addon are npm dependencies (`@statecrafting/toolchain` + `hiqlite-native`),
+no longer vendored in the tree.
 
 ```
 specs/       Feature specs (000-019), the authoritative design record
@@ -34,11 +36,8 @@ backend/     The Encore.ts app (spec 019):
   web/         Encore static service serving the built SPA (spec 006)
   health/      Liveness + decorator canary (spec 001)
 frontend/    Vue 3 + Vite SPA source, builds into backend/web/dist (spec 006)
-addon/       Rust napi-rs cdylib: in-process hiqlite; chassis source, root-level (spec 002)
 docker/      Single-container packaging: Dockerfiles, entrypoint, first-boot (specs 007/008)
 scripts/     docker-build.sh (007), generate-keys.ts (004), sync-dev-rauthy-secret.mjs (005)
-packages/    @enrahitu/toolchain (relocated build drivers + binary resolver) and its per-platform binary carrier packages (spec 018)
-vendor/encore/   Encore @ v1.57.9: rust core, napi bindings, tsparser, encore.dev; source of record the toolchain packages build from (specs 008/018)
 .derived/    Compiler output (committed shards; build-meta.json gitignored)
 ```
 
@@ -52,8 +51,7 @@ This repo is governed by [spec-spine](https://github.com/statecrafting/spec-spin
   together (`spec-spine couple` enforces this at PR time; waiver keyword
   `Spec-Drift-Waiver:` in the PR body).
 - **Manifest linkage.** `package.json` carries `"spec-spine": { "spec": ... }`
-  (root → 001, `addon/` → 002, `frontend/` → 006); `addon/Cargo.toml` carries
-  `[package.metadata.spec-spine]`.
+  (root → 001, `frontend/` → 006, `frontend-react/` → 015).
 - **Governed reads.** Read `.derived/**` only through `spec-spine` subcommands
   (`registry list/show/status-report`, `index check/render/orphans`); never
   ad-hoc `jq`/`python` parsers (`.claude/rules/governed-artifact-reads.md`).
@@ -63,16 +61,14 @@ This repo is governed by [spec-spine](https://github.com/statecrafting/spec-spin
 ## Build Commands
 
 ```bash
-npm run build:addon    # build the hiqlite-native addon (Rust, ~2 min, required once)
-npm run build:runtime  # build the vendored Encore toolchain (Rust, required once)
-npm install
+npm install            # installs @statecrafting/toolchain + hiqlite-native (prebuilt binaries)
 npm run dev            # build + run on :4000 under plain node (no encore CLI)
 npm run build:app      # parse + bundle only (.encore/build/)
+npm run extract:model  # build + write app-model.json (spec 020); check:model verifies it
 npm run typecheck      # tsc --noEmit
-npm test               # vitest (uses the vendored encore-runtime.node)
+npm test               # vitest (runtime resolved from the toolchain platform package)
 npm run dev:idp        # dev rauthy via docker compose (spec 005)
 npm run build:web      # build the SPA into backend/web/dist
-packages/toolchain/scripts/build-runtime-linux.sh arm64   # cross-build the runtime for the image
 scripts/docker-build.sh arm64                 # the full single-container image (specs 007/008)
 
 spec-spine compile    # specs -> .derived/spec-registry/by-spec/
@@ -81,9 +77,10 @@ spec-spine lint       # corpus conformance
 spec-spine couple --base origin/main --head HEAD   # the PR coupling gate
 ```
 
-Requires Node >= 24, Rust (stable), protoc, docker, and `spec-spine`
-(`cargo install spec-spine-cli`; or run `/setup`). The Encore CLI is NOT
-required (and not used): spec 008.
+Requires Node >= 24, docker, and `spec-spine` (`cargo install spec-spine-cli`;
+or run `/setup`). The toolchain and addon are prebuilt binaries, so no Rust,
+cargo, or protoc is needed. The Encore CLI is NOT required (and not used):
+spec 008.
 
 ## Key Conventions
 

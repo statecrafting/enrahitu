@@ -7,7 +7,7 @@
 // real password login through a real browser engine.
 //
 // Prerequisites (documented at length in login.rauthy.spec.ts):
-//   npm run build:runtime && npm run build:addon && npm run build:app
+//   npm ci && npm run build:app
 //   npx playwright install chromium
 //   docker available (globalSetup runs `npm run dev:idp`)
 //

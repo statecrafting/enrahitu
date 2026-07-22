@@ -4,10 +4,10 @@
 # fleet milestone (M3) without gating every push.
 #
 # Each arch builds NATIVELY on its own runner (amd64 on ubuntu-24.04, arm64 on
-# ubuntu-24.04-arm), so no QEMU emulation is involved: `npm run build:addon`
-# emits this arch's linux .node, build-runtime-linux.sh builds the linux .so,
-# and scripts/docker-build.sh assembles a linux/<arch> image and smokes it.
-# This is the "real x86-64 host" acceptance in spec 016 section 4.
+# ubuntu-24.04-arm), so no QEMU emulation is involved: scripts/docker-build.sh
+# fetches this arch's prebuilt Encore runtime and hiqlite addon from the
+# published @statecrafting packages, assembles a linux/<arch> image, and smokes
+# it. This is the "real x86-64 host" acceptance in spec 016 section 4.
 name: image
 
 on:
@@ -49,41 +49,12 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            addon/package-lock.json
             frontend/package-lock.json
-      - name: Install protoc + cmake
-        run: sudo apt-get update -q && sudo apt-get install -y -q protobuf-compiler cmake
-      - name: Cache cargo (host + linux targets)
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            vendor/encore/target
-            vendor/encore/target-linux
-            addon/target-linux
-          key: image-cargo-${{ matrix.arch }}-${{ hashFiles('vendor/encore/Cargo.lock', 'addon/Cargo.lock') }}
-          restore-keys: |
-            image-cargo-${{ matrix.arch }}-
       - run: npm ci
-      # build:web (run inside docker-build.sh) needs the Vue flavor's deps; the
-      # image worktree drops every flavor + e2e/ before its own parse walk, so
-      # the other flavors are not needed here.
-      - run: npm --prefix addon ci
+      # docker-build.sh runs build:web (the Vue SPA) inside the worktree, so the
+      # Vue flavor's deps are installed here. The image worktree drops every
+      # flavor + e2e/ before its own parse walk, so the other flavors are not.
       - run: npm --prefix frontend ci
-      # Host build:addon emits the arch-independent JS loader (addon/index.js +
-      # index.d.ts) that docker-build.sh injects, plus a native .node. Then the
-      # bookworm cross-build OVERWRITES that .node so it links against the same
-      # glibc as the node:24-slim image (a native build on this newer runner
-      # would require a glibc the image lacks).
-      - name: Build the addon JS loader (index.js/index.d.ts) + a native .node
-        run: npm run build:addon
-      - name: Cross-build the addon .node in bookworm (glibc-matched, overwrites)
-        run: packages/toolchain/scripts/build-addon-linux.sh ${{ matrix.arch }}
-      - name: Build the host Encore toolchain (tsparser-encore for the app build)
-        run: npm run build:runtime
-      - name: Cross-build the linux Encore runtime (.so injected into the image)
-        run: packages/toolchain/scripts/build-runtime-linux.sh ${{ matrix.arch }}
       - name: Build the ${{ matrix.arch }} image
         run: scripts/docker-build.sh ${{ matrix.arch }}
       - name: Smoke the image (/health, /hiq/health, first-boot)

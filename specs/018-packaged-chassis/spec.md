@@ -11,9 +11,7 @@ amends:
   - "002-in-process-hiqlite"
   - "008-vendored-encore-toolchain"
   - "009-template-contract"
-establishes:
-  - { kind: directory, path: "packages/" }
-  - { kind: file, path: ".github/workflows/publish.yml" }
+establishes: []
 summary: >
   The heavy invariants leave the template tree and become versioned npm
   packages with prebuilt binaries: @enrahitu/toolchain (the vendored
@@ -281,3 +279,16 @@ the first stamped consumer (statecraft spec 002) runs `npm ci` + verify
 against the published packages on its own CI. Marked complete on maintainer
 direction; the delegated checks are tracked at their owners, not as blockers
 here.
+
+## Amendment (2026-07-21): the packaging moves to @statecrafting; this spec goes edgeless
+
+The whole point of this spec, the toolchain leaving the tree as versioned npm
+packages, is now realized under the `@statecrafting` scope rather than
+`@enrahitu`. `packages/` (the toolchain meta + per-platform carriers) is deleted
+here, and `.github/workflows/publish.yml` with it: the packages it built are
+published from `statecrafting/statecrafting` (statecrafting specs 002/003), so
+enrahitu no longer publishes them and has nothing left for that workflow to do.
+Both `establishes` edges drop and this spec becomes edgeless, a design record of
+why the chassis is package-distributed with the artifacts it describes now owned
+and published elsewhere. No spec retires (statecrafting spec 001's
+ownership-transfer rule); the design reasoning stands.
