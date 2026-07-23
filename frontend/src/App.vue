@@ -27,9 +27,11 @@ async function load() {
 }
 
 async function onLogout() {
-  await logout();
-  me.value = null;
-  await load();
+  // Follow the server (spec 005 RP-initiated logout): under rauthy this
+  // round-trips the same-origin end-session endpoint; under mock it is
+  // the frontend root, a plain reload into the signed-out state.
+  const { redirectUrl } = await logout();
+  window.location.assign(redirectUrl);
 }
 
 async function onKvDemo() {

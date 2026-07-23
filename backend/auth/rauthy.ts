@@ -15,7 +15,7 @@ import * as client from "openid-client";
 
 import { demand } from "../kernel/adjudicate";
 import { authCookieOptions } from "../lib/cookie-config";
-import { parseCookies, serializeCookie } from "../lib/cookies";
+import { parseCookies, serializeCookie, setIdHintCookie } from "../lib/cookies";
 import { env } from "../lib/env";
 import { withinAuthRateLimit } from "../lib/rate-limit";
 import { rauthyClientSecretValue } from "../lib/secrets";
@@ -28,6 +28,20 @@ const OIDC_TX_COOKIE = "oidc_tx";
 
 export function isRauthyConfigured(): boolean {
   return Boolean(env.rauthyIssuer && env.rauthyClientId && rauthyClientSecretValue());
+}
+
+/**
+ * The RP-initiated logout URL (spec 005, amendment 2026-07-23): rauthy's
+ * end-session endpoint on the same-origin issuer, carrying the id-token
+ * hint and the registered post-logout landing. Pure URL construction:
+ * no egress happens here; the browser makes the round-trip.
+ */
+export function rauthyEndSessionUrl(idTokenHint: string): string {
+  const issuer = env.rauthyIssuer!;
+  const url = new URL("oidc/logout", issuer.endsWith("/") ? issuer : `${issuer}/`);
+  url.searchParams.set("id_token_hint", idTokenHint);
+  url.searchParams.set("post_logout_redirect_uri", frontendUrl("/"));
+  return url.href;
 }
 
 function getConfig(): Promise<client.Configuration> {
@@ -143,6 +157,9 @@ export const rauthyCallback = api.raw(
 
     // Clear the transaction cookie, then finalize (which appends the auth cookies).
     res.setHeader("Set-Cookie", serializeCookie(OIDC_TX_COOKIE, "", authCookieOptions(0)));
+    // Keep the id token as the browser-held RP-initiated logout hint
+    // (spec 005 amendment 2026-07-23): never persisted server-side.
+    if (tokens.id_token) setIdHintCookie(res, tokens.id_token);
     const profile = profileFromClaims(claims as unknown as Record<string, unknown>);
     await finalizeLogin(res, profile, { ipAddress: clientIp(req), userAgent: userAgent(req) });
     redirect(res, frontendUrl("/"));

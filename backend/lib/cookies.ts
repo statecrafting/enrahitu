@@ -11,9 +11,11 @@ import {
   ACCESS_COOKIE,
   ACCESS_TOKEN_MAX_AGE,
   CSRF_COOKIE,
+  OIDC_ID_HINT_COOKIE,
   REFRESH_COOKIE,
   REFRESH_TOKEN_MAX_AGE,
   authCookieOptions,
+  idHintCookieOptions,
   type CookieOptions,
 } from "./cookie-config";
 
@@ -73,8 +75,19 @@ export function setCsrfCookie(res: ServerResponse, token: string): void {
   appendSetCookie(res, serializeCookie(CSRF_COOKIE, token, authCookieOptions(ACCESS_TOKEN_MAX_AGE)));
 }
 
+/** The RP-initiated logout hint, session-length like the refresh cookie (spec 005). */
+export function setIdHintCookie(res: ServerResponse, idToken: string): void {
+  appendSetCookie(
+    res,
+    serializeCookie(OIDC_ID_HINT_COOKIE, idToken, idHintCookieOptions(REFRESH_TOKEN_MAX_AGE)),
+  );
+}
+
 export function clearAuthCookies(res: ServerResponse): void {
   for (const name of [ACCESS_COOKIE, REFRESH_COOKIE, CSRF_COOKIE]) {
     appendSetCookie(res, serializeCookie(name, "", authCookieOptions(0)));
   }
+  // Clearing must repeat the set-time Path; absent-cookie clears are harmless,
+  // so the mock driver path is unaffected.
+  appendSetCookie(res, serializeCookie(OIDC_ID_HINT_COOKIE, "", idHintCookieOptions(0)));
 }

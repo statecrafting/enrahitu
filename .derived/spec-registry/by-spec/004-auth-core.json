@@ -32,13 +32,14 @@
       "4. Out of scope",
       "5. Phase A seam (amended by spec 021, 2026-07-20)",
       "6. Observability seam (amended by spec 022, 2026-07-22)",
-      "7. Admin gate seams (amended by spec 023, 2026-07-22)"
+      "7. Admin gate seams (amended by spec 023, 2026-07-22)",
+      "8. RP-initiated logout seam (amended by spec 005, 2026-07-23)"
     ],
     "specPath": "specs/004-auth-core/spec.md",
     "status": "approved",
     "summary": "The authentication core, re-based from template-encore apps/api onto enrahitu's own substrate: stateless RS256 JWT access tokens in httpOnly cookies, rotated DB-backed refresh tokens, CSRF double-submit, roles, and audit records on CoreLedger; login rate limiting on hiqlite counters. Drivers are pluggable: mock (dev) here, rauthy OIDC in spec 005 (which owns backend/auth/rauthy.ts inside this spec's directory claim).\n",
     "title": "Auth service on CoreLedger + hiqlite rate limiting"
   },
-  "shardHash": "61f9ca316eb324326839608be98f4e210f4cca41c8f9c96a8417e69ca64f3ada",
+  "shardHash": "9bdabbe8390d862a056165d3c37a7b332ca6837bd7f1eea69efd80070f6c6e49",
   "specVersion": "1.1.0"
 }

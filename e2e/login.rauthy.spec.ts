@@ -111,6 +111,13 @@ test("rauthy password login round-trip stays on the app origin", async ({
   });
   expect(loggedOut.ok()).toBeTruthy();
 
+  // RP-initiated logout (spec 005): the response hands back the same-origin
+  // end-session URL carrying the id-token hint. Asserted by API inspection,
+  // deliberately not navigated: the wire fact without new flake surface.
+  const { redirectUrl } = (await loggedOut.json()) as { redirectUrl: string };
+  expect(redirectUrl).toContain("/auth/v1/oidc/logout");
+  expect(redirectUrl).toContain("id_token_hint=");
+
   // Session is gone: /me is now unauthenticated.
   expect((await page.request.get("/api/v1/auth/me")).status()).toBe(401);
 
