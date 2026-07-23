@@ -1,0 +1,39 @@
+{
+  "record": {
+    "created": "2026-07-23",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "003-coreledger",
+      "011-coreledger-postgres-driver",
+      "020-app-model-contract",
+      "021-kernel-native-consumption"
+    ],
+    "establishes": [
+      {
+        "kind": "file",
+        "path": "backend/kernel/ledger-integrity.test.ts"
+      }
+    ],
+    "id": "024-decision-chain-integrity",
+    "implementation": "complete",
+    "sectionHeadings": [
+      "024: Decision-chain integrity",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 CAS append at the store",
+      "3.2 Fork detection and fatality",
+      "3.3 The marked loss window",
+      "3.4 Signing, activated",
+      "3.5 Topology assumptions, restated",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/024-decision-chain-integrity/spec.md",
+    "status": "approved",
+    "summary": "The Decision chain's ordering authority moves from the in-process append queue into the store itself: a unique index on previous_record_hash makes every append a compare-and-swap on the chain head, inside one transaction, on both CoreLedger dialects, so two writers against one kernel_decisions table produce a clean retry-or-fail instead of a fork. Boot-time chain verification becomes real and fatal: a chain the kernel verifier rejects stops the process rather than serving under a broken proof. The fire-and-forget denial append (spec 021 section 3.6 policy, kept) gains a marked loss window: a durable dirty flag brackets pending denial appends, and an unclean end of a bracketed window ledgers a crash-window marker Decision at the next boot. The ledger signing the model has declared since spec 021 (ed25519, ENRAHITU_LEDGER_SIGNING_KEY) activates consumer-side: a detached signature over record_hash in a sibling column, invisible to the native verifier, verified as a chain-suffix property whenever the key is present.\n",
+    "title": "Decision-chain integrity: CAS append, fatal forks, marked loss, live signing"
+  },
+  "shardHash": "e12462855ff5375016ee161f5e7b830742f97e513069e4ae9f2d46ac9fff0cdd",
+  "specVersion": "1.1.0"
+}

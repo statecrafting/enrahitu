@@ -358,3 +358,38 @@ file level (spec 008).
 `frontend-admin/` like the two frontend flavors: the dashboard package
 typechecks and builds under its own manifest (`npm run build:web-admin`),
 never under the root compiler run.
+
+## Amendment (2026-07-23): ledger durability constraints (spec 024)
+
+An external architectural review argued the hiqlite/CoreLedger split
+leaves the Decision ledger without the HA that hiqlite's unused Raft
+could provide. The evaluation record: the concern is legitimate but
+mis-aimed at today's topology (a single-node cell has no replication
+to fork, and hiqlite is in-process per pod, so no cross-pod fencing
+token exists to hold); the real present gaps were store-level chain
+integrity and unmarked denial-append loss, both closed by spec 024.
+Three constraints from that evaluation enter the thesis as law:
+
+- **The outbox rule.** No invariant may span hiqlite and CoreLedger
+  without an outbox and idempotent replay. Today no invariant spans
+  them (hiqlite holds cache, counters, and coordination; CoreLedger
+  holds durable truth), and that separation stays true by law, not
+  luck: a future spec that couples the planes carries its outbox in
+  its design or does not land.
+- **Phase B doctrine: the chain head moves into hiqlite Raft.** When
+  cells cluster (§4.6 Phase B: cell clustering as hiqlite Raft
+  membership), the Decision chain's ordering authority (the chain
+  head, possibly the commit log itself) moves into hiqlite Raft:
+  commits durable in the consensus plane, indexes reproducible from
+  them, Raft as the nameservice. This is the self-hosted analogue of
+  Fluree's commits-durable/indexes-reproducible split. The addon
+  facade (kv/counters today, spec 002) would need a chain-head API.
+  The direction is recorded; nothing is built until hiqlite stops
+  being per-process.
+- **The portability boundary.** The CoreLedger decorator API stays
+  portable across drivers for application tables: "point CoreLedger
+  at managed Postgres" (§1) holds there, unchanged. The Decision
+  chain and any future fact model live on the raw-driver layer
+  beneath the decorators and may pin a driver family; portability of
+  the enforcement plane's storage is a non-goal, deliberately. The
+  decorator promise never silently extends to the proof plane.
