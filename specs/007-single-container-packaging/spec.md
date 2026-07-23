@@ -161,3 +161,24 @@ the required list is fleet-declared configuration, never substrate
 policy (spec 001 §4.1: the substrate never assumes a platform above
 it). The statecraft fleet's Deployment-command stopgap (statecraft
 PR #64) reduces to setting this one variable.
+
+## Amendment (2026-07-23b): the image runs as node (non-root)
+
+The final image sets `USER node` (uid/gid 1000, the user every node
+base image ships) and owns `/data` as `node:node` at image build, so a
+fresh named volume inherits writable ownership. This lands the chassis
+half of the statecraft finding: the fleet already runs the pod as uid
+1000 with `fsGroup: 1000` (statecraft spec 006, E2E finding 3, fixed
+fleet-side 2026-07-16), and statecraft spec 009 records that
+"hardening the image to a non-root UID is an enrahitu chassis change,
+not something to improvise in a Deployment". Nothing in the container
+needs root: everything the runtime writes lives under `/data`
+(rauthy's `data_dir` included), and both listeners (8080 app, 8081
+rauthy loopback) are unprivileged ports.
+
+Migration, stated honestly: a volume first populated by a pre-024
+root-running container carries root-owned files the node user cannot
+touch. Kubernetes heals this itself (`fsGroup` chowns volume contents
+on mount); a plain-docker deployment needs a one-time
+`chown -R 1000:1000` on the volume, and `docker run --user 0` remains
+the escape hatch for a legacy volume that cannot be migrated yet.
