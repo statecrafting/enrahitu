@@ -50,11 +50,14 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             frontend/package-lock.json
+            frontend-admin/package-lock.json
       - run: npm ci
-      # docker-build.sh runs build:web (the Vue SPA) inside the worktree, so the
-      # Vue flavor's deps are installed here. The image worktree drops every
-      # flavor + e2e/ before its own parse walk, so the other flavors are not.
+      # docker-build.sh runs build:web (the Vue SPA) and build:web-admin (the
+      # operator dashboard, spec 023) inside the worktree, so both dep trees
+      # are installed here. The image worktree drops every flavor + e2e/
+      # before its own parse walk, so the other flavors are not.
       - run: npm --prefix frontend ci
+      - run: npm --prefix frontend-admin ci
       - name: Build the ${{ matrix.arch }} image
         run: scripts/docker-build.sh ${{ matrix.arch }}
       - name: Smoke the image (/health, /hiq/health, first-boot)
