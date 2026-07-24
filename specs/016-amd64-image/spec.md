@@ -111,3 +111,16 @@ image-pull secret (statecraft spec 006, `FLEET_IMAGE_PULL_SECRET`). Back to
 - Automatic publish on every push (kept to `release`/`workflow_dispatch` +
   the weekly drift build, so a long image build never gates a push).
 - musl/static builds; glibc images match the current base.
+
+## Amendment (2026-07-23): the admin bundle's deps in the image workflow
+
+Spec 023's `frontend-admin/` broke the image build silently (the
+cron/dispatch-only failure mode spec 007's 2026-07-22 amendment
+records): `docker-build.sh` runs `npm run build:web-admin` when the
+directory is present, but `image.yml` installed only the root and
+`frontend/` dependency trees, so the dashboard's vite/tsc build died
+on missing packages; PR #27 patched `verify.yml` and `e2e.yml` and
+missed this workflow. `image.yml` now installs `frontend-admin/`
+alongside `frontend/` and adds its lockfile to the npm cache key.
+Surfaced by the 007-nonroot-image validation dispatch, the first
+image run after PR #27 merged.

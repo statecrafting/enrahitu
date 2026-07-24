@@ -18,7 +18,17 @@ COPY docker/entrypoint.sh /enrahitu/entrypoint.sh
 RUN chmod 0755 /enrahitu/entrypoint.sh /rauthy/rauthy
 
 # All durable state: CoreLedger file, app hiqlite, rauthy hiqlite, key material.
+# Owned by node BEFORE the VOLUME declaration, so a fresh named volume inherits
+# writable ownership for the non-root runtime user.
+RUN mkdir -p /data && chown node:node /data
 VOLUME /data
 EXPOSE 8080
+
+# Non-root (spec 007, amendment 2026-07-23b): uid/gid 1000, matching the
+# fleet's pod securityContext (runAsUser 1000 + fsGroup 1000, statecraft
+# spec 006). Everything the runtime writes lives under /data; both
+# listeners are unprivileged ports. A legacy root-owned volume needs a
+# one-time chown -R 1000:1000 (or --user 0 as the escape hatch).
+USER node
 
 ENTRYPOINT ["/enrahitu/entrypoint.sh"]
