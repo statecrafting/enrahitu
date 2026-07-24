@@ -88,3 +88,10 @@ Amended by spec 023 (2026-07-22): the e2e workflow installs the
 `frontend-admin/` package alongside the two flavors, for the same
 parse-walk reason the flavors are installed (the Encore tsparser
 resolves every frontend directory's vite.config imports).
+
+Amended by spec 005 (2026-07-23): the logout step additionally asserts
+the response's `redirectUrl` points at the same-origin
+`/auth/v1/oidc/logout` and carries an `id_token_hint`: the
+RP-initiated logout wire fact, proven against real rauthy by API
+inspection alone. The round-trip is deliberately not navigated, so
+the suite's flake surface is unchanged.

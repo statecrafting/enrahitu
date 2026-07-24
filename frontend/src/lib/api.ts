@@ -63,13 +63,14 @@ async function csrfToken(): Promise<string> {
   return token;
 }
 
-export async function logout(): Promise<void> {
+export async function logout(): Promise<{ redirectUrl: string }> {
   const token = await csrfToken();
-  await fetch("/api/v1/auth/logout", {
+  const res = await fetch("/api/v1/auth/logout", {
     method: "POST",
     credentials: "same-origin",
     headers: { "X-CSRF-Token": token },
   });
+  return (await res.json()) as { redirectUrl: string };
 }
 
 export interface KvRoundTrip {

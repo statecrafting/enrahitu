@@ -37,11 +37,15 @@ export const router = createBrowserRouter([
       },
       {
         // Action-only route: the profile's logout Form posts here, we drop the
-        // session (CSRF handled inside api.logout), then bounce home.
+        // session (CSRF handled inside api.logout), then follow the server's
+        // redirectUrl (spec 005 RP-initiated logout). A document navigation,
+        // not a router redirect: the end-session URL lives outside the SPA's
+        // route table.
         path: "logout",
         action: async () => {
-          await logout();
-          return redirect("/");
+          const { redirectUrl } = await logout();
+          window.location.assign(redirectUrl);
+          return null;
         },
       },
     ],

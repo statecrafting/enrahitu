@@ -15,6 +15,8 @@ import { env } from "./env";
 export const ACCESS_COOKIE = "access_token";
 export const REFRESH_COOKIE = "refresh_token";
 export const CSRF_COOKIE = "csrf_token";
+/** The RP-initiated logout hint, set and owned by the rauthy driver (spec 005). */
+export const OIDC_ID_HINT_COOKIE = "oidc_id_hint";
 
 export const ACCESS_TOKEN_MAX_AGE = 15 * 60;
 export const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60;
@@ -35,4 +37,12 @@ export function authCookieOptions(maxAge?: number): CookieOptions {
     path: "/",
     maxAge,
   };
+}
+
+/**
+ * The id-hint cookie rides only the auth surface: path-scoping keeps its
+ * weight (roughly one RS256 id token) off every other request (spec 005).
+ */
+export function idHintCookieOptions(maxAge?: number): CookieOptions {
+  return { ...authCookieOptions(maxAge), path: "/api/v1/auth" };
 }

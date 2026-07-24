@@ -115,3 +115,15 @@ Four lib/auth seams move with the operator dashboard:
 - The mock driver gains a fourth principal (`operator@example.com`)
   holding the model's operator role, so the gate is exercisable without
   a real IdP.
+
+## 8. RP-initiated logout seam (amended by spec 005, 2026-07-23)
+
+`logout.ts` composes spec 005's RP-initiated logout: it reads the
+`oidc_id_hint` cookie (name and path-scoped options live in
+`lib/cookie-config.ts`; the cookie is set and owned by the rauthy
+driver), and when the hint is present and the driver configured,
+returns spec 005's end-session URL as `redirectUrl` instead of the
+frontend root. `clearAuthCookies` clears the hint cookie alongside
+the three auth cookies (clearing an absent cookie is harmless, so the
+mock driver path is unaffected). Revocation, audit, CSRF posture, and
+the 200-with-JSON response shape are unchanged.

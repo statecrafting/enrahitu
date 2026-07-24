@@ -102,3 +102,41 @@ pipe (`stream/promises.pipeline`) instead of resolving at pipe start:
 the span and duration histogram measure the flushed response, and a
 mid-stream upstream failure rejects into the handler (response
 destroyed) rather than leaking an unhandled stream error.
+
+## Amendment (2026-07-23): RP-initiated logout (the id-hint cookie)
+
+App sign-out ended only the app session: rauthy's own session cookie
+survived the logout, so the next login silently re-authenticated
+without credentials. Fixed with OIDC RP-initiated logout, same-origin
+like everything else in this spec:
+
+- **The hint rides the browser, not the store.** The callback keeps
+  `tokens.id_token` in an `oidc_id_hint` cookie: httpOnly, path-scoped
+  to `/api/v1/auth`, lifetime equal to the refresh session
+  (`REFRESH_TOKEN_MAX_AGE`). The design fork (cookie vs a column on
+  the refresh-token row) resolves to the cookie deliberately: the
+  refresh-token store is hash-only by design (spec 004) and stays free
+  of identity assertions at rest; token rotation needs no carry
+  plumbing; and the hint returns to the only place it is ever needed,
+  the browser's own logout round-trip. The cost is cookie weight on
+  `/api/v1/auth/*` requests only (path-scoped), roughly one RS256
+  id token.
+- **Logout returns the end-session URL.** When the driver is
+  configured and the hint cookie is present, spec 004's
+  `POST /api/v1/auth/logout` answers `redirectUrl` =
+  `<issuer>oidc/logout` with `id_token_hint` and
+  `post_logout_redirect_uri` = the frontend root, same-origin through
+  the idp proxy (`rauthyEndSessionUrl` in `backend/auth/rauthy.ts`,
+  which tolerates a missing issuer trailing slash). The SPA navigates
+  there; rauthy ends its session and redirects back to the registered
+  root. Absent hint or driver, `redirectUrl` stays the frontend root:
+  the mock driver's behavior is byte-identical to before.
+- **Registration already existed.** Both client bootstraps have
+  carried `post_logout_redirect_uris = ["<public-url>/"]` since spec
+  007's first boot; the dev bootstrap additionally registers the Vite
+  origin (`http://localhost:5173/`) so a hot-dev logout round-trip is
+  legal too.
+- **Proofs.** `backend/auth/rauthy-logout.test.ts` (in spec 004's
+  directory claim, riding this amendment) pins the end-session URL
+  shape and the hint cookie's path scoping; spec 017's e2e asserts the
+  wire fact against real rauthy.

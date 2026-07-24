@@ -123,3 +123,11 @@ honors a `PAGES_BASE` env var as the Vite `base` (default `/`), and
 `import.meta.env.BASE_URL`, so the React SPA works under a project Pages subpath
 (`https://<owner>.github.io/<repo>/`) as well as at root. No effect on the
 container or dev build, where `PAGES_BASE` is unset and `base` stays `/`.
+
+**Amended 2026-07-23 (spec 005, RP-initiated logout).** The logout
+action follows the server's `redirectUrl` with
+`window.location.assign` instead of a client-side `redirect("/")`:
+the end-session URL lives outside the SPA's route table, so a data
+router redirect would 404 inside the app rather than reach rauthy.
+Under the mock driver the URL is the frontend root and the visible
+behavior is unchanged.

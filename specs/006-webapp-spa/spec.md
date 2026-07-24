@@ -66,3 +66,12 @@ placeholder only, exactly like `dist/`. The web service itself does not
 serve it: `backend/admin/` streams it behind the operator-role gate
 (spec 023 §3.2); the `/!path` fallback and the SPA's own serving are
 unchanged.
+
+## Amendment (2026-07-23): logout follows redirectUrl (spec 005)
+
+The SPA's sign-out follows the server's answer: `logout()` in
+`src/lib/api.ts` returns the response's `redirectUrl` and the app
+navigates there with `window.location.assign`, completing rauthy's
+RP-initiated logout round-trip (spec 005). Under the mock driver the
+URL is the frontend root, so the visible behavior is a plain reload
+into the signed-out state.
