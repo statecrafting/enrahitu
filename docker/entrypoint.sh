@@ -8,6 +8,22 @@ DATA="${ENRAHITU_DATA_DIR:-/data}"
 PUBLIC_URL="${ENRAHITU_PUBLIC_URL:-http://localhost:8080}"
 PUBLIC_URL="${PUBLIC_URL%/}"
 
+# Fleet-declared pre-flight (spec 007, amendment 2026-07-23): every name in
+# ENRAHITU_REQUIRED_ENV (comma- or space-separated) must be set and non-empty
+# before anything starts; all missing names report together, one failure.
+if [ -n "${ENRAHITU_REQUIRED_ENV:-}" ]; then
+  missing=""
+  for name in ${ENRAHITU_REQUIRED_ENV//,/ }; do
+    if [ -z "${!name:-}" ]; then
+      missing="$missing $name"
+    fi
+  done
+  if [ -n "$missing" ]; then
+    echo "[entrypoint] required env not set or empty:$missing" >&2
+    exit 1
+  fi
+fi
+
 node /enrahitu/first-boot.mjs
 
 # secrets.env carries RAUTHY_-prefixed material for the rauthy process and

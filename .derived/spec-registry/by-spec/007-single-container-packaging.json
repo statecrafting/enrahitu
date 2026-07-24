@@ -44,13 +44,14 @@
       "3. Behavior",
       "4. Out of scope",
       "Amendment (2026-07-22): repoint fallout in the image path (via spec 022)",
-      "Amendment (2026-07-22b): the admin bundle in the image (spec 023)"
+      "Amendment (2026-07-22b): the admin bundle in the image (spec 023)",
+      "Amendment (2026-07-23): fleet-declared required env"
     ],
     "specPath": "specs/007-single-container-packaging/spec.md",
     "status": "approved",
     "summary": "The deliverable image: one container running rauthy (loopback :8081) and the Encore app (:8080) under a die-together entrypoint, all durable state on a single /data volume, every secret self-provisioned at first boot. scripts/docker-build.sh builds from a clean git worktree of HEAD, injects the cross-built addon, the built SPA, and production node_modules, runs `encore build docker`, asserts the base-image entrypoint, and layers rauthy + the entrypoint on top.\n",
     "title": "Single-container packaging: app + rauthy in one image"
   },
-  "shardHash": "ee0483d393b33f5be0fbcfebdda4397abb19b7b354707993b54e04f83a684f72",
+  "shardHash": "27035762fc50c69ecb95c54bdd31bf41f1d160a562f62ef5c71a412f893405f2",
   "specVersion": "1.1.0"
 }

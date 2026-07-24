@@ -388,3 +388,29 @@ Spec 022 delivers the wiring §3.8 deferred; four facts here move with it:
 (public key only, through the spec 004 jwt-verify split) and demands
 nothing else. The model re-extracts under the same pipeline; a stamp
 with `admin = "off"` removes the entry at scaffold time (spec 014).
+
+## Amendment (2026-07-23): decision-chain integrity hardens the store (spec 024)
+
+Spec 024 moves four §3.6 facts; `backend/kernel/decisions.ts` (this
+spec's territory) carries the change under that spec's design:
+
+- **Ordering authority.** "Appends are serialized in-process" stops
+  being the chain's only ordering authority: the store now enforces
+  linearity itself (a unique parent index on `prev_hash`; head read
+  and insert in one transaction; a lost race reloads the head and
+  re-chains; a retry that exhausts fails loud). The in-process queue
+  remains as this process's concurrency discipline, no longer the
+  integrity guarantee.
+- **Boot verification.** Init verifies the persisted chain
+  (`kernelNative.verifyChain` plus spec 024's signature pass), and an
+  integrity failure on the init path is process-fatal: §3.4's
+  fail-closed doctrine extended to the ledger.
+- **Denial-append loss.** Fire-and-forget denial appends (§3.6
+  policy, unchanged) gain a bracketed, marked loss window: a durable
+  dirty flag in `kernel_ledger_meta` and a crash-window marker
+  Decision at the next boot.
+- **Signing.** "no signing happens in v0.1" retires: spec 024
+  activates the declared `ledger.signing` policy consumer-side
+  (detached ed25519 over `record_hash` in a sibling column, dormant
+  while `ENRAHITU_LEDGER_SIGNING_KEY` is unset). Anchor signing in
+  the model stays spec 020's named extension.

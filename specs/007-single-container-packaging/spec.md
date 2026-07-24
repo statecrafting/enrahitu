@@ -147,3 +147,17 @@ carries neither the directory nor the script), injects
 `backend/web/dist-admin/` into the worktree beside the SPA dist, and
 prunes the `frontend-admin/` source with the other frontend directories.
 `backend/admin/` ships with `backend/` as live service code.
+
+## Amendment (2026-07-23): fleet-declared required env
+
+The entrypoint gains a generic pre-flight assertion driven by one
+variable: `ENRAHITU_REQUIRED_ENV`, a comma- or space-separated list
+of environment variable names that must each be set and non-empty
+before anything starts, first-boot provisioning included. All missing
+names are collected and reported together, then the container exits
+nonzero (the verify-born-with.mjs shape: every reason at once, one
+failure). An unset or empty `ENRAHITU_REQUIRED_ENV` asserts nothing:
+the required list is fleet-declared configuration, never substrate
+policy (spec 001 §4.1: the substrate never assumes a platform above
+it). The statecraft fleet's Deployment-command stopgap (statecraft
+PR #64) reduces to setting this one variable.

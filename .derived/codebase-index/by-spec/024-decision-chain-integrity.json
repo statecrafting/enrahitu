@@ -1,0 +1,36 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "003-coreledger",
+      "011-coreledger-postgres-driver",
+      "020-app-model-contract",
+      "021-kernel-native-consumption"
+    ],
+    "implementingPaths": [
+      {
+        "path": "backend/kernel/ledger-integrity.test.ts",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "backend/kernel/ledger-integrity.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "backend/kernel/ledger-integrity.test.ts"
+        }
+      }
+    ],
+    "specId": "024-decision-chain-integrity",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "69b00f1308c4f0febbc4f36dc60f956087c5c54f79b63d0a3bbe4c297c3069c0"
+}
