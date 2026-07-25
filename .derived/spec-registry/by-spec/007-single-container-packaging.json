@@ -17,6 +17,10 @@
       },
       {
         "kind": "file",
+        "path": "docker/entrypoint.test.ts"
+      },
+      {
+        "kind": "file",
         "path": "docker/first-boot.mjs"
       },
       {
@@ -46,13 +50,14 @@
       "Amendment (2026-07-22): repoint fallout in the image path (via spec 022)",
       "Amendment (2026-07-22b): the admin bundle in the image (spec 023)",
       "Amendment (2026-07-23): fleet-declared required env",
-      "Amendment (2026-07-23b): the image runs as node (non-root)"
+      "Amendment (2026-07-23b): the image runs as node (non-root)",
+      "Amendment (2026-07-25): container stop must reach the supervised processes"
     ],
     "specPath": "specs/007-single-container-packaging/spec.md",
     "status": "approved",
     "summary": "The deliverable image: one container running rauthy (loopback :8081) and the Encore app (:8080) under a die-together entrypoint, all durable state on a single /data volume, every secret self-provisioned at first boot. scripts/docker-build.sh builds from a clean git worktree of HEAD, injects the cross-built addon, the built SPA, and production node_modules, runs `encore build docker`, asserts the base-image entrypoint, and layers rauthy + the entrypoint on top.\n",
     "title": "Single-container packaging: app + rauthy in one image"
   },
-  "shardHash": "411147e3fa773d33a9e9b6d675530eb4f274cc7bc8318333c5d86ce4db672601",
+  "shardHash": "2dbdb6f14b48d415c48297f10d56eb710229160e07f2ab118bc46c849f5a113c",
   "specVersion": "1.1.0"
 }

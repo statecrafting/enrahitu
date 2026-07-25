@@ -19,6 +19,10 @@
         "source": "spec-edge"
       },
       {
+        "path": "docker/entrypoint.test.ts",
+        "source": "spec-edge"
+      },
+      {
         "path": "docker/first-boot.mjs",
         "source": "spec-edge"
       },
@@ -74,6 +78,19 @@
       {
         "locations": [
           {
+            "file": "docker/entrypoint.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/entrypoint.test.ts"
+        }
+      },
+      {
+        "locations": [
+          {
             "file": "docker/first-boot.mjs"
           }
         ],
@@ -115,5 +132,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "3eb27f2e7e0bbc74476f33a4173d5e64a3532746b0a6a59eedd17ea4d7c29964"
+  "shardHash": "b908e01dda4bf6c802565c3190b2e03a064815fc61688cdd3a45c720a3ec269f"
 }
