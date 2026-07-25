@@ -13,6 +13,7 @@ depends_on:
 establishes:
   - "docker/Dockerfile"
   - "docker/entrypoint.sh"
+  - "docker/entrypoint.test.ts"
   - "docker/first-boot.mjs"
   - "scripts/docker-build.sh"
   - "infra.config.json"
@@ -182,3 +183,64 @@ touch. Kubernetes heals this itself (`fsGroup` chowns volume contents
 on mount); a plain-docker deployment needs a one-time
 `chown -R 1000:1000` on the volume, and `docker run --user 0` remains
 the escape hatch for a legacy volume that cannot be migrated yet.
+
+## Amendment (2026-07-25): container stop must reach the supervised processes
+
+The entrypoint supervises die-together but never handled its own stop
+signal. It is PID 1 in the shipped image, so the runtime delivers SIGTERM
+to it and to nothing else; with no trap installed, bash's default action
+ended the shell alone and left rauthy and the app running until the grace
+period expired and the runtime SIGKILLed them. The `kill` on the
+die-together path (a supervised process exiting on its own) was the only
+place either child was ever asked to stop.
+
+rauthy is the process that pays for this. Its embedded hiqlite holds lock
+files for the WAL and the state machine, and a SIGKILL never releases
+them, so **every** boot after **every** ordinary restart begins unclean.
+Observed on the live statecraft control plane 2026-07-25, on a boot that
+had nothing else wrong with it:
+
+```
+WARN hiqlite_wal::log_store: LockFile /data/rauthy/db/logs exists already - this is not a clean start!
+WARN hiqlite::store::state_machine::sqlite::state_machine: Lock file already exists: /data/rauthy/db/state_machine/lock
+WARN hiqlite_wal::log_store: LockFile /data/rauthy/db/logs_cache exists already - this is not a clean start!
+```
+
+The warning is not the whole cost. On the same restart it escalated three
+times to a hard failure before a boot got through:
+
+```
+thread 'tokio-rt-worker' panicked at hiqlite-wal-0.14.0/src/log_store.rs:47:21:
+LockFile /data/rauthy/db/logs is locked and in use by another process
+```
+
+which aborts rauthy, which die-together turns into a container exit, which
+the restart policy turns into a crash loop. Three restarts and about
+forty-five seconds of extra downtime on a routine pod replacement, with
+no bound on how many it could have been. This is the same failure shape as
+the outage recorded in statecraft spec 009 (a rauthy abort the supervision
+faithfully propagates), reached by a different route.
+
+The fix is a stop handler that forwards the signal and waits for both
+children before exiting, armed immediately after `RAUTHY_PID` is assigned
+so a stop during the rauthy health wait is covered too. It exits 0: the
+container was asked to stop and did.
+
+`docker/entrypoint.test.ts` covers it, and covers the shipped function
+rather than a copy of it: the test lifts the `shutdown()` body out of
+`docker/entrypoint.sh` by text and runs it against stub children, so
+editing the real function is what breaks the test. Four cases: both traps
+are installed, SIGTERM and SIGINT each reach rauthy and the app, and a
+signal arriving before the app has started still stops rauthy without
+tripping over an unset `APP_PID`. The negative was verified by hand and is
+worth recording, because it is the whole argument for the change: with the
+trap removed the harness exits 143 and neither child is signalled at all.
+
+This is the first test in the repo over `docker/`, which is the point. The
+entrypoint is a shell script that has now caused two production incidents,
+and "PID 1 forwards its signals" is exactly the kind of guarantee that no
+TypeScript test can reach.
+
+Consuming apps carry their own copy of this file (statecraft's diverges by
+four hunks, recorded in its spec 002), so the same handler has to land in
+each of them; it is not delivered by a pin.

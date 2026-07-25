@@ -73,6 +73,29 @@ host="${hostport%%:*}"
 ) &
 RAUTHY_PID=$!
 
+# Container stop has to reach the supervised processes. The runtime signals
+# PID 1, which is this shell; with no trap installed bash's default SIGTERM
+# action ends the shell alone and leaves rauthy and the app to be SIGKILLed
+# when the grace period expires. rauthy's embedded hiqlite then never releases
+# its WAL and state-machine lock files, so every subsequent boot starts unclean
+# ("LockFile ... exists already - this is not a clean start!") and can escalate
+# to a startup panic ("locked and in use by another process") that the
+# die-together policy turns into a crash loop. Installed here rather than after
+# the app starts, so a stop during the rauthy health wait is handled too.
+shutdown() {
+  trap - TERM INT
+  echo "[entrypoint] received $1; stopping supervised processes" >&2
+  local pids=("$RAUTHY_PID")
+  if [ -n "${APP_PID:-}" ]; then
+    pids+=("$APP_PID")
+  fi
+  kill -TERM "${pids[@]}" 2>/dev/null || true
+  wait "${pids[@]}" 2>/dev/null || true
+  exit 0
+}
+trap 'shutdown SIGTERM' TERM
+trap 'shutdown SIGINT' INT
+
 # Wait for rauthy before the app starts issuing discovery requests.
 # (node:24-slim has no curl; node does the probing.)
 for _ in $(seq 1 60); do
