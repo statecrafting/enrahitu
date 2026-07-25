@@ -75,7 +75,7 @@ async function runHarness(
       "trap 'shutdown SIGINT' INT",
       'echo ready >> "$OUT"',
       "set +e",
-      'wait -n "$RAUTHY_PID" ${APP_PID:-}',
+      startApp ? 'wait -n "$RAUTHY_PID" "$APP_PID"' : 'wait -n "$RAUTHY_PID"',
       "",
     ].join("\n"),
     { mode: 0o755 },
@@ -85,13 +85,21 @@ async function runHarness(
   const exited = new Promise<number | null>((resolve) => child.on("exit", resolve));
 
   // Signal only once the traps are installed and the stubs are running.
-  for (let i = 0; i < 100; i++) {
+  // Signalling early would deliver to a shell with no handler yet, which fails
+  // as exit 143 and reads like a broken handler rather than a slow runner, so
+  // the wait is generous and a timeout is raised as itself.
+  let ready = false;
+  for (let i = 0; i < 500 && !ready; i++) {
     try {
-      if (readFileSync(out, "utf8").includes("ready")) break;
+      ready = readFileSync(out, "utf8").includes("ready");
     } catch {
       /* not written yet */
     }
-    await new Promise((r) => setTimeout(r, 20));
+    if (!ready) await new Promise((r) => setTimeout(r, 20));
+  }
+  if (!ready) {
+    child.kill("SIGKILL");
+    throw new Error("harness never reported ready; signalling now would test nothing");
   }
   child.kill(signal);
 
