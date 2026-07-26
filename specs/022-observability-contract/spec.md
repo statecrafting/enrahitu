@@ -150,3 +150,25 @@ reads precisely:
   is a recent-window convenience, not a TSDB.
 - Any change to what scrapes the signals: Prometheus, collectors, and
   cloud tools remain per-cell operator choices (spec 001 §4.5).
+
+## Amendment (2026-07-25): /metrics gains bearer authentication (spec 025)
+
+The endpoint served unauthenticated on the public port, and its own
+comment claimed that "deployment guidance keeps it off the public
+ingress". No such guidance existed anywhere in the repository, and the
+app offered no second listener a network policy could bind, so the
+comment described a control nobody had implemented.
+
+`ENRAHITU_METRICS_TOKEN`, when set, now requires
+`Authorization: Bearer <token>`; a missing or wrong token is 401 with
+`WWW-Authenticate: Bearer`. The comparison is constant-time. The check
+lives in `backend/obs/metrics-auth.ts`, split out so it is unit-testable
+without constructing a raw Encore request, in the same spirit as
+`lib/rate-limit-window.ts`.
+
+This adds authentication, not a flag. The endpoint remains always on and
+unflagged, so §3.1's contract is intact: when no token is configured it
+serves exactly as before, which is what `npm run dev` and the suite rely
+on. The packaged image always has one, provisioned at first boot
+(spec 007's amendment), so the secure state is the default where it
+matters and the frictionless state is the default where that matters.

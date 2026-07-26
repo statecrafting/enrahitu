@@ -140,3 +140,17 @@ like everything else in this spec:
   directory claim, riding this amendment) pins the end-session URL
   shape and the hint cookie's path scoping; spec 017's e2e asserts the
   wire fact against real rauthy.
+
+## Amendment (2026-07-25): the proxy forwards only vouched values (spec 025)
+
+`forwardHeaders` appended the socket address to whatever
+`X-Forwarded-For` the client supplied and sent the concatenation
+upstream. rauthy trusts that chain under `TRUSTED_PROXIES=127.0.0.0/8`,
+so its own IP-based defenses inherited any forgery a caller invented.
+
+The header is now rebuilt from the resolved client identity
+(`vouchedForwardedFor`, spec 025 §3.2): the entry this app actually
+vouches for, followed by this hop. Client-supplied entries the declared
+topology does not cover are dropped rather than forwarded. The
+same-origin invariant, the hop-by-hop stripping, the manual redirect
+policy, and the body-streaming shape are unchanged.

@@ -244,3 +244,28 @@ TypeScript test can reach.
 Consuming apps carry their own copy of this file (statecraft's diverges by
 four hunks, recorded in its spec 002), so the same handler has to land in
 each of them; it is not delivered by a pin.
+
+## Amendment (2026-07-25b): a health check, and a provisioned metrics token (spec 025)
+
+Two gaps in the packaged image, both from spec 025.
+
+**`HEALTHCHECK`.** The image declared none, so a plain Docker or Compose
+operator had no health signal at all. It now probes `/healthz`, the
+dependency-free liveness endpoint spec 025 §3.3 separated out of
+`/health`. The target matters as much as the check: pointing a liveness
+probe at a dependency check means a transient ledger blip restarts the
+container, and under the die-together supervision above that restart also
+ends rauthy, turning a database wobble into an identity outage. `node -e`
+with `fetch` does the probing, matching the entrypoint's existing idiom
+(`node:24-trixie-slim` ships no curl).
+
+**The `/metrics` bearer token.** `first-boot.mjs` provisions
+`$DATA/keys/metrics-token` through the same `writeOnce` 0600 path as
+every other secret, and the entrypoint exports it as
+`ENRAHITU_METRICS_TOKEN`, letting an explicitly supplied value win so a
+fleet can inject one shared token across cells. The packaged image is
+therefore authenticated by default rather than opt-in, while spec 022's
+always-on, unflagged contract for the endpoint is untouched (spec 025
+§3.4). Provisioning stays write-once, so a restart never rotates a token
+an operator has already configured a scraper against;
+`docker/first-boot.test.ts` covers that property.
