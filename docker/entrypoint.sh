@@ -129,6 +129,11 @@ JWT_REFRESH_PRIVATE_KEY="$(cat "$DATA/keys/refresh-private.pem")"
 JWT_REFRESH_PUBLIC_KEY="$(cat "$DATA/keys/refresh-public.pem")"
 RAUTHY_CLIENT_SECRET="$(cat "$DATA/keys/rauthy-client-secret")"
 export JWT_PRIVATE_KEY JWT_PUBLIC_KEY JWT_REFRESH_PRIVATE_KEY JWT_REFRESH_PUBLIC_KEY RAUTHY_CLIENT_SECRET
+# /metrics bearer token (spec 025): provisioned by first-boot, so the packaged
+# image authenticates its metrics endpoint by default. An explicitly supplied
+# value wins, letting a fleet inject one shared token across cells.
+ENRAHITU_METRICS_TOKEN="${ENRAHITU_METRICS_TOKEN:-$(cat "$DATA/keys/metrics-token")}"
+export ENRAHITU_METRICS_TOKEN
 export ENRAHITU_LEDGER_URL="${ENRAHITU_LEDGER_URL:-file:$DATA/ledger/enrahitu.db}"
 export ENRAHITU_HIQ_DATA_DIR="$DATA/hiqlite"
 # rauthy's embedded hiqlite owns 8100/8200 in this network namespace.

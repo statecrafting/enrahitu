@@ -1,0 +1,39 @@
+{
+  "record": {
+    "created": "2026-07-25",
+    "dependsOn": [
+      "003-coreledger",
+      "007-single-container-packaging",
+      "009-template-contract",
+      "011-coreledger-postgres-driver"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "scripts/ops/"
+      }
+    ],
+    "id": "027-operational-verbs",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "027: Operational verbs",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 What is on the volume, and what each class actually needs",
+      "3.2 `backup`",
+      "3.3 `restore`",
+      "3.4 `migrate`",
+      "3.5 `preflight`",
+      "3.6 The recovery objective, stated",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/027-operational-verbs/spec.md",
+    "status": "approved",
+    "summary": "The template contract can stamp an app, verify it, and package it. It has no vocabulary for running one over time. There is no backup or restore anywhere in the tree, no verb, and no documentation; the migration runner spec 011 landed has no caller outside its own tests, so a stamped app upgrading from v1 to v2 has no defined moment when schema changes apply. This spec adds four verbs to template.toml (contract v0.7.0) and their implementations. The backup design is shaped by what each of the four state classes on the volume actually is: CoreLedger snapshots online through VACUUM INTO, rauthy's identity store is captured through rauthy's own integrity-checked backup mechanism rather than by copying raft directories, the app's hiqlite is deliberately excluded as derived state, and key material is bound into the same archive because a rauthy backup without its matching ENC_KEYS is unrecoverable.\n",
+    "title": "Operational verbs: preflight, migrate, backup, restore"
+  },
+  "shardHash": "4417bf522448e75285f3dff5819984293ccfeba6918489d3a033e4cff799fafe",
+  "specVersion": "1.1.0"
+}

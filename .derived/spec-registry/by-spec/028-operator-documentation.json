@@ -1,0 +1,37 @@
+{
+  "record": {
+    "created": "2026-07-25",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "007-single-container-packaging",
+      "025-substrate-hardening",
+      "026-idp-mail-delivery",
+      "027-operational-verbs"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "docs/"
+      }
+    ],
+    "id": "028-operator-documentation",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "028: Operator documentation",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 `docs/OPERATIONS.md`",
+      "3.2 `docs/ARCHITECTURE.md`, realigned",
+      "3.3 `README.md`, reframed",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/028-operator-documentation/spec.md",
+    "status": "approved",
+    "summary": "docs/ holds one 107-line file whose phase table stops at Phase 6 while the corpus runs to 024, so the human-facing overview describes neither the kernel plane, nor observability, nor the admin dashboard. There is no install guide, no upgrade procedure, no TLS or reverse-proxy guidance, no sizing, no runbook, and no troubleshooting. Everything an operator needs is currently reconstructible only by reading entrypoint.sh and twenty-five specs. The spec corpus is an excellent design record and a poor manual, and the two are different documents with different readers: a spec answers why this was built this way, an operations guide answers what do I type. This spec takes ownership of docs/, adds the operator surface, and realigns the two existing human-facing documents with what the substrate has become.\n",
+    "title": "Operator documentation: the manual the specs are not"
+  },
+  "shardHash": "31c222e82c4925b0bd4ad86858e3022a950816318ba1d1a9dfdad21f2f0f69bc",
+  "specVersion": "1.1.0"
+}

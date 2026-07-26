@@ -1,8 +1,18 @@
 {
   "app": { "name": "enrahitu", "org": "statecrafting" },
   "capabilities": [
-    { "id": "cap.counter.add", "kind": "counter.add", "resource": "counters" },
-    { "id": "cap.counter.get", "kind": "counter.get", "resource": "counters" },
+    {
+      "id": "cap.counter.demo.add",
+      "kind": "counter.add",
+      "resource": "counters",
+      "constraints": { "keyPrefix": "demo:" }
+    },
+    {
+      "id": "cap.counter.demo.get",
+      "kind": "counter.get",
+      "resource": "counters",
+      "constraints": { "keyPrefix": "demo:" }
+    },
     {
       "id": "cap.counter.rate-limit.add",
       "kind": "counter.add",
@@ -21,9 +31,24 @@
     { "id": "cap.db.app.write", "kind": "db.write", "resource": "app" },
     { "id": "cap.egress.rauthy-issuer", "kind": "http.egress", "resource": "rauthy-issuer" },
     { "id": "cap.egress.rauthy-upstream", "kind": "http.egress", "resource": "rauthy-upstream" },
-    { "id": "cap.kv.cache.delete", "kind": "kv.delete", "resource": "cache" },
-    { "id": "cap.kv.cache.get", "kind": "kv.get", "resource": "cache" },
-    { "id": "cap.kv.cache.put", "kind": "kv.put", "resource": "cache" },
+    {
+      "id": "cap.kv.demo.delete",
+      "kind": "kv.delete",
+      "resource": "cache",
+      "constraints": { "keyPrefix": "demo:" }
+    },
+    {
+      "id": "cap.kv.demo.get",
+      "kind": "kv.get",
+      "resource": "cache",
+      "constraints": { "keyPrefix": "demo:" }
+    },
+    {
+      "id": "cap.kv.demo.put",
+      "kind": "kv.put",
+      "resource": "cache",
+      "constraints": { "keyPrefix": "demo:" }
+    },
     { "id": "cap.secret.jwt-private", "kind": "secret.read", "resource": "jwt_private_key" },
     { "id": "cap.secret.jwt-public", "kind": "secret.read", "resource": "jwt_public_key" },
     {
@@ -67,11 +92,11 @@
     "hiq": {
       "tier": "ts",
       "capabilities": [
-        "cap.counter.add",
-        "cap.counter.get",
-        "cap.kv.cache.delete",
-        "cap.kv.cache.get",
-        "cap.kv.cache.put"
+        "cap.counter.demo.add",
+        "cap.counter.demo.get",
+        "cap.kv.demo.delete",
+        "cap.kv.demo.get",
+        "cap.kv.demo.put"
       ]
     },
     "idp": {

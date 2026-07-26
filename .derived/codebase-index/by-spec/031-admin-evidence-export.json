@@ -1,0 +1,36 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '031-admin-evidence-export' directory unit 'backend/evidence/' is not a directory",
+        "path": "backend/evidence/"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "020-app-model-contract",
+      "021-kernel-native-consumption",
+      "023-frontend-admin",
+      "024-decision-chain-integrity"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "backend/evidence/"
+        }
+      }
+    ],
+    "specId": "031-admin-evidence-export",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "bbcf9c15926ebe7095d30935b013e2f2f867c07deafc5c5429eea6c4d36dbc1d"
+}

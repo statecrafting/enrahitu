@@ -1,0 +1,54 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '030-infra-topology' file unit 'docker/compose.cluster.yml' does not exist",
+        "path": "docker/compose.cluster.yml"
+      },
+      {
+        "code": "W-001",
+        "message": "spec '030-infra-topology' directory unit 'backend/bus/' is not a directory",
+        "path": "backend/bus/"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "002-in-process-hiqlite",
+      "005-rauthy-same-origin",
+      "007-single-container-packaging",
+      "009-template-contract",
+      "011-coreledger-postgres-driver",
+      "021-kernel-native-consumption",
+      "024-decision-chain-integrity"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "backend/bus/"
+        }
+      },
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/compose.cluster.yml"
+        }
+      }
+    ],
+    "specId": "030-infra-topology",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "d304ccdb4d87361c7b12a7787b53efc74896f1e873b0aee258b7eb14533b5603"
+}

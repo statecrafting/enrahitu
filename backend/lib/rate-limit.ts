@@ -17,18 +17,26 @@ import { APIError, middleware, type Middleware } from "encore.dev/api";
 
 import { counterAdd, counterDel } from "../kernel/hiq";
 
+import { resolveClient } from "./client-identity";
 import { logSecurityEvent } from "./logger";
 import { bucketKey, windowOrdinal } from "./rate-limit-window";
 
 const API_LIMIT = 100;
 const AUTH_LIMIT = 10;
 
-function clientKey(headers: Record<string, string | string[]>): string {
-  const xff = headers["x-forwarded-for"];
-  const forwarded = Array.isArray(xff) ? xff[0] : xff;
-  if (forwarded) return forwarded.split(",")[0]!.trim();
-  const real = headers["x-real-ip"];
-  return (Array.isArray(real) ? real[0] : real) ?? "anonymous";
+/**
+ * The ceiling for the untrusted-identity tier (spec 025 §3.2). Encore's
+ * APICallMeta carries headers and no transport peer, so a typed endpoint with
+ * no declared proxy has no forge-proof client signal at all. Rather than key
+ * on a header a caller controls, this tier keys on the endpoint and enforces
+ * one coarse shared ceiling: a limit that cannot be evaded, instead of a
+ * per-client limit that can. ENRAHITU_TRUSTED_PROXY_HOPS is the lever that
+ * restores the precise tier.
+ */
+function globalApiLimit(): number {
+  const raw = process.env.ENRAHITU_API_GLOBAL_LIMIT;
+  const n = raw === undefined || raw === "" ? NaN : Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : 2000;
 }
 
 /**
@@ -63,11 +71,29 @@ async function withinLimit(tier: string, key: string, limit: number): Promise<bo
   return true;
 }
 
-/** General API tier, mounted as service middleware. */
+/**
+ * General API tier, mounted as service middleware. Two modes, chosen by
+ * whether the declared topology vouches for a client identity (spec 025
+ * §3.2); the mode is explicit rather than a silent fallback, because a
+ * per-client bucket keyed on a forgeable header enforces nothing.
+ */
 export const apiRateLimit: Middleware = middleware(async (req, next) => {
   const meta = req.requestMeta;
-  const key = meta && meta.type === "api-call" ? clientKey(meta.headers ?? {}) : "internal";
-  if (!(await withinLimit("api", key, API_LIMIT))) {
+  if (!meta || meta.type !== "api-call") {
+    // Not an inbound call (pubsub delivery, internal invocation): one bucket,
+    // as before.
+    if (!(await withinLimit("api", "internal", API_LIMIT))) {
+      throw APIError.resourceExhausted("rate limit exceeded").withDetails({ code: "RATE_LIMITED" });
+    }
+    return next(req);
+  }
+
+  const identity = resolveClient(meta.headers ?? {});
+  const ok = identity.trusted
+    ? await withinLimit("api", identity.client, API_LIMIT)
+    : await withinLimit("api-global", `${meta.api.service}.${meta.api.endpoint}`, globalApiLimit());
+
+  if (!ok) {
     throw APIError.resourceExhausted("rate limit exceeded").withDetails({ code: "RATE_LIMITED" });
   }
   return next(req);

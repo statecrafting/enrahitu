@@ -97,6 +97,18 @@ the build/run-time contract with its phased enforcement seam. The
 app-model contract itself lands as spec 020 in the same change;
 implementation specs and the realignment of specs 002-019 follow (§5).
 
+**2026-07-25, the exposure review.** An external evaluation of the
+packaged image found four defects that exist only once the cell is
+reachable by a stranger, plus a set of product gaps around operating one
+over time. All were verified against the code and none contradicted the
+thesis; they are the substrate failing to use protections it had already
+built, plus missing operational vocabulary. The resulting specs are
+025 (substrate hardening), 026 (IdP mail delivery), 027 (operational
+verbs), 028 (operator documentation), 029 (supply-chain provenance),
+030 (infra topology), and 031 (admin evidence export). The one thesis-level
+clarification is recorded in section 4.1: completeness, not isolation, is
+the invariant.
+
 ## 3. Territory
 
 The repo shell: the Encore app manifest (`encore.app`), TypeScript
@@ -127,6 +139,21 @@ inside it everything an application needs to be complete:
   and drift-enforced, describing the cell's services, resources,
   capabilities, trust assignments, and gate configuration, with a
   Decision ledger whose genesis commits to the model hash (§4.6).
+
+**Completeness is the invariant; isolation is the default.** The cell
+requires no external infrastructure to be complete, and that property is
+load bearing: development costs a container host, and the simple
+deployment stays simple. It has been read, including by an external
+review of this corpus, as a prohibition on infrastructure. It is not
+one. A unit that is complete alone is not thereby forbidden to compose.
+Encore's `infra.config.json` is the seam the runtime already provides
+for declaring real infrastructure, and this repo has simply never
+populated it beyond metadata and secrets. Composing cells with each
+other and with infrastructure (one shared CoreLedger on Postgres, one
+pub/sub bus, N app containers) is a supported deployment shape, governed
+by spec 030, which also names what a second app container changes. What
+this substrate refuses is the Encore posture in which infrastructure is
+mandatory to develop and to run at all, not infrastructure itself.
 
 The cell composes with the two-plane model the statecraft thesis
 records: statecraft-the-platform is ONE enrahitu app, and every stamped
