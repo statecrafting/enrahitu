@@ -58,18 +58,22 @@ export async function lock(key: string): Promise<Lease> {
   await ready;
   const held = await hiqlite.lock(key);
 
-  let released = false;
+  // The in-flight release is the idempotence guard rather than a boolean flag.
+  // A flag set before the await would report "released" for a release that
+  // then failed, and one set after would let two concurrent calls both issue
+  // it. Holding the promise gives callers the real outcome every time.
+  let releasing: Promise<void> | undefined;
   return {
     token: held.token,
     key: held.key,
-    async release(): Promise<void> {
-      if (released) return;
+    release(): Promise<void> {
+      if (releasing) return releasing;
       // Re-adjudicated against the same capability and key. The holder
       // necessarily passes, and a service that never held the grant cannot
       // release a peer's lease by naming its key.
       demand("lock.acquire", COORD_RESOURCE, { attributes: { key: held.key } });
-      released = true;
-      await hiqlite.releaseLock(held.key);
+      releasing = hiqlite.releaseLock(held.key);
+      return releasing;
     },
   };
 }

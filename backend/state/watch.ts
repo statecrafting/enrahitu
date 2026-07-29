@@ -99,9 +99,17 @@ export function listen(handler: NotifyHandler): Unsubscribe {
   handlers.add(handler);
   if (!pumpRunning) {
     // Start after the node is up; the pump owns its own failures from there.
-    void ready.then(() => {
-      if (!pumpRunning && handlers.size > 0) void pump();
-    });
+    // The trailing catch is not decoration: `ready` already has its own
+    // handler in hiq/init.ts, but `ready.then(...)` mints a NEW promise that
+    // inherits the rejection, and an unhandled one there would take the
+    // process down over a node that failed to elect.
+    void ready
+      .then(() => {
+        if (!pumpRunning && handlers.size > 0) void pump();
+      })
+      .catch(() => {
+        // Surfaced already on every `await ready` at a call site.
+      });
   }
   return () => {
     handlers.delete(handler);
