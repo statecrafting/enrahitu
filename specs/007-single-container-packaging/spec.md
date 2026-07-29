@@ -283,3 +283,39 @@ the image. Only the built bundles (`backend/web/dist` and
 `backend/web/dist-admin`) are carried in, so the container ships compiled
 assets and no build inputs. Removing a name from this list is safe only
 because the directory is gone; it is never safe as a size optimization.
+
+## Amendment (2026-07-29): the dev branch and the restore marker (spec 033)
+
+Two changes to this spec's territory, both from spec 033.
+
+**`entrypoint.sh` gains a development branch.** `ENRAHITU_DEV=1` selects the
+watch loop as the app process instead of the built bundle. Everything else
+(first-boot, rauthy on loopback, the readiness wait, the signal traps,
+die-together) is shared rather than copied, deliberately: the trap handling
+is this spec's hardest-won behavior, and its absence left rauthy's hiqlite
+holding WAL and state-machine lock files so the next boot was unclean and
+could escalate to a crash loop. A second entrypoint would be a second place
+for that to regress.
+
+Two hardcoded exports became defaults in the same change:
+`NODE_ENV=production` and `AUTH_DRIVER=rauthy` now use the `${VAR:-…}` idiom
+that `ENRAHITU_METRICS_TOKEN` and `ENRAHITU_LEDGER_URL` already use three
+lines below. The packaged image sets neither, so both land on exactly the
+values they had. The dev topology sets both, and before this they were
+silently clobbered, which made `npm ci` omit devDependencies (no build
+toolchain, so the watch loop could not compile) and disabled the mock auth
+driver (no way to sign in). Neither symptom pointed at its cause.
+
+**`first-boot.mjs` makes restore single-shot.** hiqlite applies
+`HQL_BACKUP_RESTORE` at boot before the raft node starts, and rauthy's own
+configuration documents "remove the value after the restart". Left set in a
+container with a restart policy it re-applies on every restart and discards
+everything written since, so a crash loop becomes silent, repeated data
+loss, and the operator sees a container restarting rather than one deleting.
+
+first-boot now records which backup it honoured in a marker on the volume and
+writes its decision to `$DATA/restore.env`, which the entrypoint sources
+before starting either process (the same handshake as `secrets.env`, because
+a separate process cannot unset a variable in the entrypoint's shell). A
+different identifier is a new restore and is honoured. The operator sets the
+variable once and may leave it set forever.

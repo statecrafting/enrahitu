@@ -52,6 +52,10 @@ jobs:
       # learn the graph is wrong is before anything is compiled against it.
       - name: License boundary
         run: npm run check:licenses
+      # The infra configs are generated (spec 033 §3.4). A hand-edit is caught
+      # here rather than discovered at boot in an environment nobody develops in.
+      - name: Infra config drift
+        run: npm run check:infra
       # The template carries every frontend flavor (spec 015); the Encore parse
       # walk (build:app) resolves each flavor's vite.config imports, so both
       # flavor packages are installed here. A stamped app keeps only one flavor

@@ -156,3 +156,16 @@ existed to satisfy the parse walk goes with it.
 
 The `frontend-admin` install stays: the dashboard is a real optional slot
 (spec 023) and its config is still in the walk.
+
+## Amendment (2026-07-29): the infra-config drift gate (spec 033)
+
+`verify.yml` gains `npm run check:infra` beside the license check. The
+`infra.config.*.json` files are now generated from one declarative source
+(spec 033 §3.4) rather than hand-maintained as twins that must agree, and
+this step fails the PR when a committed file differs from its regeneration.
+
+It sits next to `check:licenses` and before the build for the same reason:
+both refuse a configuration, and the cheapest moment to learn a configuration
+is wrong is before anything is built against it. A hand-edit to a generated
+config is otherwise discovered at boot, in an environment nobody develops in,
+which is precisely the failure mode that generating them exists to end.

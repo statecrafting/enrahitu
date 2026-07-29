@@ -97,9 +97,11 @@ This repo is governed by [spec-spine](https://github.com/statecrafting/spec-spin
 
 ```bash
 npm install            # installs @statecrafting/toolchain + hiqlite-native (prebuilt binaries)
-npm run dev            # build + run on :4000 under plain node (no encore CLI)
-                       # PIVOT: replaced by the compose loop in phase 1b
+docker compose -f docker/compose.yml up   # the N=1 dev topology (spec 033)
+npm run dev            # legacy host-run loop; the compose topology above is
+                       # the supported one (spec 001 §4.1: dev is docker-only)
 npm run check:licenses # the AGPL boundary guard (spec 001 §4.7)
+npm run gen:infra      # regenerate infra.config.*.json (check:infra gates it)
 npm run build:app      # parse + bundle only (.encore/build/)
 npm run extract:model  # build + write app-model.json (spec 020); check:model verifies it
 npm run typecheck      # tsc --noEmit

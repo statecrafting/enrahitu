@@ -1,0 +1,68 @@
+# The development image (spec 033 §3.3).
+#
+# Same TOPOLOGY as the packaged image: one container, rauthy on loopback, the
+# app on the published port, both supervised by the same `entrypoint.sh` with
+# the same die-together policy and the same signal handling. Different BUILD
+# POSTURE: this one mounts the working tree and carries a toolchain so the
+# watch loop can rebuild in place, where the packaged image (docker/Dockerfile)
+# carries a built bundle and no build inputs.
+#
+# Conflating the two would put a compiler in the production image, so they stay
+# two files that agree on what matters and differ on what does not.
+#
+#   docker compose up            # builds this, mounts the repo, watches
+#
+# Base image: node:24-trixie-slim, matching Dockerfile.base. This is not a
+# preference. The published napi carriers are built on ubuntu-24.04 (glibc
+# 2.39), so a bookworm base crashes at boot when the addon loads.
+FROM node:24-trixie-slim
+
+# rauthy: a single dynamically-linked binary from the same pinned image the
+# packaged build layers, so dev and production run the same IdP build.
+FROM ghcr.io/sebadob/rauthy:0.36.0 AS rauthy
+FROM node:24-trixie-slim
+
+# ca-certificates, same as Dockerfile.base and for the same non-obvious reason:
+# node:24-trixie-slim ships none, and rauthy builds a reqwest client at startup
+# which panics outright with "No CA certificates were loaded from the system".
+# The failure is a Rust panic in init_static_vars.rs during boot, so the
+# container dies before rauthy logs anything of its own and the die-together
+# supervisor reports only that rauthy exited during startup.
+RUN apt-get update -qq \
+  && apt-get install -y -qq --no-install-recommends ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=rauthy /app/rauthy /rauthy/rauthy
+COPY docker/rauthy/config.prod.toml /rauthy/config.toml
+RUN chmod 0755 /rauthy/rauthy
+
+# The entrypoint and first-boot are COPIED rather than read from the mount, so
+# a container still boots when the mount is missing or the working tree is
+# mid-edit. Everything else the app needs comes from /workspace at runtime.
+COPY docker/entrypoint.sh /enrahitu/entrypoint.sh
+COPY docker/first-boot.mjs /enrahitu/first-boot.mjs
+RUN chmod 0755 /enrahitu/entrypoint.sh
+
+# Ownership before the mount points exist, so a fresh named volume inherits it.
+# Docker initializes a named volume from whatever the image has at that path;
+# if the path is absent from the image, the volume is created root-owned and a
+# non-root process cannot write to it.
+#
+# /workspace/node_modules is created here for exactly that reason and it is not
+# obvious: the compose file mounts a named volume there (the container needs
+# linux binaries for the addon and the napi runtime, which a macOS host's tree
+# cannot supply), and without this line the first-boot `npm ci` dies with
+# EACCES on mkdir. Same class of problem, and same fix, as the /data ownership
+# the packaged image needs (spec 007).
+RUN mkdir -p /data /workspace/node_modules && chown -R node:node /data /workspace
+VOLUME /data
+WORKDIR /workspace
+EXPOSE 8080
+
+# Non-root, matching the packaged image and the fleet's pod securityContext.
+# A bind-mounted working tree must therefore be readable and writable by uid
+# 1000, which it is on Linux and on Docker Desktop's osxfs.
+USER node
+
+ENV ENRAHITU_DEV=1
+ENTRYPOINT ["/enrahitu/entrypoint.sh"]

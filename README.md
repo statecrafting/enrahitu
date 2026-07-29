@@ -42,8 +42,10 @@ phase plan.
 ## Development
 
 ```bash
+docker compose -f docker/compose.yml up   # the N=1 dev topology: app + rauthy,
+                                          # one container, one volume, watched
+
 npm install            # installs @statecrafting/toolchain + hiqlite-native (prebuilt binaries)
-npm run dev            # build + run on :4000 under plain node
 npm run check:licenses # the AGPL boundary guard (spec 001 §4.7)
 
 curl localhost:4000/healthz   # liveness; touches no dependency (spec 025)
@@ -57,11 +59,11 @@ they need a session carrying the `enrahitu_operator` role, so a bare curl
 gets a 401 by design. That surface is a demo and retires once application
 code reaches hiqlite directly.
 
-**The dev loop is being replaced.** `npm run dev` runs the app under plain
-node on the host, which is the pre-pivot shape; development becomes
-docker-only under a compose topology whose N=1 tier is the N=1 deployment
-topology (spec 001 §5.1 phase 1b). Until that lands, the commands above are
-the working ones.
+**Development is docker-only** (spec 001 §4.1). `docker compose up` runs the
+same topology the packaged image runs, under the same `entrypoint.sh` with the
+same supervision, differing only in that source is mounted and rebuilt on
+change. `npm run dev` still works and runs the app on the host, but it is the
+pre-pivot shape and the divergence it created is what spec 033 exists to close.
 
 OTel traces are on in-process (a bounded recent-trace buffer the admin
 dashboard reads); set `OTEL_EXPORTER_OTLP_ENDPOINT` to ship spans to

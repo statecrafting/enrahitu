@@ -1,0 +1,70 @@
+# The default development topology (spec 033 §3.3): N=1.
+#
+#   docker compose -f docker/compose.yml up
+#
+# One container, one volume, one command. rauthy on loopback :8081, the app on
+# :4000, both supervised by entrypoint.sh with the same die-together policy the
+# packaged image uses. This is the same SHAPE as the N=1 deployment, which is
+# the property that stops development and production drifting into two systems
+# (spec 033 §1): before this file, dev ran the app on the host with rauthy in a
+# separate compose file, and the resulting defects were only ever visible on CI.
+#
+# The scale tier is spec 030's docker/compose.cluster.yml. It is a separate file
+# for a separate purpose, and most deployments never need it.
+#
+# What is bind-mounted and why:
+#   - the working tree at /workspace, so the watch loop rebuilds what you edit
+#   - node_modules is NOT masked, because the linux binaries the addon and the
+#     napi runtime need are not the ones a macOS host installed. The container
+#     gets its own, in a named volume, populated by `npm ci` on first boot.
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    ports:
+      # Published on loopback only. The dev container holds real key material
+      # in its volume and runs with the mock auth driver enabled; neither
+      # belongs on a LAN.
+      - "127.0.0.1:4000:4000"
+    environment:
+      PORT: "4000"
+      ENRAHITU_DEV: "1"
+      # Plain http on localhost, so the entrypoint selects rauthy's
+      # danger-insecure cookie mode. Safari refuses to store a Secure cookie
+      # over http even on localhost, which otherwise breaks every login with a
+      # sub-millisecond 401 that looks like a bad password (spec 007).
+      ENRAHITU_PUBLIC_URL: "http://localhost:4000"
+      ENRAHITU_DATA_DIR: /data
+      # Development, not test and not production: "test" puts the Encore
+      # runtime in test mode where it never opens its listener, and
+      # "production" disables the mock auth driver (spec 033 §3.1).
+      NODE_ENV: development
+      AUTH_DRIVER: "${AUTH_DRIVER:-mock}"
+      ENRAHITU_LEDGER_URL: "file:/data/ledger/enrahitu.db"
+      ENRAHITU_HIQ_DATA_DIR: /data/hiqlite
+      # rauthy's embedded hiqlite owns 8100/8200 in this network namespace.
+      ENRAHITU_HIQ_ADDR_RAFT: "127.0.0.1:8300"
+      ENRAHITU_HIQ_ADDR_API: "127.0.0.1:8400"
+    volumes:
+      - ..:/workspace
+      - dev-node-modules:/workspace/node_modules
+      - dev-data:/data
+    # The image's HEALTHCHECK is the packaged image's concern; here the app
+    # port is what a developer waits on.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
+
+volumes:
+  dev-node-modules:
+  dev-data:

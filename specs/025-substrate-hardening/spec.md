@@ -433,3 +433,17 @@ the kind only a booting application reveals: `encore.dev` had drifted a
 patch ahead of the napi runtime the toolchain ships (1.57.12 against
 1.57.9), and the runtime printed a version-mismatch warning on every boot
 that nothing was reading. Pinned in spec 033.
+
+## Amendment (2026-07-29): first-boot's test harness widens
+
+`docker/first-boot.test.ts` (this spec's territory, since spec 025 §3.4 added
+the `/metrics` token provisioning it covers) gains seven cases for the
+single-shot restore guard, and its `runFirstBoot` helper now accepts extra
+environment and returns stdout so a test can assert on what the script
+decided rather than only on what it wrote.
+
+The provisioning properties this spec cares about are unchanged and still
+covered: material is written once, so a restart or upgrade never rotates a
+token an operator has already configured a scraper against. The restore guard
+is spec 033's behavior; it lives in this file because the file is the
+first-boot suite, not because it is this spec's concern.

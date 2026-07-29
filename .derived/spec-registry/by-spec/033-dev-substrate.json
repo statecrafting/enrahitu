@@ -12,6 +12,26 @@
       {
         "kind": "directory",
         "path": "testing/"
+      },
+      {
+        "kind": "file",
+        "path": "docker/compose.yml"
+      },
+      {
+        "kind": "file",
+        "path": "docker/Dockerfile.dev"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/gen-infra-config.mjs"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/gen-infra-config.test.ts"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/dev-watch.mjs"
       }
     ],
     "id": "033-dev-substrate",
@@ -32,9 +52,9 @@
     ],
     "specPath": "specs/033-dev-substrate/spec.md",
     "status": "approved",
-    "summary": "Phase 1b of the pivot (spec 001 §5.1). Development becomes docker-only, and the N=1 dev topology becomes the N=1 deployment topology rather than a parallel arrangement that resembles it. Five parts: a tiered compose topology whose default tier is one container and one volume; a single generator for infra.config.<topology>.json, replacing hand-maintained twins; a backend watch loop, which the toolchain's dev runner has never had; the app-level test harness, which boots the real compiled bundle and talks to it over HTTP; and the single-shot restore marker that makes HQL_BACKUP_RESTORE safe in a container with a restart policy. The harness landed first because it is what closes spec 025 and what specs 026, 027, and the control plane all build on, and because it immediately found two defects nothing else in the repo could see.\n",
+    "summary": "Phase 1b of the pivot (spec 001 §5.1). Development becomes docker-only, and the N=1 dev topology becomes the N=1 deployment topology rather than a parallel arrangement that resembles it. Five parts: a tiered compose topology whose default tier is one container and one volume; a single generator for infra.config.<topology>.json, replacing hand-maintained twins; a backend watch loop, which the toolchain's dev runner has never had; the app-level test harness, which boots the real compiled bundle and talks to it over HTTP; and the single-shot restore marker that makes HQL_BACKUP_RESTORE safe in a container with a restart policy. The harness landed first because it is what closes spec 025 and what specs 026, 027, and the control plane all build on. Between them the harness and a real boot of the topology found five defects nothing else in the repo could see, which is the case for verifying this by running it rather than by reading it.\n",
     "title": "The dev substrate: docker-only development and the app-level harness"
   },
-  "shardHash": "6f5e6654acc4e06697d273920051a731940d80467fd694bd85a6c7705dcdf0ea",
+  "shardHash": "be6189774a49bdea251791547bd394fab605309b687b311f0ebdf54429434d8a",
   "specVersion": "1.1.0"
 }

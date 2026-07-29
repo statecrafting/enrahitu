@@ -135,4 +135,75 @@ writeFileSync(join(bootstrapDir, "clients.json"), JSON.stringify(clients, null, 
   mode: 0o600,
 });
 
+// --- restore, made single-shot (spec 033 §3.5, spec 032 §3.9) ---------------
+//
+// hiqlite restores a backup at boot when HQL_BACKUP_RESTORE is set, BEFORE the
+// raft node starts, and its own documentation says to remove the value after
+// the restart. That instruction is a runbook step standing between a tenant and
+// their data: left set in a container with a restart policy, the backup is
+// re-applied on EVERY restart and everything written since is discarded. A
+// crash loop then becomes silent, repeated data loss, and the operator sees a
+// container that keeps restarting rather than one that keeps deleting.
+//
+// So it is designed out rather than documented around. The value the operator
+// set is recorded in a marker on the volume the first time it is honoured;
+// subsequent boots see the marker, unset the variable for the child processes,
+// and say so. The operator sets it once and may leave it set forever.
+//
+// Changing the variable to a DIFFERENT backup is a new restore and is honoured:
+// the marker records which backup was applied, not merely that one was.
+// This runs as its own process, so it cannot unset a variable in the
+// entrypoint's shell. It therefore writes its decision to restore.env, which
+// the entrypoint sources before starting either supervised process, exactly
+// the handshake already used for secrets.env. Keeping the decision in one
+// place (here) and the application in one place (the entrypoint) is what
+// stops the two from drifting into disagreement.
+const restoreRequest = (process.env.HQL_BACKUP_RESTORE ?? "").trim();
+const restoreMarkerPath = join(DATA, "restore-applied.json");
+const restoreEnvPath = join(DATA, "restore.env");
+
+if (restoreRequest) {
+  let applied = null;
+  if (existsSync(restoreMarkerPath)) {
+    try {
+      applied = JSON.parse(readFileSync(restoreMarkerPath, "utf8"));
+    } catch {
+      // An unreadable marker is treated as absent. The alternative is refusing
+      // to boot over a corrupt bookkeeping file, which is a worse failure than
+      // re-applying a restore the operator explicitly asked for.
+      applied = null;
+    }
+  }
+
+  if (applied?.backup === restoreRequest) {
+    writeFileSync(restoreEnvPath, "unset HQL_BACKUP_RESTORE\n", { mode: 0o600 });
+    console.log(
+      `[first-boot] HQL_BACKUP_RESTORE is still set to "${restoreRequest}", already applied at ` +
+        `${applied.appliedAt}; ignoring it. Delete ${restoreMarkerPath} to force a re-restore.`,
+    );
+  } else {
+    writeFileSync(
+      restoreMarkerPath,
+      JSON.stringify(
+        { backup: restoreRequest, appliedAt: new Date().toISOString(), previous: applied },
+        null,
+        2,
+      ),
+      { mode: 0o600 },
+    );
+    // Single-quoted and escaped: a backup identifier is operator-supplied and
+    // this file is sourced by bash.
+    const quoted = `'${restoreRequest.replace(/'/g, `'\\''`)}'`;
+    writeFileSync(restoreEnvPath, `export HQL_BACKUP_RESTORE=${quoted}\n`, { mode: 0o600 });
+    console.log(
+      `[first-boot] restore requested from "${restoreRequest}"; recorded at ${restoreMarkerPath}. ` +
+        `It will not be applied again on the next restart.`,
+    );
+  }
+} else {
+  // No request this boot: make sure a stale decision from a previous boot
+  // cannot leak into this one.
+  writeFileSync(restoreEnvPath, "unset HQL_BACKUP_RESTORE\n", { mode: 0o600 });
+}
+
 console.log("[first-boot] ready");
