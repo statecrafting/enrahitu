@@ -24,6 +24,14 @@
       {
         "kind": "file",
         "path": "vitest.setup.ts"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/check-licenses.mjs"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/check-licenses.test.ts"
       }
     ],
     "id": "001-enrahitu-architecture",
@@ -37,24 +45,28 @@
       "2. Rewrite record",
       "3. Territory",
       "4. Behavior",
-      "4.1 The governed cell",
-      "4.2 Repo-shaping decisions (retained)",
+      "4.1 The product, the unit, and the two invariants",
+      "4.2 Repo-shaping decisions",
       "4.3 Frontends: React-only convergence",
       "4.4 The admin dashboard and the operator role",
       "4.5 Observability: the substrate contract",
       "4.6 app-model.json and the phased seam",
       "4.7 Dependency posture",
       "4.8 Lineage",
-      "5. Sequencing",
+      "4.9 Product scope bans",
+      "5. Sequencing and corpus disposition",
+      "5.1 Phases",
+      "5.2 Disposition of every spec",
+      "5.3 The auth boundary (decided 2026-07-29)",
       "6. Out of scope",
       "Amendment (2026-07-22): root excludes gain frontend-admin (spec 023)",
       "Amendment (2026-07-23): ledger durability constraints (spec 024)"
     ],
     "specPath": "specs/001-enrahitu-architecture/spec.md",
     "status": "approved",
-    "summary": "The architecture thesis and the app shell, rewritten ground-up on 2026-07-19 from the grand-refactor realignment. enrahitu is the substrate for governed cells: Encore.ts is kept as the application framework while its managed-infrastructure coupling stays severed (in-process hiqlite, CoreLedger on libSQL/Turso, rauthy inside the app image), and every app built on it is a self-contained governed cell carrying embedded identity, embedded consensus, durable state behind one decorator data layer, a non-negotiable observability contract (Prometheus /metrics + OTel), and one extracted, hash-anchored model (app-model.json, spec 020) of what it contains and what it is permitted to do. The frontend converges React-only: frontend (the user-facing SPA) plus frontend-admin (the flag-gated admin dashboard, gated on the <app>_operator role convention). Enforcement phases in behind the model (Phase A: extraction, kernel adjudication, Decision ledger; Phase B: the Rust effect tier). One Docker image plus one volume is a complete authenticated, observable, governed application. This spec owns the repo-shell units (Encore app manifest, TypeScript and test configuration, the health service) and anchors the root package; subsystems are governed by specs 002-019 and the follow-up specs this rewrite sequences. This repository is enrahitu (EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso; formerly enrahi / enrahi-kit): the Encore toolchain is vendored and driven directly via napi-rs (spec 008), and the repo doubles as the template chassis the Statecraft factory stamps (spec 009).\n",
+    "summary": "The architecture thesis and the app shell. enrahitu is a membership and association management platform for non-profits and associations, shipped as a working application that organizations extend rather than fork. Encore.ts is kept as the edge, contract, and external-seam layer and stops being the process supervisor; hiqlite stops being a cache and becomes the replicated state layer; rauthy stops being a login page and becomes the principal authority, reached only through the app's own origin. Every deployment carries one extracted, hash-anchored model (app-model.json, spec 020) of what it contains and what it is permitted to do, enforced by a kernel and recorded in a hash-chained Decision ledger, plus a non-negotiable observability contract (Prometheus /metrics + OTel). The deployment unit is one container and one volume by default: N=1 is the primary mode, not a degenerate case, and becomes a three or five node Raft cluster when a tenant outgrows it. Development is docker-only. The frontend converges React-only: frontend (the member-facing SPA) plus frontend-admin (the flag-gated operator dashboard, gated on the <app>_operator role convention). This spec owns the repo-shell units (Encore app manifest, TypeScript and test configuration, the health service), anchors the root package, and carries the corpus disposition table (section 5) recording how every other spec stands after the 2026-07-27 pivot. The build toolchain is consumed as published packages and driven directly via napi-rs with no encore CLI (spec 008), and the repo doubles as the template chassis the Statecraft factory stamps (spec 009). The name enrahitu is kept as a proper noun; its former expansion no longer describes the stack.\n",
     "title": "enrahitu: the self-contained governed cell substrate"
   },
-  "shardHash": "31d26fbd133fbb14f74af5df7a361e30a45bc2c79e8ff02bf40e0c886a577945",
+  "shardHash": "23629b9dbb33c8872fca04b8276b88f9ff569838773d7a84c80d6324c4b917ce",
   "specVersion": "1.1.0"
 }

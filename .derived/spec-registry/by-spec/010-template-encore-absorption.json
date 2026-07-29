@@ -21,13 +21,14 @@
       "LI-2: Born-with certificate + agentic posture",
       "LI-3: Pages deployment",
       "LI-4: repoInit seeding",
-      "4. Out of scope"
+      "4. Out of scope",
+      "Amendment (2026-07-27): the license boundary runs in verify (spec 001)"
     ],
     "specPath": "specs/010-template-encore-absorption/spec.md",
     "status": "approved",
     "summary": "template-encore (the previous chassis, stamped by factory-encore) still owns four capabilities this template does not have: born-green CI workflows, the born-with certificate + agentic posture flow, Pages deployment, and repoInit seeding. This spec enumerates the absorption line items with their source locations and target shapes. When all four land here, template-encore retires as a chassis and the enrahitu repo is the only template the Statecraft factory stamps. LI-1 done 2026-07-14 (born-green stamp proven); each item flips to done individually.\n",
     "title": "Absorb template-encore's remaining value, then retire it"
   },
-  "shardHash": "11fdfb63425a2200d841e06b043b34ef08b87ab9aab8afff08c8aa4fc4e4100c",
+  "shardHash": "e83d78d277b9fb4c8d7d68dd2eb1f356e3b44ce94c655eba46117c9e7d0073d4",
   "specVersion": "1.1.0"
 }

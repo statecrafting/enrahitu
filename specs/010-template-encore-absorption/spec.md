@@ -118,3 +118,28 @@ completion; the implementing specs own the how.
 Amended by spec 023 (2026-07-22): the verify workflow installs the
 `frontend-admin/` package alongside the two frontend flavors (parse-walk
 resolution, same as spec 015's flavor installs) and caches its lockfile.
+
+## Amendment (2026-07-27): the license boundary runs in verify (spec 001)
+
+`verify.yml` (this spec's territory) gains a `npm run check:licenses` step
+immediately after `npm ci`, enforcing the AGPL boundary that spec 001 §4.7
+states: customer-reaching packages never depend on AGPL-licensed ones, so
+`@statecrafting/governance-native` (AGPL-3.0) must never appear in this
+repo's dependency graph while `@statecrafting/kernel-native` (Apache-2.0)
+is the sanctioned path for admission and audit.
+
+Two placement decisions, both deliberate. It runs **in this repo** because
+this repo's `package.json` is where such a dependency would be declared,
+and a guard living only upstream does not gate these PRs. It runs
+**before the build**, because its whole job is to refuse a dependency
+graph, and the cheapest moment to learn the graph is wrong is before
+anything compiles against it.
+
+The guard itself (`scripts/check-licenses.mjs` and its test) is spec 001's
+territory, since the rule it enforces is stated there. This amendment
+covers only the workflow step.
+
+Not yet decided: whether the check joins `template.toml [verbs].verify`,
+which would make every stamped app inherit it. That touches the template
+contract, so it rides the phase 1c change that already bumps the contract
+version (spec 001 §5.1) rather than bumping it twice.

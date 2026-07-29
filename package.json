@@ -7,7 +7,7 @@
     "spec": "001-enrahitu-architecture"
   },
   "type": "module",
-  "description": "EnRaHiTu: Encore.ts + rauthy + hiqlite + Turso/libSQL on the @statecrafting build toolchain (Encore rust core + js runtime via napi-rs, no encore CLI): a self-contained, single-container application core with zero managed-infrastructure dependencies.",
+  "description": "enrahitu: a self-hosted membership and association management platform for non-profits and associations, on the @statecrafting build toolchain (Encore rust core + js runtime via napi-rs, no encore CLI). One container and one volume is a complete authenticated, observable, governed application.",
   "engines": {
     "node": ">=24"
   },
@@ -18,6 +18,7 @@
     "check:model": "enrahitu-extract --check",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
+    "check:licenses": "node scripts/check-licenses.mjs",
     "generate-keys": "tsx scripts/generate-keys.ts",
     "dev:idp": "docker compose -f docker/compose.dev.yml up -d && node scripts/sync-dev-rauthy-secret.mjs",
     "dev:idp-secret": "node scripts/sync-dev-rauthy-secret.mjs",

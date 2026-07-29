@@ -7,7 +7,6 @@
       "005-rauthy-same-origin",
       "007-single-container-packaging",
       "009-template-contract",
-      "011-coreledger-postgres-driver",
       "021-kernel-native-consumption",
       "024-decision-chain-integrity"
     ],
@@ -28,20 +27,22 @@
       "1. Purpose",
       "2. Territory",
       "3. Behavior",
-      "3.1 The thesis, restated",
-      "3.2 Roles",
-      "3.3 What multiplies, and what must be shared",
-      "3.4 Pub/sub, governed",
-      "3.5 The compose topology",
-      "3.6 Contract",
+      "3.1 What multiplies",
+      "3.2 Key material",
+      "3.3 What does not span, and what to do about it",
+      "3.4 The scale path",
+      "3.5 Pub/sub, governed",
+      "3.6 `sql_servers` stays unpopulated pending a decision",
+      "3.7 Contract",
       "4. Acceptance",
-      "5. Out of scope"
+      "5. Out of scope",
+      "6. Rewrite record"
     ],
     "specPath": "specs/030-infra-topology/spec.md",
     "status": "approved",
-    "summary": "The zero-infrastructure single container was read, including by this corpus, as a prohibition on infrastructure. It was always a default. Encore's infra.config.json is the seam the runtime already provides for declaring real infrastructure, and the toolchain's runtime ships NSQ, Postgres, and Redis clients compiled in; this substrate has simply never populated the file beyond metadata and secrets. This spec makes the cluster topology a first-class, supported deployment shape: a compose file with Postgres and nsqd, N enrahitu containers sharing one ledger and one pub/sub bus, and encore.dev/pubsub Topic and Subscription usable exactly as they are in any Encore app. Doing that honestly requires naming what a second app container breaks, so this spec introduces a role selector (cell, app, idp), moves key material from per-volume generation to injection in multi-instance roles, and brings pub/sub under kernel adjudication so the bus does not become the one ungoverned channel out of a governed cell.\n",
-    "title": "Infra topology: the cell is the atom, not the ceiling"
+    "summary": "Rewritten 2026-07-27 for the pivot. The first version of this spec solved the wrong problem: it treated the single container as a limit to escape and designed a stateless app tier around a singleton identity provider, which required a role selector, a key-injection ceremony, and a shared external ledger. Once hiqlite is the state layer and rauthy clusters its own hiqlite alongside it, all three dissolve. The topology is now uniform: every replica is a stateful Raft member, one container by default with a single voter, and three or five members under a Kubernetes StatefulSet when a tenant outgrows it. N=1 is the primary mode and every behavior here is stated at N=1 first. This spec owns the cluster compose realization, the three operational requirements that make N>1 safe (PodDisruptionBudget, readiness-not-liveness on quorum, anti-affinity), the rule that Raft is never bridged across clusters, and the governed pub/sub path so the bus does not become the one ungoverned channel out of a governed deployment.\n",
+    "title": "Infra topology: N=1 is the primary mode, N=3 is the scale path"
   },
-  "shardHash": "b306128da3b2a282fc157890216b097ea871e593aba46430b1642045bfc47cf5",
+  "shardHash": "9e58711509af5a643ca98bdffdfea96a1d14a3240033f2cb22c3676fe6165d18",
   "specVersion": "1.1.0"
 }

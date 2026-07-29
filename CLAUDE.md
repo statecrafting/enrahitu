@@ -2,18 +2,49 @@
 
 ## Project Overview
 
-enrahitu (**EnRaHiTu**: **En**core.ts + **ra**uthy + **hi**qlite +
-**Tu**rso) is a self-contained application substrate on the published
+enrahitu is a **membership and association management platform** for
+non-profits and associations, shipped as a working application that
+organizations extend rather than fork. It runs on the published
 `@statecrafting/toolchain`: the Encore rust runtime core and TS
 parser/compiler arrive as prebuilt per-platform binaries and are driven
 directly via napi-rs; the `encore` CLI is not used anywhere (spec 008).
-One Docker image + one volume = a complete authenticated application,
-zero managed-infrastructure dependencies. It is also the template
-chassis stamped by the Statecraft factory (spec 009 defines the
-versioned template contract; spec 010 tracks template-encore
-absorption). Lineage: formerly `enrahi` / `enrahi-kit`.
+One container + one volume = a complete authenticated application.
+It is also the template chassis stamped by the Statecraft factory
+(spec 009 defines the versioned template contract; spec 010 tracks
+template-encore absorption). Lineage: formerly `enrahi` / `enrahi-kit`.
+The name is a proper noun; its former acronym expansion (Encore + rauthy
++ hiqlite + Turso) no longer describes the stack, because Turso is
+benched (spec 001 §4.7).
 The architecture thesis lives in `specs/001-enrahitu-architecture/spec.md`;
 `docs/ARCHITECTURE.md` is the human overview.
+
+## The 2026-07-27 pivot: read this before planning any change
+
+The corpus is mid-pivot. Spec 001 §2 carries the rewrite record, §5.1
+the phases, and **§5.2 a disposition table saying whether each spec is
+current, rewritten, or rewrite-pending**. Check it before treating any
+spec as truth.
+
+What changed, in the four lines that most often mislead:
+
+- **Layer ownership.** Encore.ts holds the edge (API, contracts,
+  external seams) and is not the process supervisor. hiqlite is the
+  state layer, not a cache. rauthy is the principal authority, not a
+  login page. Application code holds intent and reconciliation.
+- **Development is docker-only** in the target state. The old
+  "`npm run dev` requires no infrastructure" invariant was wrong and is
+  deleted; the *deployment* completeness invariant survives untouched.
+  Phase 1b builds the compose loop; until it lands, the commands below
+  are still the working ones.
+- **N=1 is the primary mode.** One container, one volume, single Raft
+  voter. State behavior at N=1 first; N=3 is the additional case.
+- **The application ships and stays.** There is no prunable example
+  slot and no template-you-fill-in.
+
+Rewrite-pending specs (003, 004, 011, 024) still describe what is
+actually built. Do not rewrite them ahead of the code; that is the
+distinction between deleting a false invariant (phase 0, done) and
+describing an unbuilt target (rides the implementing change).
 
 ## Repository Structure
 
@@ -67,6 +98,8 @@ This repo is governed by [spec-spine](https://github.com/statecrafting/spec-spin
 ```bash
 npm install            # installs @statecrafting/toolchain + hiqlite-native (prebuilt binaries)
 npm run dev            # build + run on :4000 under plain node (no encore CLI)
+                       # PIVOT: replaced by the compose loop in phase 1b
+npm run check:licenses # the AGPL boundary guard (spec 001 §4.7)
 npm run build:app      # parse + bundle only (.encore/build/)
 npm run extract:model  # build + write app-model.json (spec 020); check:model verifies it
 npm run typecheck      # tsc --noEmit
@@ -89,8 +122,13 @@ spec 008.
 
 ## Key Conventions
 
-- **No Encore `SQLDatabase` anywhere.** Durable state is CoreLedger's job
-  (spec 003). `encore run` must never want Docker Postgres.
+- **No Encore `SQLDatabase` anywhere.** The ban is on the primitive:
+  adopting it puts Encore in charge of durable state and its migrations,
+  displacing the state layer this substrate owns. Unchanged by the pivot.
+  The `sql_servers` *slot* is a separate, open question (spec 001 §4.2
+  decision 2), unpopulated until the phase 1a interface contract resolves
+  it. Durable state is CoreLedger's job today (spec 003) and hiqlite's
+  after phase 2.
 - **Single-package repo, no npm workspaces** (spec 001 key decision 1);
   `addon/` and `frontend/` have standalone manifests.
 - **Stage-3 TS decorators only**; no `experimentalDecorators`.

@@ -25,13 +25,14 @@
       "6. Phase A seam (amended by spec 021, 2026-07-20)",
       "Amendment (2026-07-21): the addon moves to @statecrafting/hiqlite-native",
       "Amendment (2026-07-22): observability seam (spec 022)",
-      "Amendment (2026-07-25): the demo surface is operator-gated (spec 025)"
+      "Amendment (2026-07-25): the demo surface is operator-gated (spec 025)",
+      "Pivot (2026-07-27): two invariants deleted, nothing added"
     ],
     "specPath": "specs/002-in-process-hiqlite/spec.md",
     "status": "approved",
     "summary": "The hiqlite runtime embedded in the Node process: a napi-rs cdylib (@enrahitu/hiqlite-native) exposing init/health, TTL'd KV, and counters, plus the thin `hiq` Encore service that starts the node at service load and fronts the addon over HTTP. Replaces Redis for cache and rate-limit state with zero extra processes.\n",
     "title": "In-process hiqlite via a napi-rs native addon"
   },
-  "shardHash": "77db07e82e45e05f673d2b81a6854579ce0d102361b137795b8497e24db8c11d",
+  "shardHash": "83192e8445bd91c6a611ec9ea84b3b9d5956ba7680b1a9fdd3b1ee130a36f46c",
   "specVersion": "1.1.0"
 }

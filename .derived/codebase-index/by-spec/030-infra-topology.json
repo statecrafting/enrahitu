@@ -21,7 +21,6 @@
       "005-rauthy-same-origin",
       "007-single-container-packaging",
       "009-template-contract",
-      "011-coreledger-postgres-driver",
       "021-kernel-native-consumption",
       "024-decision-chain-integrity"
     ],
@@ -50,5 +49,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "d304ccdb4d87361c7b12a7787b53efc74896f1e873b0aee258b7eb14533b5603"
+  "shardHash": "f915278e7c5765e14f1bb4cae9e5e30bbc2438ddba02c72df8e408be575aee31"
 }
