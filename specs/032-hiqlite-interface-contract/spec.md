@@ -64,6 +64,17 @@ docs.** That was not ceremony. Three checks changed the answer:
 This spec owns `backend/state/`: the typed, governed facade over the
 expanded addon, in the same shape as `backend/kernel/hiq.ts` (spec 021).
 Application code never imports the addon; it calls this facade, and the
+facade adjudicates before crossing into Rust.
+
+**It stays `implementation: pending` even though the addon shipped**, and
+the distinction is worth being precise about rather than rounding up. The
+contract is settled and the surface it describes is built and proven
+(statecrafting 0.2.0, see the implementation record below). What is
+unbuilt is this repo's territory: the facade. It cannot be written earlier
+than the publish either, because it must compile against the PUBLISHED
+addon, and a facade calling `query` today would fail this repo's own
+typecheck against 0.1.0.
+Application code never imports the addon; it calls this facade, and the
 facade adjudicates before crossing into Rust. The extraction ban-list
 enforces that, as it already does for the cache surface.
 
@@ -460,3 +471,85 @@ SQLite it did not have; it is consolidating onto one.
   (`// TODO - lock_timeout`); until then ten seconds is the contract and
   fencing is what makes it safe.
 - The control plane that consumes this surface: phase 3.
+
+## Implementation record (2026-07-29): four corrections
+
+The addon shipped as `@statecrafting/hiqlite-native` 0.2.0 (statecrafting
+spec 003), and building it corrected this contract in four places. Each is
+recorded here rather than only there, because this document is the one read
+during the work and a contract that quietly disagrees with its
+implementation is worse than one that is wrong out loud.
+
+**§3.4 was wrong about where the fencing token comes from.** This spec
+reasoned that hiqlite's lock id is the raft `log_id`, monotonically
+increasing across the cache group, and therefore "already a valid fencing
+token" that is "free". The first half is true. The second is not:
+`hiqlite::Lock` keeps `id` in a private field with **no accessor**, so the
+token cannot be obtained through the public API at all.
+
+The correction is better than the original, which is why it stands rather
+than being patched around. The token is now a monotonic counter in the
+**SQLite** group (`_hiqlite_lease_fence`, created lazily on first `lock()`,
+bumped by an upsert with `RETURNING` in one round trip). Lock state lives in
+the cache group, which is not durable and does not survive a full cluster
+restart, and **a fencing token that resets is not a fencing token**. The
+fence is now durable, and it lives in the same group as the writes it
+guards, so the fence and the write commit in one `txn`. The
+`WHERE fence <= :token` predicate this spec specifies is unchanged.
+
+**§3.4's release requirement got sharper.** `hiqlite::Lock` releases on
+`Drop`, asynchronously. Without parking the handle Rust-side the lock would
+release the instant `lock()` returned, so the lease would be a silent no-op
+rather than a short one. `releaseLock(key)` is explicit for that reason,
+not merely for determinism.
+
+**§3.2's envelope is now a struct, not a convention.** hiqlite serializes
+bus events with bincode, which cannot decode a free-form JSON value
+(`Serde(AnyNotSupported)`), so a `serde_json::Value` envelope fails at
+runtime. `NotifyEnvelope { kind, tenant?, name, revision }` is a concrete
+type, which is what this spec wanted anyway: with fixed fields a caller
+**cannot** smuggle a payload onto the cache raft group. The key-only
+decision is now enforced structurally rather than by discipline.
+
+**§3.8 has a precondition this spec did not state.** Enabling `backup`
+pulls hiqlite's `s3` feature, which makes `NodeConfig.enc_keys` mandatory:
+the node **refuses to start** without encryption keys. That is a boot
+contract change, not a detail. `ENRAHITU_HIQ_ENC_KEYS` takes the same
+format rauthy's `ENC_KEYS` uses, so a deployment custodies one key set for
+both hiqlite instances, which is what §8.6 of the pivot brief required and
+what this spec should have said. A publicly-known development key is the
+fallback and warns loudly on every boot.
+
+**One addition to §4.** `executeReturning` is on the surface. `execute`
+alone cannot express an upsert that reports the value it settled on, which
+is exactly what the fence needs, and a caller forced to follow a write with
+a read would be reading through a different consistency path than the one
+that wrote.
+
+### What did not change
+
+The four decisions that concluded "no new primitive" all held. `txn` plus a
+unique index is the CAS, and spec 024's existing retry loop carries over
+with no change to its assertions. A monotonic column inside the transaction
+is the revision sequence. Migrations remain DDL through `txn` guarded by a
+version table, with no addon entry point. Restore stays outside the addon.
+
+Verified against a running node rather than by inspection: 19 checks in
+`sanity-state.mjs` covering every decision that produced a call plus txn
+atomicity and fence monotonicity, the original cache sanity unregressed,
+and enrahitu's full suite (181 tests, including the app-level suite that
+boots the real Encore process) passing against the expanded addon. That
+last one re-proves the two-tokio-runtimes property now that SQLite-C, S3
+and cron are compiled into the same `.node`.
+
+### Remaining
+
+`backend/state/` is this spec's territory and is not yet written, which is
+why this stays `implementation: in-progress` rather than moving to
+`complete`. The index gate refused `complete` on exactly that ground, and it
+was right to: the contract is settled and proven, but the governed facade
+that application code will actually call does not exist. It lands when 0.2.0
+is published and enrahitu bumps to `^0.2`.
+
+The surface it wraps is now fixed and verified against a running node, which
+was the entire point of writing the contract before the addon.

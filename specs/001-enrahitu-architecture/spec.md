@@ -548,12 +548,24 @@ independent and run in parallel.
   nothing booted the bundle inside a test.
 - **Phase 1c, frontend convergence. Landed as spec 015** (2026-07-29),
   with amendments to specs 002, 006, 009, 013, and 014. §4.3 executed.
-- **Phase 2, the addon expansion (the gate).** `sqlite`, `dlock`, and
-  `listen_notify_local` features, cluster config passthrough, and the
-  TS surface (`query` / `execute` / `txn` / `listen` / `notify` / `lock`
-  / backup). Nothing above it is testable until it exists. It lives in
-  `statecrafting/statecrafting`, and is developed against this repo by
-  patching `node_modules` rather than waiting on a publish.
+- **Phase 2, the addon expansion (the gate). Landed 2026-07-29** as
+  `@statecrafting/hiqlite-native` 0.2.0 (statecrafting spec 003, PR #13).
+  Nine functions became twenty-one: replicated SQL, watch, leases with
+  fencing, encrypted backups, and cluster membership as configuration
+  passthrough. Verified against a running node and against this repo's full
+  suite with the addon patched into `node_modules`, which re-proved the
+  two-tokio-runtimes property now that SQLite-C, S3 and cron compile into
+  the same `.node`.
+
+  Building it corrected the contract in four places, recorded in spec 032's
+  implementation record. The sharpest: the fencing token could not come
+  from hiqlite's lock at all (`Lock::id` is private with no accessor), so
+  it moved to a durable counter in the SQLite group, which is better,
+  because lock state lives in the non-durable cache group and a fencing
+  token that resets is not a fencing token.
+
+  Remaining before phase 3: publish 0.2.0 (CI-only), bump this repo to
+  `^0.2`, and write `backend/state/`.
 - **Phase 3, control plane architecture.** Kinds, admission, watch,
   controllers, audit. Back-written from what real nodes did, not
   designed ahead of them.
@@ -607,6 +619,7 @@ territory, per the coupling gate.
 | 028 operator documentation | **Survives, grows.** |
 | 029 supply-chain provenance | **Survives.** |
 | 030 infra topology | **Rewritten, phase 0.** |
+| 032 hiqlite interface contract | **In progress**: the contract is settled and the addon (statecrafting 0.2.0) is built and proven; `backend/state/` lands after publish. |
 | 031 admin evidence export | **Pulled forward**: grant reporting is a buying reason, and open-format portability is a separate feature from backup. Conflating them fails a procurement review. |
 
 New specs, in phase order: the interface contract (1a), the dev
