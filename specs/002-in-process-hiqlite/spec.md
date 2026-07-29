@@ -52,12 +52,16 @@ its own embedded hiqlite, so the entire stack stays in the SQLite family.
 - HTTP surface (`hiq` service): `GET /hiq/health`, `POST /hiq/kv`,
   `GET|DELETE /hiq/kv/:key`, `POST /hiq/counter/:key/add`,
   `GET /hiq/counter/:key`.
-- hiqlite runs **single-node**; `cache` + `counters` only.
+- As built today, the addon enables `cache` + `counters` and the node
+  runs with a single voter. This is the shipped configuration, not a
+  ceiling; see the 2026-07-27 pivot note.
 
 ## 4. Out of scope
 
-- dlock and listen/notify: added to the addon only when a consumer exists.
-- Clustering (StatefulSet raft) is out of scope for v0.
+- The expanded addon surface (replicated SQL, dlock, listen/notify,
+  cluster configuration) is not described here because it does not exist
+  yet. It is specified by the interface contract and built in phase 2
+  (spec 001 §5.1); this spec is rewritten when that surface lands.
 
 ## 5. Publishing (amended by spec 018, 2026-07-14)
 
@@ -139,3 +143,39 @@ grants, and swallowed by the limiter's fail-open path, enforcing nothing.
 An operator-only surface behind a role gate does not need it.
 
 The addon facade, the init path, and the Phase A seam are unchanged.
+
+## Pivot (2026-07-27): two invariants deleted, nothing added
+
+This spec carried two prohibitions that the pivot (spec 001 §2) makes
+false. They are deleted here, in phase 0, ahead of any code, because an
+approved spec asserting them would make every phase 2 spec read as
+contradicting the corpus rather than extending it:
+
+- **"hiqlite runs single-node."** Deleted. hiqlite is the state layer,
+  and N=3 or N=5 Raft is the scale path (spec 001 §4.1, spec 030). N=1
+  remains the primary mode and the default deployment, which is a
+  statement about defaults, not about capability.
+- **"Clustering (StatefulSet raft) is out of scope for v0."** Deleted.
+  hiqlite already solves bootstrap, auto-join, ordinal identity
+  (`node_id_from = "k8s"`), and learners (`HQL_LEARNER_ONLY`); what is
+  missing from the addon is configuration passthrough, not consensus
+  code.
+- **"dlock and listen/notify: added only when a consumer exists."** The
+  condition is now met: controllers need leases and watch. Both features
+  resolve to `["cache"]` in hiqlite's `Cargo.toml`, which is already
+  enabled, so they are nearly free.
+
+**Deliberately not done here.** The expanded surface is not written into
+this spec, and the pin, the feature list, and the "no bundled SQLite-C"
+property in section 2 still describe what is actually built. This spec is
+`implementation: complete`, and a complete spec that describes unbuilt
+behavior is a claim the coupling gate cannot catch. Deleting a false
+prohibition and describing an unbuilt target are different operations;
+only the first belongs in phase 0.
+
+For the record, so the phase 2 rewrite is not a surprise: enabling the
+`sqlite` feature pulls `rusqlite`, `deadpool`, and `serde_rusqlite`, which
+compiles SQLite-C into the `.node` on all three platforms and ends the
+addon's current no-bundled-SQLite-C property. That cost is accepted, and
+it buys `backup = ["dep:cron", "s3", "sqlite"]` in the same change, which
+is the product's durability story rather than a side effect.

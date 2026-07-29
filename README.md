@@ -1,24 +1,40 @@
 # enrahitu
 
-**EnRaHiTu**: **En**core.ts + **ra**uthy + **hi**qlite + **Tu**rso/libSQL.
-A self-contained, single-container application core with zero
-managed-infrastructure dependencies, and the template chassis the
-Statecraft factory stamps (spec 009 defines the template contract).
+A **membership and association management platform** for non-profits and
+associations: members, tiers, renewals, dues, events, registrations,
+volunteers, documents, board governance, announcements, and threaded
+discussion. Self-hosted, with the organization's own identity provider,
+shipped as a working application that organizations extend rather than
+fork. It is also the template chassis the Statecraft factory stamps
+(spec 009 defines the template contract).
+
 The Encore toolchain (rust runtime core, TS parser/compiler) is consumed as
 the published `@statecrafting/toolchain` package and driven directly via
 napi-rs; the `encore` CLI is not used anywhere (spec 008). Lineage:
-formerly `enrahi` / `enrahi-kit`; the kit variant is now the only
-variant, renamed to credit the fourth load-bearing ingredient.
+formerly `enrahi` / `enrahi-kit`. The name is a proper noun: its former
+expansion (Encore + rauthy + hiqlite + Turso) stopped describing the stack
+when Turso was benched.
 
-One Docker image + one volume = a complete authenticated application:
+One container + one volume = a complete authenticated application. Layer
+ownership, with no overlap:
 
-- **Encore.ts** application framework (self-hosted, no Encore cloud, no
-  Encore CLI: the @statecrafting toolchain builds and runs the app)
-- **rauthy** OIDC identity provider, shipped inside the same container
-- **hiqlite** in-process (napi-rs native addon): cache/KV + counters, no Redis
-- **CoreLedger** durable data on libSQL: local SQLite file by default, Turso
-  embedded-replica sync optional, managed Postgres behind the same decorator
-  API when scale demands it
+- **Encore.ts** holds the edge: API surface, contracts, generated clients,
+  and the external seams declared in `infra.config.json`. Self-hosted, no
+  Encore cloud, no Encore CLI.
+- **rauthy** holds identity: authentication and principal identity, reached
+  only through the app's own origin, consumed at its API surface and never
+  forked.
+- **hiqlite** holds state and coordination, in-process via a napi-rs addon.
+  Raft runs with a single voter at N=1 and with three or five when a tenant
+  outgrows one box.
+- **Application code** holds intent and reconciliation: typed,
+  tenant-scoped resources admitted through a kernel, with a hash-chained
+  Decision ledger recording every admitted mutation.
+
+**N=1 is the primary mode**, not a degenerate case: one container, one
+volume, one command, no external infrastructure, and that is what most
+deployments run forever. The corpus is mid-pivot toward this shape; spec
+001 §5.2 records the disposition of every spec, and §5.1 the phases.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the design record and
 phase plan.
@@ -28,14 +44,24 @@ phase plan.
 ```bash
 npm install            # installs @statecrafting/toolchain + hiqlite-native (prebuilt binaries)
 npm run dev            # build + run on :4000 under plain node
+npm run check:licenses # the AGPL boundary guard (spec 001 §4.7)
 
-curl localhost:4000/health
+curl localhost:4000/healthz   # liveness; touches no dependency (spec 025)
+curl localhost:4000/readyz    # readiness; checks the ledger
 curl localhost:4000/hiq/health
-curl -X POST localhost:4000/hiq/kv -H 'content-type: application/json' \
-  -d '{"key":"hello","value":"world","ttlSecs":60}'
-curl localhost:4000/hiq/kv/hello
-curl localhost:4000/metrics   # Prometheus text format, always on (spec 022)
+curl localhost:4000/metrics -H "Authorization: Bearer $ENRAHITU_METRICS_TOKEN"
 ```
+
+The `/hiq/kv` and `/hiq/counter` endpoints are operator-gated (spec 025):
+they need a session carrying the `enrahitu_operator` role, so a bare curl
+gets a 401 by design. That surface is a demo and retires once application
+code reaches hiqlite directly.
+
+**The dev loop is being replaced.** `npm run dev` runs the app under plain
+node on the host, which is the pre-pivot shape; development becomes
+docker-only under a compose topology whose N=1 tier is the N=1 deployment
+topology (spec 001 §5.1 phase 1b). Until that lands, the commands above are
+the working ones.
 
 OTel traces are on in-process (a bounded recent-trace buffer the admin
 dashboard reads); set `OTEL_EXPORTER_OTLP_ENDPOINT` to ship spans to
@@ -46,9 +72,9 @@ The flag-gated operator dashboard (spec 023) serves same-origin at
 the `enrahitu_operator` role; `ADMIN_UI_ENABLED=false` is the runtime
 kill switch, and the template.toml `admin` slot prunes it at stamp time.
 
-Requires Node >= 24. The toolchain and the hiqlite addon arrive as prebuilt
-per-platform binaries, so no Rust, cargo, or protoc is needed. The Encore CLI
-is NOT required.
+Requires Node >= 24 and docker. The toolchain and the hiqlite addon arrive as
+prebuilt per-platform binaries, so no Rust, cargo, or protoc is needed. The
+Encore CLI is NOT required and is not used anywhere.
 
 ## License
 

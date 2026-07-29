@@ -47,6 +47,11 @@ jobs:
             frontend-react/package-lock.json
             frontend-admin/package-lock.json
       - run: npm ci
+      # The AGPL boundary guard (spec 001 §4.7). Runs before the build, because
+      # its whole job is to refuse a dependency graph, and the cheapest place to
+      # learn the graph is wrong is before anything is compiled against it.
+      - name: License boundary
+        run: npm run check:licenses
       # The template carries every frontend flavor (spec 015); the Encore parse
       # walk (build:app) resolves each flavor's vite.config imports, so both
       # flavor packages are installed here. A stamped app keeps only one flavor

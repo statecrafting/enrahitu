@@ -1,6 +1,6 @@
 ---
 id: "030-infra-topology"
-title: "Infra topology: the cell is the atom, not the ceiling"
+title: "Infra topology: N=1 is the primary mode, N=3 is the scale path"
 status: approved
 created: "2026-07-25"
 implementation: pending
@@ -10,28 +10,27 @@ depends_on:
   - "005-rauthy-same-origin"
   - "007-single-container-packaging"
   - "009-template-contract"
-  - "011-coreledger-postgres-driver"
   - "021-kernel-native-consumption"
   - "024-decision-chain-integrity"
 establishes:
   - "docker/compose.cluster.yml"
   - { kind: directory, path: "backend/bus/" }
 summary: >
-  The zero-infrastructure single container was read, including by this
-  corpus, as a prohibition on infrastructure. It was always a default.
-  Encore's infra.config.json is the seam the runtime already provides for
-  declaring real infrastructure, and the toolchain's runtime ships NSQ,
-  Postgres, and Redis clients compiled in; this substrate has simply
-  never populated the file beyond metadata and secrets. This spec makes
-  the cluster topology a first-class, supported deployment shape: a
-  compose file with Postgres and nsqd, N enrahitu containers sharing one
-  ledger and one pub/sub bus, and encore.dev/pubsub Topic and
-  Subscription usable exactly as they are in any Encore app. Doing that
-  honestly requires naming what a second app container breaks, so this
-  spec introduces a role selector (cell, app, idp), moves key material
-  from per-volume generation to injection in multi-instance roles, and
-  brings pub/sub under kernel adjudication so the bus does not become the
-  one ungoverned channel out of a governed cell.
+  Rewritten 2026-07-27 for the pivot. The first version of this spec
+  solved the wrong problem: it treated the single container as a limit to
+  escape and designed a stateless app tier around a singleton identity
+  provider, which required a role selector, a key-injection ceremony, and
+  a shared external ledger. Once hiqlite is the state layer and rauthy
+  clusters its own hiqlite alongside it, all three dissolve. The topology
+  is now uniform: every replica is a stateful Raft member, one container
+  by default with a single voter, and three or five members under a
+  Kubernetes StatefulSet when a tenant outgrows it. N=1 is the primary
+  mode and every behavior here is stated at N=1 first. This spec owns the
+  cluster compose realization, the three operational requirements that
+  make N>1 safe (PodDisruptionBudget, readiness-not-liveness on quorum,
+  anti-affinity), the rule that Raft is never bridged across clusters,
+  and the governed pub/sub path so the bus does not become the one
+  ungoverned channel out of a governed deployment.
 ---
 
 # 030: Infra topology
@@ -39,251 +38,289 @@ summary: >
 ## 1. Purpose
 
 An external review read the substrate as unable to scale past one box.
-The reading is understandable and the fault is this corpus's: spec 001
-says "zero managed-infrastructure dependencies", CLAUDE.md says
-"`encore run` must never want Docker Postgres", and nothing anywhere
-says what to do when one box is not enough. Absent a stated alternative,
-a strong default reads as a limit.
+The reading was understandable and the fault was this corpus's, but the
+first version of this spec answered it badly, and the correction is worth
+recording because it is the same mistake in two forms.
 
-It is not one. The cell (spec 001 section 4.1) is the unit of the
-substrate: the smallest thing that is complete. A unit that is complete
-alone is not thereby forbidden to compose. Two facts make composition
-cheap, and both already exist:
+That version accepted the premise that the single container was a
+limitation and designed an escape from it: N stateless app containers in
+front of a shared Postgres, with a singleton identity provider beside
+them. That shape forced three pieces of machinery into existence. A role
+selector (`cell`, `app`, `idp`), because rauthy's store has exactly one
+owner. A key-injection ceremony, because stateless replicas cannot each
+generate their own signing keys. And a shared external ledger, because
+in-process state cannot be shared by processes.
 
-1. **`infra.config.json` is the seam.** Encore's runtime takes its
-   infrastructure from that file. This repo's copy declares `metadata`
-   and `secrets` and stops, which is why the substrate looks
-   infrastructure-free: it declared no infrastructure, not that it can
-   have none. The runtime shipped in `@statecrafting/toolchain` carries
-   `sql_servers`, `pubsub`, `redis`, `object_storage`, `hosted_services`,
-   `hosted_gateways`, `graceful_shutdown`, and more, with NSQ compiled in
-   (`runtimes/core/src/pubsub/nsq/`) alongside AWS and GCP clients.
-2. **The kernel already anticipated it.** `actingService()` in
-   `backend/kernel/adjudicate.ts` handles `meta.type === "pubsub-message"`
-   attribution, and spec 024 moved the Decision chain's ordering
-   authority into the store precisely so that two writers against one
-   table produce a clean retry rather than a fork. The governance plane
-   was built for more than one process.
+All three were consequences of treating hiqlite as a cache and rauthy as
+a singleton. The pivot (spec 001 §2) makes hiqlite the state layer and
+clusters rauthy's own hiqlite the same way, and the machinery evaporates:
+there is no stateless tier to inject keys into, no single-owner store to
+protect with a role, and no external ledger to share, because the state
+layer replicates. What is left is one topology at two sizes.
 
-What is missing is not capability. It is a stated topology, the compose
-file that realizes it, and an honest account of what changes when a
-second app container exists.
+**N=1 is the primary mode**, not the degenerate case that a cluster spec
+tolerates. Most tenants deploy one container and one volume forever
+(spec 001 §4.1), and every section below states its behavior at N=1
+first.
 
 ## 2. Territory
 
 This spec owns:
 
-- `docker/compose.cluster.yml`: the multi-container topology.
-- `backend/bus/`: topic and subscription declarations, and the
-  governed publish path in section 3.4.
+- `docker/compose.cluster.yml`: the local multi-node topology, which
+  exists so that three-node Raft is exercisable on a developer's machine
+  and in CI rather than only in a cluster.
+- `backend/bus/`: topic and subscription declarations, and the governed
+  publish path in section 3.5.
 
 It amends, without owning:
 
 - `infra.config.json` (spec 007): the `pubsub` block and its
   environment-driven activation.
-- `docker/entrypoint.sh` (spec 007): the role selector in section 3.2.
-- `docker/first-boot.mjs` (spec 007): provisioning becomes
-  role-dependent, section 3.3.
 - `app-manifest.json` (spec 021): pub/sub capability kinds.
-- `template.toml` and spec 009: an additive `[topologies]` table,
-  contract v0.8.0.
-- Spec 001 section 4.1: the thesis restatement in section 3.1, which is
-  the amendment that makes this spec legible rather than contradictory.
+- `template.toml` and spec 009: an additive `[topologies]` table.
+
+The default (N=1) compose topology is **not** owned here. It is the dev
+substrate's (spec 001 §5.1 phase 1b), because the N=1 dev topology and
+the N=1 deployment topology are the same thing, and splitting one file
+across two specs is how they drift apart.
+
+Kubernetes manifests are the fleet's (statecrafting spec 006, which this
+spec's section 3.4 obliges to change shape). This spec specifies the
+placement requirements; it does not carry the YAML.
 
 ## 3. Behavior
 
-### 3.1 The thesis, restated
+### 3.1 What multiplies
 
-Spec 001 is amended to say what it always meant:
+At N=1: one container, one volume, one command, a single Raft voter, no
+quorum round-trip, and no configuration. Unchanged from today, and it
+stays that way.
 
-> The cell is the atom of the substrate: one container, one volume, and
-> everything an application needs to be complete. Completeness is the
-> invariant. Isolation is the default, not the invariant. A cell that
-> requires no external infrastructure to be complete may still be
-> composed with others, and with infrastructure, when a deployment needs
-> it. What the substrate refuses is the Encore posture in which
-> infrastructure is mandatory to develop and to run at all.
+At N>1, every replica is the same thing: a stateful Raft member running
+both rauthy and the app, each with its own storage. There is no role
+selector and no asymmetry between replicas. This is the entire reason the
+first version's machinery is gone.
 
-The default stamp is unchanged: one container, one volume, no external
-dependency, `npm run dev` wanting nothing. That property is load bearing
-and this spec does not spend it. Everything below activates only when
-configured.
+**Two Raft clusters per deployment, four groups per replica.** rauthy
+runs its own hiqlite (Sqlite + Cache groups); the app runs its own
+(Sqlite + Cache groups). They are separate consensus domains that happen
+to be co-located, which is why every readiness check below is an AND
+across four groups rather than a single health bit.
 
-### 3.2 Roles
+**A shared volume between Raft nodes is data corruption, not a
+simplification.** Each node owns its log, its state machine, and its
+snapshots. This is stated as a prohibition because it is the
+cost-saving instinct a reader will have when they see per-pod PVCs.
 
-A second app container breaks three things that are safe in a single
-cell, and pretending otherwise would be the failure mode of this spec.
-The fix is to name what a container is for.
+### 3.2 Key material
 
-`ENRAHITU_ROLE` selects, defaulting to `cell`:
+At N=1: `docker/first-boot.mjs` generates everything on first start, and
+the zero-configuration property is preserved exactly.
 
-- **`cell`** (default): today's behavior exactly. rauthy on loopback,
-  the app on 8080, everything on one volume, no external infrastructure.
-- **`app`**: the application only. No rauthy process. `RAUTHY_UPSTREAM`
-  points at the topology's idp service, so `backend/idp/proxy.ts` keeps
-  serving `/auth/*` from this container's own origin and spec 005's
-  same-origin invariant survives untouched: a browser still sees exactly
-  one origin.
-- **`idp`**: rauthy only. Owns the identity store and its volume.
+At N>1: **one key set per deployment, injected into every replica, and
+custodied once.** rauthy's `ENC_KEYS` decrypts its own store, so it must
+be present in the environment before Raft starts and cannot be derived
+from replicated state; the app's signing keys must match across replicas
+or a session minted by one is rejected by another.
 
-The split exists because **rauthy's store has exactly one owner**.
-rauthy embeds its own hiqlite; running the current image N times would
-produce N independent identity stores, each with its own users, which is
-not a cluster but a fault. The `idp` role makes the ownership explicit
-instead of accidental.
+The custody requirement is not an operational footnote. Off-box backups
+are encrypted with those keys, so **a tenant that loses them holds
+unrecoverable ciphertext**, and a deployment with two independent key
+custodies (rauthy's and the app's) doubles that exposure. One key set,
+displayed once at provisioning for the operator to store, re-entry
+verified before backups are reported healthy. The generation path stays
+untouched at N=1 so the simple case pays none of this.
 
-`cell` remains the recommended shape for the overwhelming majority of
-deployments. The cluster exists for the deployment that has outgrown it,
-not as an aspiration.
+### 3.3 What does not span, and what to do about it
 
-### 3.3 What multiplies, and what must be shared
+**hiqlite's cache group is not durable and is not replicated for
+durability** (spec 001 §4.7). Two consequences at every N:
 
-Stated plainly, because each of these is a real behavior change and
-silence about any of them would be a defect:
+- The cache is warm per node. Correct but colder after a leader change,
+  and a cache is allowed to be.
+- **Rate limiting is per-node**, so N replicas admit N times the intended
+  ceiling. This is a real weakening and it is stated rather than buried.
+  It is not fixed here: doing it properly needs a shared counter
+  authority with its own consistency argument, and in a fronted topology
+  per-client limits belong at the reverse proxy anyway. Named, quantified,
+  deferred.
 
-**Key material must be injected, not generated.** `docker/first-boot.mjs`
-generates JWT signing keys per volume. Two app containers generating
-their own keys issue tokens the other rejects. In the `app` role,
-first-boot does not generate: `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`, the
-refresh pair, `RAUTHY_CLIENT_SECRET`, and the metrics token (spec 025)
-are required from the environment, and the container refuses to start
-without them through the existing `ENRAHITU_REQUIRED_ENV` mechanism.
-Generation stays exactly as it is in the `cell` role, so the simple case
-keeps its zero-configuration property.
+**Notify is a hint; revision is truth.** SQL writes and notify land in
+different Raft groups and cannot be atomic together (spec 001 §4.7), so
+any consumer that treats delivery as a guarantee is incorrect. A resource
+and its outbox row go in one SQL batch; the notify sits outside it; a
+controller polls a revision watermark as the backstop.
 
-**hiqlite does not span containers.** It is in-process (spec 002), and
-spec 024 already recorded that two pods hold two independent instances.
-Therefore, in a multi-app topology:
+**Migrations are a deploy step**, applied leader-only through Raft, not
+something each booting replica attempts (spec 027).
 
-- The cache is per-instance. Correct but colder, and a cache is allowed
-  to be.
-- **Rate limiting is per-instance**, so N containers admit N times the
-  intended ceiling. This is a real weakening and the documentation says
-  so rather than burying it. The limiter is not moved to a shared store
-  in this spec: doing it properly means a shared counter authority, and
-  the honest interim is a stated, quantified property plus the
-  reverse-proxy layer where per-client limits belong in a fronted
-  topology anyway.
+### 3.4 The scale path
 
-**CoreLedger is shared and already safe.** Postgres via
-`ENRAHITU_LEDGER_URL` (spec 011, shipped and CI-exercised). The Decision
-chain's CAS append (spec 024) was designed for exactly this, so the
-governance ledger is multi-writer correct today.
+```
+StatefulSet  control-plane  replicas: 3
+  pod:
+    container: rauthy   raft 8100 / api 8200  -> /data/rauthy (subPath)
+    container: app      raft 8300 / api 8400  -> /data/app    (subPath)
+    HQL_NODE_ID_FROM=k8s   both containers, one ordinal
+  volumeClaimTemplate      per-pod PVC, NEVER shared
+Service      headless      raft peer addressing
+Deployment   readers       learner_only=true, no PVC, scale freely
+```
 
-**Migrations become a deploy step**, per spec 027 section 3.4, rather
-than something each booting container attempts.
+Three operational requirements, each of which turns a routine event into
+an outage if omitted:
 
-### 3.4 Pub/sub, governed
+1. **PodDisruptionBudget `maxUnavailable: 1`.** A node drain can
+   otherwise evict two of three pods simultaneously and destroy quorum.
+2. **Readiness reflects quorum; liveness must not.** Liveness on Raft
+   health converts a transient quorum loss into a permanent restart loop,
+   because the restart cannot restore the quorum it is waiting for.
+   Readiness is an AND across all four Raft groups in the pod (rauthy
+   sqlite + cache, app sqlite + cache). This is the same distinction spec
+   025 §3.3 already drew for `/healthz` versus `/readyz`, applied to
+   consensus.
+3. **Anti-affinity across nodes and zones.**
+
+Reader replicas run as learners: no PVC, no vote, scale freely. They are
+the answer to the anonymous public surface at N>1 (spec 001 §4.9 ban 5),
+which must not hit quorum per request.
+
+**Raft is within-cluster, always** (spec 001 §4.1). Between clusters,
+events go over pub/sub and identity goes over rauthy OIDC federation.
+Bridging Raft across clusters is not a configuration this substrate
+supports.
+
+statecrafting spec 006 (fleet-native) currently encodes a Deployment plus
+PVC placement shape. The object graph above is different (StatefulSet
+with `volumeClaimTemplates`, headless Service, PodDisruptionBudget,
+anti-affinity, separate learner Deployment), so that spec is reworked
+rather than parameterized.
+
+### 3.5 Pub/sub, governed
 
 `infra.config.json` gains a `pubsub` block naming an NSQ cluster,
-populated from the environment so one image serves both topologies:
-absent configuration, no bus is declared and nothing changes.
+populated from the environment so one image serves every topology: absent
+configuration, no bus is declared and nothing changes. The runtime ships
+NSQ compiled in (`runtimes/core/src/pubsub/nsq/`).
 
-`backend/bus/` declares topics and subscriptions with
-`encore.dev/pubsub` as any Encore app does. This is the first use of an
-Encore infrastructure primitive in this substrate, and it is acceptable
-where `SQLDatabase` is not, for a reason worth recording: `SQLDatabase`
-would displace CoreLedger, which is the substrate's own durable-state
-design and the thing specs 003, 011, 021, and 024 are built on. A topic
-displaces nothing. There is no enrahitu message bus for it to compete
-with.
+`backend/bus/` declares topics and subscriptions with `encore.dev/pubsub`
+as any Encore app does. This is the first use of an Encore infrastructure
+primitive in this substrate, and it is acceptable where `SQLDatabase` is
+not, for a reason worth recording: `SQLDatabase` would displace the state
+layer this substrate owns. A topic displaces nothing, because there is no
+enrahitu message bus for it to compete with.
 
-**The bus is adjudicated.** A governed cell whose messages leave
-unadjudicated has an ungoverned channel, and the whole kernel plane
-would be arguable. Publishing therefore routes through a governed facade
-in `backend/bus/`, in the same shape as `backend/kernel/hiq.ts` and
+**The bus is adjudicated.** A governed deployment whose messages leave
+unadjudicated has an ungoverned channel, and the whole kernel plane would
+be arguable. Publishing routes through a governed facade in
+`backend/bus/`, in the same shape as `backend/kernel/hiq.ts` and
 `backend/kernel/egress.ts`: `demand("pubsub.publish", "<topic>")` before
 the message leaves the process. New capability kinds
 (`cap.pubsub.<topic>.publish`, `cap.pubsub.<topic>.subscribe`) enter
 `app-manifest.json`, so a service publishing to a topic it was not
 granted is denied and the denial is ledgered like any other. Subscriber
-attribution needs no new work: `actingService()` already resolves
-`pubsub-message` requests.
+attribution needs no new work: `actingService()` in
+`backend/kernel/adjudicate.ts` already resolves `pubsub-message` requests.
 
-**Postgres and `sql_servers`.** The compose topology runs a real
-Postgres and the app really uses it, through CoreLedger's Postgres
-driver on `ENRAHITU_LEDGER_URL`. The `sql_servers` block in
-`infra.config.json` is deliberately **not** populated, because that block
-exists to serve Encore's `SQLDatabase`, and adopting `SQLDatabase` would
-mean two competing durable-state layers in one app. CLAUDE.md's rule
-stands unamended and unweakened: no `SQLDatabase` anywhere, and
-`npm run dev` still wants no Docker Postgres. The operator gets Postgres;
-the app reaches it the way this substrate reaches durable state.
+The outbox drain (section 3.3) is a leased controller, which is why
+`dlock` is on the phase 2 addon surface.
 
-### 3.5 The compose topology
+### 3.6 `sql_servers` stays unpopulated pending a decision
 
-`docker/compose.cluster.yml` realizes the shape end to end:
+The first version of this spec ruled `sql_servers` out permanently, on
+the grounds that it exists to serve `SQLDatabase`. That reasoning is
+retained for the primitive and withdrawn for the slot: hiqlite replicates
+its full database to every node, so unbounded data-plane history (audit
+archive, discussion history, step logs, analytics) has to live somewhere
+else, and the slot is one of three candidate answers.
 
-```
-postgres    shared CoreLedger store
-nsqd        the bus (with nsqlookupd)
-idp         enrahitu, ENRAHITU_ROLE=idp, its own volume
-app-1       enrahitu, ENRAHITU_ROLE=app, no volume
-app-2       enrahitu, ENRAHITU_ROLE=app, no volume
-```
+Spec 001 §4.2 decision 2 holds the open question and the interface
+contract (phase 1a) resolves it. Until then the block stays unpopulated
+and no `SQLDatabase` is declared anywhere. The rule that stands
+unweakened either way: **no `SQLDatabase`**, because adopting it would
+put Encore in charge of durable state and its migrations.
 
-App containers are stateless: no volume, ledger on Postgres, keys
-injected, cache and counters per-instance and disposable. Scaling is
-`docker compose up --scale app=N`.
-
-`docker/compose.dev.yml` (spec 005, the dev rauthy) is untouched. This
-is a separate file for a separate purpose, and conflating them would
-damage the dev loop for no gain.
-
-### 3.6 Contract
+### 3.7 Contract
 
 `template.toml` gains an additive `[topologies]` table naming the
 supported shapes and the compose file for each, so the factory and the
-fleet can discover deployment options from the contract rather than from
-folklore, which is the failure spec 009 exists to prevent. Contract
-version to 0.8.0 (additive, minor).
+fleet discover deployment options from the contract rather than from
+folklore, which is the failure spec 009 exists to prevent. The contract
+version bump rides the phase 1c change that also resolves the frontend
+slot, so the factory pins one new version rather than two.
 
 ## 4. Acceptance
 
-1. The default stamp is byte-for-byte unaffected in behavior: a `cell`
-   container starts with no compose, no Postgres, no nsqd, no injected
-   keys, exactly as before. `npm run dev` requires no infrastructure.
-2. `docker compose -f docker/compose.cluster.yml up --scale app=2`
-   yields a topology where a login served by `app-1` produces a session
-   that `app-2` accepts, proving shared keys and shared ledger.
-3. A message published by `app-1` is received by a subscriber on
-   `app-2`, proving the bus.
-4. A publish to a topic the publishing service was not granted is
-   denied with `KERNEL_DENIED` and appends a Decision, proving the bus
-   is governed and not a hole in the model.
-5. `app`-role containers refuse to start when key material is absent,
-   naming every missing variable at once through the spec 007
-   mechanism.
-6. Two app containers writing denials concurrently produce a Decision
-   chain that verifies, exercising spec 024's CAS append against real
+1. N=1 is unaffected in behavior: one container starts with no compose,
+   no external store, no injected keys, exactly as before, and the dev
+   topology at N=1 is the deployment topology at N=1.
+2. `docker compose -f docker/compose.cluster.yml up` yields a three-member
+   deployment where a login served by any replica produces a session every
+   other replica accepts, proving shared identity and replicated state.
+3. Killing the Raft leader leaves the deployment serving reads and writes
+   after election, and the killed member rejoins and catches up.
+4. A message published by one replica is received by a subscriber on
+   another, proving the bus.
+5. A publish to a topic the publishing service was not granted is denied
+   with `KERNEL_DENIED` and appends a Decision, proving the bus is
+   governed and not a hole in the model.
+6. Concurrent denial appends from two replicas produce a Decision chain
+   that verifies, exercising spec 024's CAS append against real
    concurrency for the first time.
-7. `app-model.json` regenerated by `npm run extract:model` contains the
+7. Readiness goes false and liveness stays true when quorum is lost;
+   the deployment recovers without a restart loop.
+8. `app-model.json` regenerated by `npm run extract:model` contains the
    pub/sub capabilities and passes `npm run check:model`; the kernel
    boots on it.
-8. `infra.config.json` contains no `sql_servers` block and the tree
+9. `infra.config.json` contains no `sql_servers` block and the tree
    contains no `SQLDatabase` usage; a grep proving both is part of the
    test suite, so the rule cannot erode silently.
-9. `template.toml` carries `[topologies]`, `[contract].version` is
-   `0.8.0`, and spec 009 records the bump.
-10. Spec 001 section 4.1 carries the section 3.1 restatement.
+10. `template.toml` carries `[topologies]` and spec 009 records the bump.
 11. `npm run typecheck && npm test` green, coupling gate green.
 
 ## 5. Out of scope
 
-- Highly-available rauthy. rauthy supports clustering; running more than
-  one `idp` is a separate spec with its own quorum and volume
-  questions. The `idp` role here is a single owner by design.
-- A shared rate-limit authority across app containers. Named,
-  quantified, and deferred in section 3.3.
-- hiqlite Raft membership across cells. Spec 001 lists it as the cell-level
-  scaling path and spec 024 recorded why it is not buildable while
-  hiqlite is per-process; unchanged here.
-- Encore `SQLDatabase`, object storage, Redis cache clusters, and Encore
-  cron. Available in the runtime, deliberately unadopted; each would need
-  its own justification against an existing substrate capability.
-- Kubernetes manifests and Helm charts. The fleet's (statecraft spec
-  006); this spec delivers the topology and the compose realization of
-  it.
-- Backup of the topology's Postgres and nsqd: spec 027 section 5.
+- The default (N=1) compose topology and the dev loop: phase 1b's, per
+  section 2.
+- The addon surface that N>1 depends on (cluster config passthrough,
+  `dlock`, replicated SQL): phase 2, gated on the interface contract.
+  This spec is `implementation: pending` for that reason.
+- A shared rate-limit authority across replicas. Named, quantified, and
+  deferred in section 3.3.
+- Kubernetes manifests and Helm charts: the fleet's (statecrafting spec
+  006). This spec states the placement requirements they must satisfy.
+- Backup and restore of a multi-member deployment: spec 027. Restore at
+  N>=3 is a cluster reset rather than a data restore, and it has its own
+  runbook.
+- Encore `SQLDatabase`, object storage, Redis, and Encore cron.
+  Available in the runtime, deliberately unadopted; each would need its
+  own justification against an existing substrate capability.
 - Message ordering, exactly-once delivery, and dead-letter policy beyond
   what NSQ and Encore's subscription configuration already provide.
+
+## 6. Rewrite record
+
+**2026-07-25.** First authored, against the pre-pivot thesis: stateless
+app tier, singleton `idp`, shared Postgres ledger, role selector.
+
+**2026-07-27, the pivot.** Rewritten rather than amended, because the
+premise changed rather than the details. What was deleted and why:
+
+- **The `ENRAHITU_ROLE` selector (`cell` / `app` / `idp`).** It existed
+  because rauthy's store had exactly one owner. Clustering rauthy's own
+  hiqlite removes the singleton, so the roles have nothing left to
+  distinguish.
+- **The injected-key ceremony for a stateless app tier.** There is no
+  stateless tier. Key injection survives at N>1 for a different and
+  better-stated reason (section 3.2: one custody, because backups are
+  encrypted with it).
+- **Shared external CoreLedger as the multi-writer story.** The state
+  layer replicates, so the shared store is no longer what makes N>1
+  work. Postgres remains a candidate for unbounded overflow only
+  (section 3.6).
+
+What survived unchanged: the governed bus (section 3.5), the refusal to
+adopt `SQLDatabase`, and the observation that `actingService()` already
+resolves `pubsub-message` attribution. What is new: the scale path
+(section 3.4) and its three operational requirements.
