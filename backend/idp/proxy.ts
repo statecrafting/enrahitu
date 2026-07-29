@@ -15,6 +15,7 @@ import { pipeline } from "node:stream/promises";
 import { api, APIError, ErrCode } from "encore.dev/api";
 
 import { governedFetch } from "../kernel/egress";
+import { vouchedForwardedFor } from "../lib/client-identity";
 
 const UPSTREAM = process.env.RAUTHY_UPSTREAM ?? "http://127.0.0.1:8081";
 
@@ -44,11 +45,14 @@ function forwardHeaders(req: IncomingMessage): Headers {
       headers.append(key, v);
     }
   }
-  const clientIp = req.socket?.remoteAddress ?? "";
-  const priorXff = req.headers["x-forwarded-for"];
+  // Only values this app vouches for (spec 025 §3.2). Concatenating the
+  // client's prior X-Forwarded-For with the socket address forwarded the
+  // forgery intact, and rauthy trusts this chain under
+  // TRUSTED_PROXIES=127.0.0.0/8, so its own IP-based defenses inherited the
+  // spoof. Entries the declared topology does not cover are dropped.
   headers.set(
     "x-forwarded-for",
-    priorXff ? `${Array.isArray(priorXff) ? priorXff[0] : priorXff}, ${clientIp}` : clientIp,
+    vouchedForwardedFor(req.headers, req.socket?.remoteAddress ?? undefined),
   );
   if (!headers.has("x-forwarded-proto")) headers.set("x-forwarded-proto", "http");
   if (req.headers.host) headers.set("x-forwarded-host", req.headers.host);

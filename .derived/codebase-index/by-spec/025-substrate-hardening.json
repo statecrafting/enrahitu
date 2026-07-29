@@ -1,0 +1,72 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "002-in-process-hiqlite",
+      "004-auth-core",
+      "005-rauthy-same-origin",
+      "007-single-container-packaging",
+      "021-kernel-native-consumption",
+      "022-observability-contract"
+    ],
+    "implementingPaths": [
+      {
+        "path": "backend/lib/client-identity.test.ts",
+        "source": "spec-edge"
+      },
+      {
+        "path": "backend/lib/client-identity.ts",
+        "source": "spec-edge"
+      },
+      {
+        "path": "docker/first-boot.test.ts",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "backend/lib/client-identity.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "backend/lib/client-identity.test.ts"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "backend/lib/client-identity.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "backend/lib/client-identity.ts"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "docker/first-boot.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/first-boot.test.ts"
+        }
+      }
+    ],
+    "specId": "025-substrate-hardening",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "f5ccbbb1d2d58f66fe33291c95a404d6be654d1d40f51854ad41c2ffcc4b89da"
+}

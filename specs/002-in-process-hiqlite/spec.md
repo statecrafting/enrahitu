@@ -114,3 +114,28 @@ The hiq service mounts spec 022's `obsMiddleware` (its only
 middleware): every `/hiq/*` endpoint gets a request span and the
 request metrics families. Facade semantics and the kernel adjudication
 seam are unchanged.
+
+## Amendment (2026-07-25): the demo surface is operator-gated (spec 025)
+
+The six `/hiq/*` endpoints shipped `expose: true` with no `auth: true`,
+and the service mounted `obsMiddleware` alone. That was correct while the
+surface was a developer's laptop and wrong once the packaged image binds
+`0.0.0.0:8080`: it published unauthenticated writes into the
+raft-replicated store, and, because this service also held an
+unconstrained `cap.counter.add`, it published the rate limiter's own
+counters. Spec 025 §3.1 has the detail and the exploit path.
+
+The five data endpoints (`kvPut`, `kvGet`, `kvDel`, `counterAdd`,
+`counterGet`) now take `auth: true` and check the `<app>_operator` role.
+`GET /hiq/health` stays public: it returns a status string, leaks
+nothing, and is the probe the image smoke curls.
+
+The service mounts `[obsMiddleware, securityHeaders, csrfMiddleware]`,
+the admin service's chain rather than the auth service's. `apiRateLimit`
+is deliberately absent: middleware runs under the mounting service's
+kernel attribution, so the limiter's `rl:`-prefixed writes would be
+adjudicated as `hiq`, denied against this service's `demo:`-scoped
+grants, and swallowed by the limiter's fail-open path, enforcing nothing.
+An operator-only surface behind a role gate does not need it.
+
+The addon facade, the init path, and the Phase A seam are unchanged.

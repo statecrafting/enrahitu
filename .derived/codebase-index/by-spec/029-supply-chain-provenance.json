@@ -1,0 +1,35 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '029-supply-chain-provenance' file unit 'scripts/airgap-bundle.sh' does not exist",
+        "path": "scripts/airgap-bundle.sh"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "012-born-with-provenance",
+      "016-amd64-image",
+      "027-operational-verbs"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/airgap-bundle.sh"
+        }
+      }
+    ],
+    "specId": "029-supply-chain-provenance",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "b7bd5164c374a2d2f1dc7cd34bc93fe7bb028e5fd75d71cf7db7feb5044d5a8f"
+}

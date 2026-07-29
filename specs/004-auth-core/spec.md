@@ -127,3 +127,28 @@ frontend root. `clearAuthCookies` clears the hint cookie alongside
 the three auth cookies (clearing an absent cookie is harmless, so the
 mock driver path is unaffected). Revocation, audit, CSRF posture, and
 the 200-with-JSON response shape are unchanged.
+
+## Amendment (2026-07-25): forge-proof client identity (spec 025)
+
+`clientKey` in `backend/lib/rate-limit.ts` and `clientIp` in
+`backend/auth/http.ts` both derived the caller from the leftmost
+`X-Forwarded-For` value, with no notion of which hop was trustworthy;
+`clientIp` preferred that header over the socket address it already
+held. Since the packaged image is exposed directly, a caller set its own
+header and drew a fresh bucket per request, so both rate-limit tiers
+counted an attacker-chosen string.
+
+Both derivations now route through `backend/lib/client-identity.ts`
+(spec 025 §3.2), which believes the header only to the depth an operator
+declares in `ENRAHITU_TRUSTED_PROXY_HOPS`, counting from the right so a
+forged leading entry is ignored. The raw path always resolves, falling
+back to the transport peer, which makes the auth tier (the one guarding
+brute force and account lockout) forge-proof in every mode.
+
+The typed tier cannot do the same: Encore's `APICallMeta` carries headers
+and no peer address. With no declared proxy it therefore keys on the
+endpoint under a coarse shared ceiling rather than on a header a caller
+controls, which is honest degradation instead of an unenforceable
+per-client limit. `ENRAHITU_TRUSTED_PROXY_HOPS` restores the precise
+tier. `API_LIMIT`, `AUTH_LIMIT`, the fixed-window arithmetic, and the
+fail-open-on-backend-error policy are unchanged.

@@ -80,6 +80,16 @@ if (writeOnce(adminPasswordPath, alnum(24))) {
   );
 }
 
+// --- /metrics bearer token (spec 025 §3.4) ----------------------------------
+// Provisioned like every other secret, so the packaged image is authenticated
+// by default rather than opt-in. The endpoint stays always-on and unflagged
+// (spec 022): this authenticates it, it does not gate it off. An operator
+// reads the token out of the volume to configure a scraper.
+const metricsTokenPath = join(keysDir, "metrics-token");
+if (writeOnce(metricsTokenPath, alnum(48))) {
+  console.log(`[first-boot] generated /metrics bearer token (stored at ${metricsTokenPath})`);
+}
+
 // --- runtime secrets sourced by the entrypoint ------------------------------
 const secretsEnvPath = join(rauthyDir, "secrets.env");
 if (!existsSync(secretsEnvPath)) {

@@ -1,0 +1,36 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "007-single-container-packaging",
+      "025-substrate-hardening",
+      "026-idp-mail-delivery",
+      "027-operational-verbs"
+    ],
+    "implementingPaths": [
+      {
+        "path": "docs/",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "docs/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "docs/"
+        }
+      }
+    ],
+    "specId": "028-operator-documentation",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "4def3346932922d5a22969c4177153aacb9e974f71832692f568c556967260cb"
+}

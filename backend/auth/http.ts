@@ -4,11 +4,18 @@
  */
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { clientAddress } from "../lib/client-identity";
+
+/**
+ * The caller's address, forge-proof by construction (spec 025 §3.2). This
+ * previously preferred X-Forwarded-For over the socket it already held, so
+ * the auth-tier rate limiter (the one guarding brute force and lockout)
+ * counted a value the caller chose. Raw handlers have a socket, so this
+ * always resolves: the vouched forwarded entry when a proxy is declared, the
+ * transport peer otherwise.
+ */
 export function clientIp(req: IncomingMessage): string | undefined {
-  const xff = req.headers["x-forwarded-for"];
-  const value = Array.isArray(xff) ? xff[0] : xff;
-  if (value) return value.split(",")[0]!.trim();
-  return req.socket?.remoteAddress ?? undefined;
+  return clientAddress(req.headers, req.socket?.remoteAddress ?? undefined);
 }
 
 export function userAgent(req: IncomingMessage): string | undefined {

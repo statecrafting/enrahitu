@@ -1,0 +1,37 @@
+{
+  "record": {
+    "created": "2026-07-25",
+    "dependsOn": [
+      "020-app-model-contract",
+      "021-kernel-native-consumption",
+      "023-frontend-admin",
+      "024-decision-chain-integrity"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "backend/evidence/"
+      }
+    ],
+    "id": "031-admin-evidence-export",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "031: Admin evidence export",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 Capability diff",
+      "3.2 Verification on demand",
+      "3.3 The evidence bundle",
+      "3.4 In the dashboard",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/031-admin-evidence-export/spec.md",
+    "status": "approved",
+    "summary": "The substrate already holds the two things a security reviewer asks for and cannot usually get: a machine-readable statement of every capability the application can exercise, and an append-only, hash-chained, optionally-signed record of every capability denial. The admin dashboard currently presents these as operator telemetry, which undersells them by a wide margin. This spec turns the kernel plane into an artifact a buyer's auditor is shown: capability diffs between two models, so an upgrade's governance change is legible before it is deployed; operator-runnable chain verification that produces a attestation rather than a log line; and an exportable evidence bundle binding model, chain, and verification result together. This is the substrate's differentiator and the only item in this batch that is about advantage rather than repair.\n",
+    "title": "Admin evidence export: the kernel plane as a compliance artifact"
+  },
+  "shardHash": "04ebf76fd3c4aebfcefc0c5d3896a3bfd2a77af85279580e1a493be32a77ca6d",
+  "specVersion": "1.1.0"
+}

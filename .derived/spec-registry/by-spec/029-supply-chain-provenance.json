@@ -1,0 +1,36 @@
+{
+  "record": {
+    "created": "2026-07-25",
+    "dependsOn": [
+      "012-born-with-provenance",
+      "016-amd64-image",
+      "027-operational-verbs"
+    ],
+    "establishes": [
+      {
+        "kind": "file",
+        "path": "scripts/airgap-bundle.sh"
+      }
+    ],
+    "id": "029-supply-chain-provenance",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "029: Supply-chain provenance",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 Signatures",
+      "3.2 The SBOM",
+      "3.3 The air-gap bundle",
+      "3.4 The build's own egress, stated",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/029-supply-chain-provenance/spec.md",
+    "status": "approved",
+    "summary": "Spec 012 established born-with provenance for the repository: a stamped app can prove what generated it and under what agentic posture. The artifact that repository produces carries none of that. image.yml pushes to GHCR unsigned and unattested, with no SBOM and no offline install path, so the chain of custody the template is careful about ends exactly where a buyer's security review begins. This spec extends provenance from the repo to the image: cosign keyless signatures, an SPDX SBOM published as an attestation, and a docker save bundle with a verification script so a cell can be installed on a host with no outbound network. The buyer persona that wants a self-contained image is disproportionately the persona that has no egress, so the air-gap path is not an edge case for this substrate; it is the main case arriving late.\n",
+    "title": "Supply-chain provenance: signed, described, and installable offline"
+  },
+  "shardHash": "e21ceb534142b5b28f4c527a7b05953bb45a3ace35286836b85f4e9ad1e3fcf2",
+  "specVersion": "1.1.0"
+}

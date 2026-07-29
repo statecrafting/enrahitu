@@ -24,6 +24,13 @@ RUN mkdir -p /data && chown node:node /data
 VOLUME /data
 EXPOSE 8080
 
+# Liveness, not readiness (spec 025 §3.3): /healthz touches no dependency, so
+# a transient ledger blip cannot restart the container and thereby take rauthy
+# down with it under the die-together supervisor. node:24-trixie-slim ships no
+# curl, so node does the probing, matching the entrypoint's idiom.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
 # Non-root (spec 007, amendment 2026-07-23b): uid/gid 1000, matching the
 # fleet's pod securityContext (runAsUser 1000 + fsGroup 1000, statecraft
 # spec 006). Everything the runtime writes lives under /data; both

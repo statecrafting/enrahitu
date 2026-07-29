@@ -414,3 +414,26 @@ spec's territory) carries the change under that spec's design:
   (detached ed25519 over `record_hash` in a sibling column, dormant
   while `ENRAHITU_LEDGER_SIGNING_KEY` is unset). Anchor signing in
   the model stays spec 020's named extension.
+
+## Amendment (2026-07-25): the hiq grants are demo-scoped (spec 025)
+
+The manifest granted the `hiq` service `cap.counter.add`,
+`cap.counter.get`, and the three `cap.kv.cache.*` capabilities, all
+unconstrained, while granting `auth` the same `counter.add` kind
+constrained to `keyPrefix: "rl:"`. The constraint on the auth grant
+exists because unconstrained counter access is dangerous, and the demo
+service held exactly that.
+
+The five grants are replaced by `cap.counter.demo.*` and `cap.kv.demo.*`,
+each carrying `constraints.keyPrefix: "demo:"`. `kind` and `resource` are
+unchanged, since `demand()` matches on those and the capability id is a
+label. The unconstrained ids are deleted rather than retained: the `hiq`
+service was their only holder, and the rate limiter reaches counters
+through `auth`'s untouched `cap.counter.rate-limit.*` grants.
+
+The effect is a second, independent barrier behind the endpoint gating in
+spec 002's amendment: an `rl:`-prefixed key is now unreachable from the
+hiq service by construction, so a future regression that drops an `auth`
+annotation re-exposes a demo keyspace rather than the rate limiter. The
+extraction gate enforces the ceiling, and refused an earlier draft of
+spec 025 that would have mounted `apiRateLimit` on this service.
