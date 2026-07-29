@@ -135,7 +135,7 @@
       {
         "tier": "ts",
         "tool": "enrahitu-extract",
-        "version": "0.3.0"
+        "version": "0.4.0"
       }
     ],
     "verified": true
@@ -148,7 +148,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:12b428c1a2591ae7e5f53eb33a538779d9b8b0aa5c38195aaee5241c0f9bd110"
+    "hash": "sha256:de93c65223dea8ce54e37e6022fcfc3107bcbefe008b98a7669683dcead4fedf"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -504,7 +504,7 @@
     }
   ],
   "source": {
-    "revision": "3c259920e1761bdf55c4daffe9ba67bd86e7671a",
+    "revision": "aff2124fc3bf9c27dd9c85aa7f5eb6971a116d84",
     "uncommittedChanges": true
   },
   "trust": {
