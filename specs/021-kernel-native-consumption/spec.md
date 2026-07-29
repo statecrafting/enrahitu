@@ -469,3 +469,39 @@ The declare-verify-enforce loop is unchanged: the manifest is authored, the
 extractor verifies observed usage is a subset, and `npm run check:model`
 gates staleness. This amendment records a narrowing of the declaration, not
 a change to the mechanism.
+
+## Amendment (2026-07-29b): the state service joins the manifest (spec 032)
+
+The state layer facade (spec 032) adds nine capabilities and one service to
+`app-manifest.json`, and the shape of that addition is the point rather than
+the count.
+
+**Nine capabilities, two held.** `db.read`, `db.write`, `db.txn` and
+`db.migrate` on `state`; `lock.acquire`, `notify.publish` and `notify.listen`
+on `state`; `bucket.write` and `bucket.list` on `state-backups`. A `state`
+service, `role: library`, holds exactly `cap.db.state.migrate` and
+`cap.db.state.read`. It owns the schema, so it may change the schema and read
+what version it is at, and it cannot write a row, take a lease, publish a
+notify, or touch a backup.
+
+**The other seven are declared and granted to no one.** That is the same
+posture the previous amendment left the hiq service in, arrived at from the
+other direction: hiq dropped to zero when its demo surface retired, and the
+state layer starts at near-zero because its consumer does not exist yet.
+Phase 3's control plane is the first thing with a reason to hold a write, a
+lease, or a watch, and it will justify each grant it takes.
+`backend/state/state.test.ts` asserts each ungranted capability denies in
+fact, so the withholding is evidence rather than intention.
+
+**Why `backup` is a bucket capability.** The kind table this spec consumes is
+a fixed 28 kinds (spec 020 §3.3) and boot refuses a model declaring one it
+does not know, so `backup.create` would need a kernel-native release before
+the facade could exist at all. It is not needed either: a backup genuinely is
+an object-store write of the database, and `bucket.write` is classified
+non-read, so it fails closed at `read-only` trust.
+
+**A second governed facade.** `backend/state/` joins `backend/kernel/hiq.ts`
+as an importer of the addon handle, split by raft group rather than by file
+layout (spec 032 §2). The extraction ban-list admits both and nothing else;
+that widening is statecrafting spec 002's 0.4.0 amendment, and this repo's
+`^0.4.0` toolchain bump is what carries it.

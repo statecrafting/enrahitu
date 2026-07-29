@@ -10,6 +10,16 @@
   },
   "capabilities": [
     {
+      "id": "cap.backup.state.list",
+      "kind": "bucket.list",
+      "resource": "state-backups"
+    },
+    {
+      "id": "cap.backup.state.write",
+      "kind": "bucket.write",
+      "resource": "state-backups"
+    },
+    {
       "constraints": {
         "keyPrefix": "rl:"
       },
@@ -46,6 +56,26 @@
       "resource": "app"
     },
     {
+      "id": "cap.db.state.migrate",
+      "kind": "db.migrate",
+      "resource": "state"
+    },
+    {
+      "id": "cap.db.state.read",
+      "kind": "db.read",
+      "resource": "state"
+    },
+    {
+      "id": "cap.db.state.txn",
+      "kind": "db.txn",
+      "resource": "state"
+    },
+    {
+      "id": "cap.db.state.write",
+      "kind": "db.write",
+      "resource": "state"
+    },
+    {
       "id": "cap.egress.rauthy-issuer",
       "kind": "http.egress",
       "resource": "rauthy-issuer"
@@ -54,6 +84,21 @@
       "id": "cap.egress.rauthy-upstream",
       "kind": "http.egress",
       "resource": "rauthy-upstream"
+    },
+    {
+      "id": "cap.lock.state.acquire",
+      "kind": "lock.acquire",
+      "resource": "state"
+    },
+    {
+      "id": "cap.notify.state.listen",
+      "kind": "notify.listen",
+      "resource": "state"
+    },
+    {
+      "id": "cap.notify.state.publish",
+      "kind": "notify.publish",
+      "resource": "state"
     },
     {
       "id": "cap.secret.jwt-private",
@@ -90,7 +135,7 @@
       {
         "tier": "ts",
         "tool": "enrahitu-extract",
-        "version": "0.3.0"
+        "version": "0.4.0"
       }
     ],
     "verified": true
@@ -103,7 +148,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:3a5fbb2779bc1df736c1474c9324e828406b2c065d31013ffa4aefd05d99e074"
+    "hash": "sha256:de93c65223dea8ce54e37e6022fcfc3107bcbefe008b98a7669683dcead4fedf"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -118,6 +163,11 @@
     "otel": true
   },
   "resources": {
+    "buckets": [
+      {
+        "name": "state-backups"
+      }
+    ],
     "counters": [
       {
         "name": "counters"
@@ -127,6 +177,10 @@
       {
         "engine": "coreledger-libsql",
         "name": "app"
+      },
+      {
+        "engine": "hiqlite",
+        "name": "state"
       }
     ],
     "kv": [
@@ -424,6 +478,15 @@
       "tier": "ts"
     },
     {
+      "capabilities": [
+        "cap.db.state.migrate",
+        "cap.db.state.read"
+      ],
+      "endpoints": [],
+      "name": "state",
+      "tier": "ts"
+    },
+    {
       "capabilities": [],
       "endpoints": [
         {
@@ -441,7 +504,7 @@
     }
   ],
   "source": {
-    "revision": "02aebeafeb1f83bf226c57ec96e9048eb426e95a",
+    "revision": "aff2124fc3bf9c27dd9c85aa7f5eb6971a116d84",
     "uncommittedChanges": true
   },
   "trust": {

@@ -1,14 +1,4 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '032-hiqlite-interface-contract' directory unit 'backend/state/' is not a directory",
-        "path": "backend/state/"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "001-enrahitu-architecture",
@@ -16,10 +6,19 @@
       "021-kernel-native-consumption",
       "024-decision-chain-integrity"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "backend/state/",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "backend/state/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -32,5 +31,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "a16e3aadd5503b4ab458cd491b5959375cb3074fffcd09ee9ea6c48135da31c7"
+  "shardHash": "46bfe00309f598c525b6ae6c4b901a533bcf0ef2d99722d26931abc3f2fd047c"
 }
