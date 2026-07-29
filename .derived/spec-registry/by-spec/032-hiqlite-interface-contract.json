@@ -38,6 +38,7 @@
       "Implementation record (2026-07-29): four corrections",
       "What did not change",
       "Implementation record (2026-07-29): the facade",
+      "Implementation record (2026-07-29b): a fifth correction, found by phase 3",
       "Remaining"
     ],
     "specPath": "specs/032-hiqlite-interface-contract/spec.md",
@@ -45,6 +46,6 @@
     "summary": "Phase 1a of the pivot (spec 001 §5.1). The expanded hiqlite addon is the gate: nothing above it is testable until it exists, and its surface is either derived from stated requirements or guessed. This spec states the requirements. Ten decisions, each with the question, the resolution, the reason, and what it determines about the addon surface: atomicity boundary, notify envelope, read consistency, lease semantics, watermark, migration ownership, CAS and audit placement, backup surface, archive mechanics, and local-only notify. Every decision is checked against hiqlite's actual implementation rather than its documentation, which surfaced three constraints that change the answers: the distributed lock TTL is hardcoded at ten seconds with no configuration, the lock id is the raft log index and is therefore already a fencing token, and the notify bus is a single global channel whose events may be replayed on restart. The resulting surface is small on purpose: five new calls plus backup, and no new primitive where an existing one composes.\n",
     "title": "The hiqlite interface contract: ten decisions before the addon"
   },
-  "shardHash": "8805b81634fe6cc23c1dadee805366b4434d6549d1a2415fc3222cfa06116741",
+  "shardHash": "21cfe0866918c95f8742f94206bbc0bd5e3ade7e1265ae24070b8f8d87d08a8d",
   "specVersion": "1.1.0"
 }

@@ -116,7 +116,16 @@ function canonical(value: unknown): string {
   return JSON.stringify(value);
 }
 
-function contextHash(context: Record<string, unknown>): string {
+/**
+ * The context hash of a Decision.
+ *
+ * Exported so that an allow appended from outside this module (the control
+ * plane's admission record, spec 034 §3.3) hashes its context by the same rule
+ * a denial does. A second implementation of "canonical" would be a second
+ * answer to what a record commits to, and the chain's verification cannot tell
+ * which one was meant.
+ */
+export function contextHash(context: Record<string, unknown>): string {
   return `sha256:${createHash("sha256").update(`${canonical(context)}\n`, "utf8").digest("hex")}`;
 }
 
