@@ -3,7 +3,7 @@ id: "025-substrate-hardening"
 title: "Substrate hardening: the exposed surface, forge-proof client identity, probe separation"
 status: approved
 created: "2026-07-25"
-implementation: in-progress
+implementation: complete
 depends_on:
   - "001-enrahitu-architecture"
   - "002-in-process-hiqlite"
@@ -388,3 +388,48 @@ proof rather than behavior:
 - The operator documentation that sections 3.3 and 3.4 imply
   (probe wiring, scraper configuration, trusted-proxy guidance): spec
   028.
+
+## Closure (2026-07-29): the remaining items, two proved and two superseded
+
+Section 5 left four acceptance items unprovable for one reason: this repo
+had no app-level harness, so no test could ask the running gateway
+anything. Spec 033 built one. This spec moves to
+`implementation: complete`, and the four items resolve in two different
+ways, which is worth recording precisely rather than marking them all
+"done".
+
+**Item 6, proved.** `/metrics` returns 401 unauthenticated, 401 for a wrong
+bearer token, and 200 with Prometheus exposition format for the right one,
+asserted against a real gateway with a real token provisioned the way
+first-boot provisions one. The provisioning half was already covered by
+`docker/first-boot.test.ts`; the serving half now is.
+
+**Items 1 and 4, superseded by removal.** They asked for proof that an
+unauthenticated `POST /hiq/kv` is refused and that a non-`demo:` key
+returns `KERNEL_DENIED`. Spec 015 retired those endpoints entirely and
+dropped the `hiq` service to zero capabilities, so the property now held is
+strictly stronger than the one requested: the surface does not exist, and
+the service that held the grants holds none.
+
+This is recorded as supersession rather than completion because the
+distinction matters for anyone auditing this spec later. The exploit path
+in §3.1 was closed twice: first by gating (this spec, 2026-07-25), then by
+deletion (spec 015, 2026-07-29). The gating was the right emergency fix and
+the deletion is the right end state, and neither makes the other
+retrospectively wrong.
+
+The harness asserts the absence rather than dropping the requirement: five
+`it.each` cases prove the retired routes 404. A future change that
+reintroduces a write surface on this service fails there, which is exactly
+where the §3.1 exploit path would otherwise reopen.
+
+**Item 5's ledger-failure and Docker-health-status halves** remain
+`image.yml` territory (cron and dispatch only), unchanged by this closure
+and not blocking it: they assert packaging behavior, not application
+behavior.
+
+One further defect surfaced in the course of closing this spec, and it is
+the kind only a booting application reveals: `encore.dev` had drifted a
+patch ahead of the napi runtime the toolchain ships (1.57.12 against
+1.57.9), and the runtime printed a version-mismatch warning on every boot
+that nothing was reading. Pinned in spec 033.
