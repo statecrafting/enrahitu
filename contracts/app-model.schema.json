@@ -107,7 +107,7 @@
             "required": ["name", "engine"],
             "properties": {
               "name": { "$ref": "#/$defs/slug" },
-              "engine": { "enum": ["coreledger-libsql", "coreledger-postgres"] },
+              "engine": { "enum": ["coreledger-libsql", "coreledger-postgres", "hiqlite"] },
               "migrations": {
                 "type": "array",
                 "x-ordered": "semantic",

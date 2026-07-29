@@ -268,3 +268,26 @@ recomputation), 3 I/O / parse / schema error.
 - Enrahitu's own committed model instance and its coupling-gate wiring:
   they arrive with the Phase A extraction implementation, not with this
   contract.
+
+## Amendment (2026-07-29): the schema learns the state store (spec 032)
+
+The state layer facade (spec 032) put two resources in the model that the
+schema had no vocabulary for, and both refusals were the schema doing its
+job rather than getting in the way.
+
+- **`resources.databases[].engine` gains `hiqlite`.** The enum carried the
+  two CoreLedger drivers, because until the pivot every durable store in
+  this app was CoreLedger's. hiqlite's SQLITE raft group is now a database
+  in the model's sense: a named durable store that capabilities are granted
+  on. It is deliberately a third value rather than a relaxation of the
+  enum to a free string, because the point of the enum is that a typo
+  cannot invent a store.
+- **`resources.buckets` gets its first entry**, `state-backups`. The
+  category already existed in the schema and had never been populated. It
+  covers the local backup directory and the S3 prefix together, because
+  they are two views of one backup set: hiqlite writes the local file and
+  pushes the same object, and an operator asking what backups exist means
+  both.
+
+No schema shape changed, and no producer or verifier rule changed. This is
+the vocabulary catching up with a store the app now has.

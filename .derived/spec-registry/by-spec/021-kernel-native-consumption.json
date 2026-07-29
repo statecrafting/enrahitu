@@ -46,13 +46,14 @@
       "Amendment (2026-07-22b): the admin service joins the manifest (spec 023)",
       "Amendment (2026-07-23): decision-chain integrity hardens the store (spec 024)",
       "Amendment (2026-07-25): the hiq grants are demo-scoped (spec 025)",
-      "Amendment (2026-07-29): the hiq service drops to zero capabilities"
+      "Amendment (2026-07-29): the hiq service drops to zero capabilities",
+      "Amendment (2026-07-29b): the state service joins the manifest (spec 032)"
     ],
     "specPath": "specs/021-kernel-native-consumption/spec.md",
     "status": "approved",
     "summary": "Phase A of the enforcement seam (spec 001 section 4.6, item 1 of the section 5 sequencing): the substrate consumes @statecrafting/kernel-native 0.1.0 (statecrafting spec 004) at the existing napi boundary. Three deliverables. Extraction from day one: the toolchain drives the vendored tsparser, lowers encore meta plus the capability manifest (app-manifest.json, the authored ceiling) into app-model.json per spec 020, runs the verify step (observed usage subset-of declared, ban-list, sorted arrays, schema-valid), seals the gate config hash and the integrity hash, and the committed model is a governed derived artifact whose staleness fails the gate. The kernel at the napi boundary: boot is fail-closed on the nine refusals and write-once per process; the operations that already route through Rust (CoreLedger driver calls, hiqlite kv/counters, secret reads, governed egress) are adjudicated against the booted model; a deny surfaces as a typed error naming the capability. The Decision ledger live: the deploy genesis commits to the model hash; denials and human-granted overrides append as hash-linked Decisions; the chain re-verifies via the kernel. The whole TS tier gets attempt-deny-audit semantics with no new runtime machinery. Landing this closes statecrafting spec 004 acceptance item 3 (the first consumer builds green against the published package).\n",
     "title": "Phase A: extraction, kernel-native adjudication, the live Decision ledger"
   },
-  "shardHash": "5b2ea8d25e94016be935d6121dab9a0d5e4e9b1213d3e513c32963419e469416",
+  "shardHash": "9d71155d0839b0ebaacd550769d133e3df7eb5654066d87d329b99ca6d4e8732",
   "specVersion": "1.1.0"
 }

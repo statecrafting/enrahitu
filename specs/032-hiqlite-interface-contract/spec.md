@@ -3,7 +3,7 @@ id: "032-hiqlite-interface-contract"
 title: "The hiqlite interface contract: ten decisions before the addon"
 status: approved
 created: "2026-07-29"
-implementation: pending
+implementation: complete
 depends_on:
   - "001-enrahitu-architecture"
   - "002-in-process-hiqlite"
@@ -66,17 +66,20 @@ expanded addon, in the same shape as `backend/kernel/hiq.ts` (spec 021).
 Application code never imports the addon; it calls this facade, and the
 facade adjudicates before crossing into Rust.
 
-**It stays `implementation: pending` even though the addon shipped**, and
-the distinction is worth being precise about rather than rounding up. The
-contract is settled and the surface it describes is built and proven
-(statecrafting 0.2.0, see the implementation record below). What is
-unbuilt is this repo's territory: the facade. It cannot be written earlier
-than the publish either, because it must compile against the PUBLISHED
-addon, and a facade calling `query` today would fail this repo's own
-typecheck against 0.1.0.
-Application code never imports the addon; it calls this facade, and the
-facade adjudicates before crossing into Rust. The extraction ban-list
-enforces that, as it already does for the cache surface.
+The extraction ban-list enforces that, as it already does for the cache
+surface: the addon is imported in exactly one file, `backend/hiq/init.ts`,
+and that handle is reachable from exactly two places, this directory and
+`backend/kernel/hiq.ts`.
+
+**Two facades over one addon, split by raft group.** `backend/kernel/hiq.ts`
+(spec 021) governs the CACHE group: KV with TTL and replicated counters,
+which is what the rate limiter needs. This directory governs the SQLITE
+group, which is durable and is the state layer proper. The split follows the
+groups rather than the file layout because the groups have genuinely
+different guarantees: cache state does not survive a full cluster restart,
+which is correct for leases and rate-limit windows and disqualifying for
+anything else. One module fronting both would put two durability contracts
+behind one import.
 
 The addon itself is statecrafting's (its spec 003). This spec is the
 requirement side of that interface; the addon is the implementation side.
@@ -542,14 +545,68 @@ boots the real Encore process) passing against the expanded addon. That
 last one re-proves the two-tokio-runtimes property now that SQLite-C, S3
 and cron are compiled into the same `.node`.
 
+## Implementation record (2026-07-29): the facade
+
+`backend/state/` landed with 0.2.0's publish, closing phase 2. Five modules
+behind one barrel, split the way the contract's §4 groups the surface: `sql`
+(§3.1, §3.3), `watch` (§3.2), `lease` (§3.4), `backup` (§3.8), and `migrate`
+(§3.6, which is policy rather than an addon call and is therefore the only
+module with logic of its own).
+
+**Three things the facade decides that the contract left to it.**
+
+*The watch pump.* The addon exposes `listenNext()`, one event per call, and
+hiqlite's bus delivers each event to a single awaiter. Two concurrent
+`listenNext()` callers would therefore steal events from each other and each
+see an arbitrary half of the stream, so fan-out cannot be the caller's
+problem: the facade runs exactly one pump per process and dispatches to every
+registered handler. One consequence is worth stating because it is invisible
+otherwise: `listenNext()` cannot be cancelled, so when the last handler
+unsubscribes the pump consumes and discards one further event before exiting.
+That is harmless under §3.5's watermark rule and would not be under any design
+that treated delivery as authoritative.
+
+*Table narrowing is opt-in.* The kernel checks a `tables` constraint against a
+request's `table`/`tables` attribute, so a grant declaring tables denies any
+call that does not name them. The facade cannot infer them without parsing
+SQL, which would make the security boundary depend on a parser, so the SQL
+calls take an optional `{ tables }` and no grant declares the constraint yet,
+matching the `cap.db.app.*` precedent. Phase 3 constrains the control plane's
+grants once its tables are known.
+
+*`backup` adjudicates as `bucket.write`.* The kernel's vocabulary is a fixed
+28 kinds (spec 020 §3.3) and boot refuses a model declaring one it does not
+know, so a `backup.*` kind would need a kernel-native release before the
+facade could exist at all. It is not needed either: a backup genuinely is an
+object-store write of the database, and `bucket.write` is classified
+non-read, so it fails closed at `read-only` trust. Listing is `bucket.list`.
+
+**What holds these grants.** A `state` service, `role: library`, with
+`db.migrate` and `db.read` on `state` and nothing else. It owns the schema, so
+it may change the schema and read what version it is at; it cannot write a
+row, take a lease, publish a notify, or touch a backup. The other seven
+capabilities are declared in the model and granted to no service, and
+`backend/state/state.test.ts` asserts each one denies in fact rather than
+merely being undocumented. They land on phase 3's control plane, which is the
+first thing with a reason to hold them.
+
+**The toolchain had to move first.** The extract surface wired exactly one
+governed facade over the addon in by name, so every file in `backend/state/`
+tripped the `raw-hiq-init-import` ban and none of its exports mapped to a
+kind. statecrafting spec 002 amendment (0.4.0) makes that ban a path-prefix
+rule over both facades and adds `STATE_KINDS`. Two smaller consumer-side
+gaps surfaced with it: `contracts/app-model.schema.json` had no `hiqlite`
+engine, and `state-backups` needed a `resources.buckets` entry.
+
+**Division of evidence.** The addon's `sanity-state.mjs` proves the surface
+(txn atomicity, the query/queryConsistent split, fence monotonicity and
+durability, lease behavior) on all three platforms, under statecrafting's new
+build gate (its spec 007). This repo's suite proves what is only true on this
+side: that every crossing adjudicates against the right kind and resource,
+and the migration runner's ordering, duplicate refusal, and idempotence. Both
+run against a real booted node; neither repeats the other.
+
 ### Remaining
 
-`backend/state/` is this spec's territory and is not yet written, which is
-why this stays `implementation: in-progress` rather than moving to
-`complete`. The index gate refused `complete` on exactly that ground, and it
-was right to: the contract is settled and proven, but the governed facade
-that application code will actually call does not exist. It lands when 0.2.0
-is published and enrahitu bumps to `^0.2`.
-
-The surface it wraps is now fixed and verified against a running node, which
-was the entire point of writing the contract before the addon.
+Nothing in this spec's territory. Phase 3 consumes the facade and is where
+the withheld grants find their holder.

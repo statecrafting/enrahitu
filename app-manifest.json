@@ -17,6 +17,15 @@
     { "id": "cap.db.app.read", "kind": "db.read", "resource": "app" },
     { "id": "cap.db.app.txn", "kind": "db.txn", "resource": "app" },
     { "id": "cap.db.app.write", "kind": "db.write", "resource": "app" },
+    { "id": "cap.db.state.migrate", "kind": "db.migrate", "resource": "state" },
+    { "id": "cap.db.state.read", "kind": "db.read", "resource": "state" },
+    { "id": "cap.db.state.txn", "kind": "db.txn", "resource": "state" },
+    { "id": "cap.db.state.write", "kind": "db.write", "resource": "state" },
+    { "id": "cap.lock.state.acquire", "kind": "lock.acquire", "resource": "state" },
+    { "id": "cap.notify.state.listen", "kind": "notify.listen", "resource": "state" },
+    { "id": "cap.notify.state.publish", "kind": "notify.publish", "resource": "state" },
+    { "id": "cap.backup.state.list", "kind": "bucket.list", "resource": "state-backups" },
+    { "id": "cap.backup.state.write", "kind": "bucket.write", "resource": "state-backups" },
     { "id": "cap.egress.rauthy-issuer", "kind": "http.egress", "resource": "rauthy-issuer" },
     { "id": "cap.egress.rauthy-upstream", "kind": "http.egress", "resource": "rauthy-upstream" },
     { "id": "cap.secret.jwt-private", "kind": "secret.read", "resource": "jwt_private_key" },
@@ -73,6 +82,11 @@
       "tier": "ts",
       "capabilities": []
     },
+    "state": {
+      "tier": "ts",
+      "role": "library",
+      "capabilities": ["cap.db.state.migrate", "cap.db.state.read"]
+    },
     "web": {
       "tier": "ts",
       "capabilities": []
@@ -80,8 +94,12 @@
   },
   "resources": {
     "counters": [{ "name": "counters" }],
-    "databases": [{ "name": "app", "engine": "coreledger-libsql" }],
+    "databases": [
+      { "name": "app", "engine": "coreledger-libsql" },
+      { "name": "state", "engine": "hiqlite" }
+    ],
     "kv": [{ "name": "cache" }],
+    "buckets": [{ "name": "state-backups" }],
     "secrets": [
       { "name": "jwt_private_key" },
       { "name": "jwt_public_key" },
