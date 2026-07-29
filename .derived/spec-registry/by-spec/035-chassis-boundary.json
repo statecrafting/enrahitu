@@ -1,0 +1,51 @@
+{
+  "record": {
+    "created": "2026-07-29",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "009-template-contract",
+      "012-born-with-provenance",
+      "018-packaged-chassis",
+      "021-kernel-native-consumption",
+      "034-control-plane"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "app/"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/gen-manifest.mjs"
+      },
+      {
+        "kind": "file",
+        "path": "scripts/chassis-lock.mjs"
+      },
+      {
+        "kind": "file",
+        "path": "chassis.lock"
+      }
+    ],
+    "id": "035-chassis-boundary",
+    "implementation": "complete",
+    "sectionHeadings": [
+      "035: The chassis/tree boundary",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 The boundary",
+      "3.2 The lock and the preflight",
+      "3.3 The manifest overlay",
+      "3.4 What an extension is, now that the control plane exists",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/035-chassis-boundary/spec.md",
+    "status": "approved",
+    "summary": "Phase 4 of the pivot (spec 001 §5.1). enrahitu ships as a working application an organization extends rather than forks, which is a claim about upgrades, and a claim about upgrades is worth nothing unless something can check it. This draws the line: `app/` is the organization's and an upgrade never reaches into it, everything else is chassis and an upgrade replaces it wholesale. Three mechanisms make that real: a manifest overlay so an extension can hold capabilities without editing a file the upgrade will overwrite, a chassis lock so an upgrade can tell an edited chassis file from an untouched one, and a preflight that reports what an upgrade would discard before it discards it. Lands before the application baseline because it decides what the baseline is allowed to contain.\n",
+    "title": "The chassis/tree boundary and upgrade mechanics"
+  },
+  "shardHash": "43dd7287cdcfacceffe4809450fd7277967ba99a3ee7f90989c11dcf7b0219fa",
+  "specVersion": "1.1.0"
+}

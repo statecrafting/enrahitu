@@ -1,35 +1,110 @@
 {
-  "app": { "name": "enrahitu", "org": "statecrafting" },
+  "app": {
+    "name": "enrahitu",
+    "org": "statecrafting"
+  },
   "capabilities": [
+    {
+      "id": "cap.backup.state.list",
+      "kind": "bucket.list",
+      "resource": "state-backups"
+    },
+    {
+      "id": "cap.backup.state.write",
+      "kind": "bucket.write",
+      "resource": "state-backups"
+    },
     {
       "id": "cap.counter.rate-limit.add",
       "kind": "counter.add",
       "resource": "counters",
-      "constraints": { "keyPrefix": "rl:" }
+      "constraints": {
+        "keyPrefix": "rl:"
+      }
     },
     {
       "id": "cap.counter.rate-limit.delete",
       "kind": "counter.delete",
       "resource": "counters",
-      "constraints": { "keyPrefix": "rl:" }
+      "constraints": {
+        "keyPrefix": "rl:"
+      }
     },
-    { "id": "cap.db.app.migrate", "kind": "db.migrate", "resource": "app" },
-    { "id": "cap.db.app.read", "kind": "db.read", "resource": "app" },
-    { "id": "cap.db.app.txn", "kind": "db.txn", "resource": "app" },
-    { "id": "cap.db.app.write", "kind": "db.write", "resource": "app" },
-    { "id": "cap.db.state.migrate", "kind": "db.migrate", "resource": "state" },
-    { "id": "cap.db.state.read", "kind": "db.read", "resource": "state" },
-    { "id": "cap.db.state.txn", "kind": "db.txn", "resource": "state" },
-    { "id": "cap.db.state.write", "kind": "db.write", "resource": "state" },
-    { "id": "cap.lock.state.acquire", "kind": "lock.acquire", "resource": "state" },
-    { "id": "cap.notify.state.listen", "kind": "notify.listen", "resource": "state" },
-    { "id": "cap.notify.state.publish", "kind": "notify.publish", "resource": "state" },
-    { "id": "cap.backup.state.list", "kind": "bucket.list", "resource": "state-backups" },
-    { "id": "cap.backup.state.write", "kind": "bucket.write", "resource": "state-backups" },
-    { "id": "cap.egress.rauthy-issuer", "kind": "http.egress", "resource": "rauthy-issuer" },
-    { "id": "cap.egress.rauthy-upstream", "kind": "http.egress", "resource": "rauthy-upstream" },
-    { "id": "cap.secret.jwt-private", "kind": "secret.read", "resource": "jwt_private_key" },
-    { "id": "cap.secret.jwt-public", "kind": "secret.read", "resource": "jwt_public_key" },
+    {
+      "id": "cap.db.app.migrate",
+      "kind": "db.migrate",
+      "resource": "app"
+    },
+    {
+      "id": "cap.db.app.read",
+      "kind": "db.read",
+      "resource": "app"
+    },
+    {
+      "id": "cap.db.app.txn",
+      "kind": "db.txn",
+      "resource": "app"
+    },
+    {
+      "id": "cap.db.app.write",
+      "kind": "db.write",
+      "resource": "app"
+    },
+    {
+      "id": "cap.db.state.migrate",
+      "kind": "db.migrate",
+      "resource": "state"
+    },
+    {
+      "id": "cap.db.state.read",
+      "kind": "db.read",
+      "resource": "state"
+    },
+    {
+      "id": "cap.db.state.txn",
+      "kind": "db.txn",
+      "resource": "state"
+    },
+    {
+      "id": "cap.db.state.write",
+      "kind": "db.write",
+      "resource": "state"
+    },
+    {
+      "id": "cap.egress.rauthy-issuer",
+      "kind": "http.egress",
+      "resource": "rauthy-issuer"
+    },
+    {
+      "id": "cap.egress.rauthy-upstream",
+      "kind": "http.egress",
+      "resource": "rauthy-upstream"
+    },
+    {
+      "id": "cap.lock.state.acquire",
+      "kind": "lock.acquire",
+      "resource": "state"
+    },
+    {
+      "id": "cap.notify.state.listen",
+      "kind": "notify.listen",
+      "resource": "state"
+    },
+    {
+      "id": "cap.notify.state.publish",
+      "kind": "notify.publish",
+      "resource": "state"
+    },
+    {
+      "id": "cap.secret.jwt-private",
+      "kind": "secret.read",
+      "resource": "jwt_private_key"
+    },
+    {
+      "id": "cap.secret.jwt-public",
+      "kind": "secret.read",
+      "resource": "jwt_public_key"
+    },
     {
       "id": "cap.secret.jwt-refresh-private",
       "kind": "secret.read",
@@ -40,23 +115,17 @@
       "kind": "secret.read",
       "resource": "jwt_refresh_public_key"
     },
-    { "id": "cap.secret.rauthy-client", "kind": "secret.read", "resource": "rauthy_client_secret" }
+    {
+      "id": "cap.secret.rauthy-client",
+      "kind": "secret.read",
+      "resource": "rauthy_client_secret"
+    }
   ],
   "services": {
     "admin": {
       "tier": "ts",
-      "capabilities": ["cap.secret.jwt-public"]
-    },
-    "control": {
-      "tier": "ts",
-      "role": "library",
       "capabilities": [
-        "cap.db.state.read",
-        "cap.db.state.txn",
-        "cap.db.state.write",
-        "cap.lock.state.acquire",
-        "cap.notify.state.listen",
-        "cap.notify.state.publish"
+        "cap.secret.jwt-public"
       ]
     },
     "auth": {
@@ -76,14 +145,33 @@
         "cap.secret.rauthy-client"
       ]
     },
+    "control": {
+      "tier": "ts",
+      "role": "library",
+      "capabilities": [
+        "cap.db.state.read",
+        "cap.db.state.txn",
+        "cap.db.state.write",
+        "cap.lock.state.acquire",
+        "cap.notify.state.listen",
+        "cap.notify.state.publish"
+      ]
+    },
     "health": {
       "tier": "ts",
-      "capabilities": ["cap.db.app.read"]
+      "capabilities": [
+        "cap.db.app.read"
+      ]
     },
-    "hiq": { "tier": "ts", "capabilities": [] },
+    "hiq": {
+      "tier": "ts",
+      "capabilities": []
+    },
     "idp": {
       "tier": "ts",
-      "capabilities": ["cap.egress.rauthy-upstream"]
+      "capabilities": [
+        "cap.egress.rauthy-upstream"
+      ]
     },
     "lib": {
       "tier": "ts",
@@ -97,7 +185,10 @@
     "state": {
       "tier": "ts",
       "role": "library",
-      "capabilities": ["cap.db.state.migrate", "cap.db.state.read"]
+      "capabilities": [
+        "cap.db.state.migrate",
+        "cap.db.state.read"
+      ]
     },
     "web": {
       "tier": "ts",
@@ -105,29 +196,78 @@
     }
   },
   "resources": {
-    "counters": [{ "name": "counters" }],
-    "databases": [
-      { "name": "app", "engine": "coreledger-libsql" },
-      { "name": "state", "engine": "hiqlite" }
+    "counters": [
+      {
+        "name": "counters"
+      }
     ],
-    "kv": [{ "name": "cache" }],
-    "buckets": [{ "name": "state-backups" }],
+    "databases": [
+      {
+        "name": "app",
+        "engine": "coreledger-libsql"
+      },
+      {
+        "name": "state",
+        "engine": "hiqlite"
+      }
+    ],
+    "kv": [
+      {
+        "name": "cache"
+      }
+    ],
+    "buckets": [
+      {
+        "name": "state-backups"
+      }
+    ],
     "secrets": [
-      { "name": "jwt_private_key" },
-      { "name": "jwt_public_key" },
-      { "name": "jwt_refresh_private_key" },
-      { "name": "jwt_refresh_public_key" },
-      { "name": "rauthy_client_secret" }
+      {
+        "name": "jwt_private_key"
+      },
+      {
+        "name": "jwt_public_key"
+      },
+      {
+        "name": "jwt_refresh_private_key"
+      },
+      {
+        "name": "jwt_refresh_public_key"
+      },
+      {
+        "name": "rauthy_client_secret"
+      }
     ]
   },
   "agents": [],
-  "trust": { "levels": ["full", "restricted", "read-only", "suspended"] },
-  "gate": { "checks": ["secrets"] },
+  "trust": {
+    "levels": [
+      "full",
+      "restricted",
+      "read-only",
+      "suspended"
+    ]
+  },
+  "gate": {
+    "checks": [
+      "secrets"
+    ]
+  },
   "ledger": {
     "recordSchema": "decision/v1",
     "maxRecordBytes": 1024,
-    "signing": { "algorithm": "ed25519", "keyEnv": "ENRAHITU_LEDGER_SIGNING_KEY" }
+    "signing": {
+      "algorithm": "ed25519",
+      "keyEnv": "ENRAHITU_LEDGER_SIGNING_KEY"
+    }
   },
-  "observability": { "metricsPath": "/metrics", "otel": true },
-  "auth": { "idp": "rauthy-embedded", "operatorRole": "enrahitu_operator" }
+  "observability": {
+    "metricsPath": "/metrics",
+    "otel": true
+  },
+  "auth": {
+    "idp": "rauthy-embedded",
+    "operatorRole": "enrahitu_operator"
+  },
+  "//": "GENERATED by scripts/gen-manifest.mjs from app-manifest.chassis.json + app/manifest.json. Do not edit; edit one of those and re-run (spec 035)."
 }

@@ -2,25 +2,27 @@
   "mapping": {
     "dependsOn": [
       "001-enrahitu-architecture",
-      "002-in-process-hiqlite",
-      "003-coreledger",
-      "004-auth-core",
-      "005-rauthy-same-origin",
-      "008-vendored-encore-toolchain",
+      "009-template-contract",
+      "012-born-with-provenance",
       "018-packaged-chassis",
-      "020-app-model-contract"
+      "021-kernel-native-consumption",
+      "034-control-plane"
     ],
     "implementingPaths": [
       {
-        "path": "app-manifest.json",
+        "path": "app/",
         "source": "spec-edge"
       },
       {
-        "path": "app-model.json",
+        "path": "chassis.lock",
         "source": "spec-edge"
       },
       {
-        "path": "backend/kernel/",
+        "path": "scripts/chassis-lock.mjs",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/gen-manifest.mjs",
         "source": "spec-edge"
       }
     ],
@@ -28,46 +30,59 @@
       {
         "locations": [
           {
-            "file": "backend/kernel/"
+            "file": "app/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "backend/kernel/"
+          "path": "app/"
         }
       },
       {
         "locations": [
           {
-            "file": "app-manifest.json"
+            "file": "chassis.lock"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "file",
-          "path": "app-manifest.json"
+          "path": "chassis.lock"
         }
       },
       {
         "locations": [
           {
-            "file": "app-model.json"
+            "file": "scripts/chassis-lock.mjs"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "file",
-          "path": "app-model.json"
+          "path": "scripts/chassis-lock.mjs"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/gen-manifest.mjs"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/gen-manifest.mjs"
         }
       }
     ],
-    "specId": "021-kernel-native-consumption",
+    "specId": "035-chassis-boundary",
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "7b07f649edf37d85b242ad05af56d89597ea72cc51f84b3496378a1ce6c81eb2"
+  "shardHash": "386c4fa0210760559e8ffe3e23f213bda470071d1378ddc09ed31ffa4e6fd488"
 }

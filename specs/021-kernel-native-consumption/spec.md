@@ -540,3 +540,25 @@ The Decision store itself does not move. It stays CoreLedger's, reached through
 `rawDriverFromEnv` as the enforcement plane always has, and relocating the chain
 head onto hiqlite with a hot window and sealed segments (spec 032 §3.7, §3.9)
 remains spec 024's.
+
+## Amendment (2026-07-29d): the manifest splits in two (spec 035)
+
+`app-manifest.json` stops being authored and becomes derived. The authored
+chassis manifest is `app-manifest.chassis.json`; an organization's additions
+live in `app/manifest.json`; `scripts/gen-manifest.mjs` composes them and
+`check:manifest` gates the result, exactly as `check:infra` gates the generated
+infra configs.
+
+Nothing about what the kernel reads changes. The extractor still consumes
+`app-manifest.json`, the model still records the same ceiling, and adjudication
+is untouched. What changes is who may write which part of it, and that had to
+change: before spec 035 an organization's only way to add a capability was to
+edit a chassis file, so the first upgrade would discard the grant and its
+extension would start failing adjudication with no visible cause.
+
+The composition refuses collisions rather than resolving them by precedence,
+and the reason belongs in this spec because it is a statement about the
+ceiling: a silently overridden capability is a widened ceiling that reads, in
+the composed file, exactly like a chassis decision. The single exception is
+additive grants to a chassis service, which is visible in the output and is the
+only way an organization's kind can be reconciled by a chassis controller.

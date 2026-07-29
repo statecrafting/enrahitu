@@ -564,14 +564,34 @@ independent and run in parallel.
   because lock state lives in the non-durable cache group and a fencing
   token that resets is not a fencing token.
 
-  Remaining before phase 3: publish 0.2.0 (CI-only), bump this repo to
-  `^0.2`, and write `backend/state/`.
-- **Phase 3, control plane architecture.** Kinds, admission, watch,
-  controllers, audit. Back-written from what real nodes did, not
-  designed ahead of them.
-- **Phase 4, the chassis/tree boundary and upgrade mechanics.** Decides
-  what the application baseline is allowed to contain, so it lands
-  before the baseline and after the control plane.
+  **Closed 2026-07-29**: 0.2.0 and toolchain 0.4.0 published from
+  statecrafting CI under its new build gate (its spec 007, which landed
+  first so the tag could not spend a version on a tree no machine had
+  compiled), this repo bumped to `^0.2`/`^0.4`, and `backend/state/`
+  written. Spec 032 is `implementation: complete`.
+- **Phase 3, control plane architecture. Landed as spec 034**
+  (2026-07-29). Kinds, admission, watch, controllers, audit, back-written
+  from what real nodes did exactly as this plan required, and the
+  requirement paid twice.
+
+  hiqlite binds SQL parameters in order of first appearance and ignores
+  the number, so any statement whose numbers do not ascend binds the wrong
+  values with no error. It cost two silently empty tables and a tombstone
+  that never appeared. `backend/state/placeholders.ts` is the guard;
+  statecrafting#16 is the defect.
+
+  An admission that changes nothing must not produce a revision, or a
+  controller that writes what it watches re-triggers itself until its
+  lease expires. A test timeout found that one.
+- **Phase 4, the chassis/tree boundary and upgrade mechanics. Landed as
+  spec 035** (2026-07-29). `app/` is the organization's and an upgrade
+  never reaches into it; everything else is chassis and is replaced
+  wholesale. A manifest overlay so an extension can hold capabilities
+  without editing a file the upgrade overwrites, a chassis lock so an
+  upgrade can tell an edited chassis file from an untouched one, and a
+  preflight that reports what an upgrade would discard before it discards
+  it. It decides what the application baseline is allowed to contain, so
+  it lands before the baseline and after the control plane.
 - **Phase 5, the application baseline.** The association domain, written
   against the real store. It ships and it stays; there is no prunable
   example slot.

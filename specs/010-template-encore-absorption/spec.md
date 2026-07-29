@@ -169,3 +169,27 @@ both refuse a configuration, and the cheapest moment to learn a configuration
 is wrong is before anything is built against it. A hand-edit to a generated
 config is otherwise discovered at boot, in an environment nobody develops in,
 which is precisely the failure mode that generating them exists to end.
+
+## Amendment (2026-07-29b): the chassis boundary gates (spec 035)
+
+`verify.yml` gains two checks, both alongside the infra-config drift gate and
+for the same reason: a generated file that has been hand-edited is a
+disagreement between authored intent and what actually runs, and the cheapest
+place to find it is the pull request.
+
+- **`check:manifest`.** `app-manifest.json` is now composed from
+  `app-manifest.chassis.json` and `app/manifest.json` (spec 035 §3.3). A
+  hand-edit to the derived file would be a capability that exists in the model,
+  and therefore in the kernel's enforced ceiling, and in nobody's authored
+  intent. It is caught here rather than at adjudication, where it would look
+  like a grant somebody meant to make.
+- **`check:chassis`.** `chassis.lock` is what lets a stamped deployment tell an
+  edited chassis file from an untouched one before it takes an upgrade (spec
+  035 §3.2). In *this* repository every chassis change is legitimate and the
+  lock simply has to keep up, so the gate here is staleness. Shipping a stale
+  lock would misreport a downstream deployment's local edits, which is worse
+  than not shipping one: it would report a file as safe to overwrite when the
+  deployment had changed it.
+
+Both run before the app build, like the license and infra gates, because they
+read files off disk and depend on nothing being compiled first.
