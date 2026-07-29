@@ -535,11 +535,17 @@ independent and run in parallel.
   already a fencing token, and the notify bus is one global channel whose
   events may replay. Four of the ten decisions add nothing to the addon
   surface, which is the contract doing its job.
-- **Phase 1b, the dev substrate.** Docker-only tiered compose with N=1 as
-  the default tier, generated `infra.config.<topology>.json` from one
-  source, backend watch, the app-level test harness, and the single-shot
-  restore marker in `docker/first-boot.mjs`. Closes spec 025 §5 items 1,
-  4, and 6, which is what moves spec 025 to `implementation: complete`.
+- **Phase 1b, the dev substrate. Landed as spec 033** (2026-07-29, in
+  progress). Docker-only tiered compose with N=1 as the default tier,
+  generated `infra.config.<topology>.json` from one source, backend watch,
+  the app-level test harness, and the single-shot restore marker in
+  `docker/first-boot.mjs`. The harness shipped first and moved **spec 025
+  to `implementation: complete`**: acceptance item 6 is proved against a
+  running gateway, and items 1 and 4 are superseded by spec 015's removal
+  of the endpoints they described. It also found a defect nothing else
+  could see: `encore.dev` had floated a patch ahead of the napi runtime,
+  and the runtime's version-mismatch warning had never been read because
+  nothing booted the bundle inside a test.
 - **Phase 1c, frontend convergence. Landed as spec 015** (2026-07-29),
   with amendments to specs 002, 006, 009, 013, and 014. §4.3 executed.
 - **Phase 2, the addon expansion (the gate).** `sqlite`, `dlock`, and
@@ -595,7 +601,7 @@ territory, per the coupling gate.
 | 022 observability contract | **Survives.** |
 | 023 frontend-admin | **Survives**, and is the single most expensive asset in the tree: the rebuilt Encore dev dashboard (catalog, API caller, traces, waterfall). Do not rebuild it. |
 | 024 decision chain integrity | **Rewrite pending, phase 1a**: its outbox rule and portability boundary were written against a hiqlite/CoreLedger split the pivot dissolves. The CAS append survives and becomes the audit spine of admission. |
-| 025 substrate hardening | **In progress; completed by phase 1b.** |
+| 025 substrate hardening | **COMPLETE** (2026-07-29). Item 6 proved by spec 033's harness; items 1 and 4 superseded by spec 015's removal of the endpoints. |
 | 026 IdP mail delivery | **Pulled forward, scope grows**: the platform's outbound channel, on a bring-your-own SMTP relay (§4.9 ban 3). |
 | 027 operational verbs | **Grows**: gains the restore verb and its runbook. Restore at N>=3 is a cluster reset, not a data restore, and the tenant assurance must not imply otherwise. |
 | 028 operator documentation | **Survives, grows.** |

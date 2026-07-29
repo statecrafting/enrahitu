@@ -25,7 +25,7 @@
       }
     ],
     "id": "025-substrate-hardening",
-    "implementation": "in-progress",
+    "implementation": "complete",
     "sectionHeadings": [
       "025: Substrate hardening",
       "1. Purpose",
@@ -37,13 +37,14 @@
       "3.4 The metrics endpoint",
       "4. Acceptance",
       "5. Status",
-      "6. Out of scope"
+      "6. Out of scope",
+      "Closure (2026-07-29): the remaining items, two proved and two superseded"
     ],
     "specPath": "specs/025-substrate-hardening/spec.md",
     "status": "approved",
     "summary": "Four defects that only exist once the cell is actually exposed on a network, found by an external review of the packaged image and verified against the code. The hiq demo endpoints are public and unauthenticated while holding an unconstrained counter capability, which lets any remote caller forge the rate limiter's own buckets and lock a chosen IP out of login. Client identity is taken from an unvalidated X-Forwarded-For on both the typed and raw paths, so the limiter is evadable and rauthy inherits the spoof through the proxy. The liveness endpoint performs a ledger query, so a transient store blip restarts a container that the die-together supervisor then takes down whole, and the image declares no HEALTHCHECK at all. The metrics endpoint is unauthenticated on the public port with its own comment citing deployment guidance that was never written. This spec closes all four: the demo surface becomes operator-gated and demo-scoped at the capability layer, client identity becomes forge-proof by construction, liveness separates from readiness, and metrics gains a first-boot-provisioned bearer token without weakening spec 022's always-on contract.\n",
     "title": "Substrate hardening: the exposed surface, forge-proof client identity, probe separation"
   },
-  "shardHash": "e54ab62087a10394f300c24013909f7d559b66c180e375910314967c79e17ccd",
+  "shardHash": "47e4ad1b215dcc009a201154f09d3fb39398f4240b43ca78bfb541856f77b70d",
   "specVersion": "1.1.0"
 }

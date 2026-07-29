@@ -1,0 +1,40 @@
+{
+  "record": {
+    "created": "2026-07-29",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "007-single-container-packaging",
+      "008-vendored-encore-toolchain",
+      "025-substrate-hardening",
+      "032-hiqlite-interface-contract"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "testing/"
+      }
+    ],
+    "id": "033-dev-substrate",
+    "implementation": "in-progress",
+    "sectionHeadings": [
+      "033: The dev substrate",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 The app-level harness (delivered)",
+      "3.2 What the harness found immediately",
+      "3.3 Tiered topology, docker only",
+      "3.4 One generated infra config, and a watch loop",
+      "3.5 The restore marker",
+      "4. Acceptance",
+      "5. Status",
+      "6. Out of scope"
+    ],
+    "specPath": "specs/033-dev-substrate/spec.md",
+    "status": "approved",
+    "summary": "Phase 1b of the pivot (spec 001 §5.1). Development becomes docker-only, and the N=1 dev topology becomes the N=1 deployment topology rather than a parallel arrangement that resembles it. Five parts: a tiered compose topology whose default tier is one container and one volume; a single generator for infra.config.<topology>.json, replacing hand-maintained twins; a backend watch loop, which the toolchain's dev runner has never had; the app-level test harness, which boots the real compiled bundle and talks to it over HTTP; and the single-shot restore marker that makes HQL_BACKUP_RESTORE safe in a container with a restart policy. The harness landed first because it is what closes spec 025 and what specs 026, 027, and the control plane all build on, and because it immediately found two defects nothing else in the repo could see.\n",
+    "title": "The dev substrate: docker-only development and the app-level harness"
+  },
+  "shardHash": "6f5e6654acc4e06697d273920051a731940d80467fd694bd85a6c7705dcdf0ea",
+  "specVersion": "1.1.0"
+}

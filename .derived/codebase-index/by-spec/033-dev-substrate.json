@@ -1,0 +1,36 @@
+{
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "007-single-container-packaging",
+      "008-vendored-encore-toolchain",
+      "025-substrate-hardening",
+      "032-hiqlite-interface-contract"
+    ],
+    "implementingPaths": [
+      {
+        "path": "testing/",
+        "source": "spec-edge"
+      }
+    ],
+    "resolvedUnits": [
+      {
+        "locations": [
+          {
+            "file": "testing/"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "testing/"
+        }
+      }
+    ],
+    "specId": "033-dev-substrate",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "2bfb4b25e1a3b9c48bd211323ed74da98047451f4cfc5d3a2f5e11c510fd342f"
+}
