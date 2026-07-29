@@ -35,8 +35,9 @@
  * `package-lock.json` exists rather than resolving the registry every time.
  */
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -82,45 +83,49 @@ const CHASSIS_FILES = [
 ];
 
 /**
- * Skipped inside a chassis root: build output, dependencies, and generated
- * trees. They are reproducible from what is locked, so hashing them would make
- * the lock churn on every build without telling anyone anything.
+ * The roster comes from `git ls-files`, not from a filesystem walk.
+ *
+ * The chassis is what the chassis SHIPS, and git already knows exactly that.
+ * A walk knows only what happens to be on the disk of whoever ran it, so a
+ * stale Playwright report or a local scratch file lands in the lock, and then
+ * CI on a clean checkout reports it as a deleted chassis file. That is not a
+ * hypothetical: it is how this function came to be written this way, on the
+ * first CI run of the gate that introduced it.
+ *
+ * The rule the walk was trying to express (skip build output, dependencies and
+ * generated trees, because they are reproducible from what is locked) is
+ * exactly what `.gitignore` already says, in one place, maintained by everyone.
+ * Restating it in a `SKIP_DIRS` set was a second copy of a list that was
+ * already wrong the moment the two disagreed.
  */
-const SKIP_DIRS = new Set([
-  "node_modules",
-  "dist",
-  "dist-admin",
-  ".encore",
-  "test-results",
-  "playwright-report",
-]);
-
-function walk(dir, out) {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name.startsWith(".") && entry.name !== ".derived") continue;
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) continue;
-      walk(full, out);
-    } else if (entry.isFile()) {
-      out.push(full);
-    }
+function gitTrackedFiles() {
+  try {
+    return execFileSync("git", ["ls-files", "-z", "--cached", "--"], {
+      cwd: repoRoot,
+      maxBuffer: 64 * 1024 * 1024,
+    })
+      .toString()
+      .split("\0")
+      .filter(Boolean);
+  } catch (err) {
+    console.error(
+      "[chassis-lock] cannot list tracked files. This needs to run inside a git " +
+        "checkout: the chassis roster is what git tracks, because that is what the " +
+        `chassis ships. (${String(err).split("\n")[0]})`,
+    );
+    process.exit(1);
   }
-  return out;
+}
+
+function isChassisPath(relPath) {
+  if (CHASSIS_FILES.includes(relPath)) return true;
+  return CHASSIS_ROOTS.some((root) => relPath.startsWith(`${root}/`));
 }
 
 function chassisPaths() {
-  const files = [];
-  for (const root of CHASSIS_ROOTS) {
-    const full = join(repoRoot, root);
-    if (existsSync(full) && statSync(full).isDirectory()) walk(full, files);
-  }
-  for (const file of CHASSIS_FILES) {
-    const full = join(repoRoot, file);
-    if (existsSync(full)) files.push(full);
-  }
-  // POSIX separators so a lock written on one platform verifies on another.
-  return files.map((f) => relative(repoRoot, f).split(sep).join("/")).sort();
+  // git already emits POSIX separators, so a lock written on one platform
+  // verifies on another without normalization.
+  return gitTrackedFiles().filter(isChassisPath).sort();
 }
 
 function hash(relPath) {

@@ -74,9 +74,19 @@ chassis-owned by default, so whoever adds one silently takes it away from the
 organization. An inclusion list makes the same mistake a missing entry that
 `--check` reports on the next commit.
 
-Build output, `node_modules`, and generated trees are skipped. They are
-reproducible from what is locked, so hashing them would churn the lock on
-every build while telling nobody anything.
+**The roster comes from `git ls-files`, not from a filesystem walk.** The
+chassis is what the chassis ships, and git already knows exactly that. A walk
+knows only what happens to be on the disk of whoever ran it, so a stale
+Playwright report or a local scratch file lands in the lock and CI on a clean
+checkout then reports it as a deleted chassis file.
+
+That is not hypothetical. The first version walked the tree with a `SKIP_DIRS`
+set, and the gate's own first CI run failed on
+`D e2e/artifacts/report/index.html`, a gitignored artifact from a local test
+run. The rule the skip list was reaching for (build output and generated trees
+are reproducible from what is locked) is what `.gitignore` already says, in one
+place, maintained by everyone. A second copy of that list was wrong the moment
+the two disagreed, and it disagreed immediately.
 
 ### 3.2 The lock and the preflight
 
