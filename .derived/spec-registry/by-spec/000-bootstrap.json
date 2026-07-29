@@ -15,7 +15,8 @@
       "000: Bootstrap spec system",
       "1. The authoring / derived boundary",
       "2. The typed authority graph",
-      "3. Repository configuration (`spec-spine.toml`)"
+      "3. Repository configuration (`spec-spine.toml`)",
+      "Amendment (2026-07-29): one standalone npm package"
     ],
     "specPath": "specs/000-bootstrap/spec.md",
     "status": "approved",
@@ -29,6 +30,6 @@
       "refusal-rule"
     ]
   },
-  "shardHash": "73c2fd3387ace2cfbb6958c9277e1177932c4bc0ccdff83ab29193818529e430",
+  "shardHash": "a5af38580266a11f87ff1874b39e0de4e77a81be309b33895428171072ac9a46",
   "specVersion": "1.1.0"
 }

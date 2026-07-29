@@ -143,3 +143,16 @@ Not yet decided: whether the check joins `template.toml [verbs].verify`,
 which would make every stamped app inherit it. That touches the template
 contract, so it rides the phase 1c change that already bumps the contract
 version (spec 001 §5.1) rather than bumping it twice.
+
+## Amendment (2026-07-29): one frontend install in verify
+
+`verify.yml` (this spec's territory) drops `npm --prefix frontend-react ci`
+and the second lockfile cache path. The chassis carried both flavor
+packages because the Encore parse walk resolves every flavor's
+`vite.config` import regardless of `tsconfig` excludes, so both had to be
+installed for `build:app` to succeed. With the flavor slot retired
+(spec 015, contract v0.7) there is one SPA package, so the install that
+existed to satisfy the parse walk goes with it.
+
+The `frontend-admin` install stays: the dashboard is a real optional slot
+(spec 023) and its config is still in the walk.

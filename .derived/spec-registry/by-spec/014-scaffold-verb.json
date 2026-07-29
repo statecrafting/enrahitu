@@ -25,13 +25,14 @@
       "4. Acceptance",
       "5. Out of scope",
       "6. Implementation notes",
-      "Amendment (2026-07-22): the admin slot keep-or-prune (spec 023)"
+      "Amendment (2026-07-22): the admin slot keep-or-prune (spec 023)",
+      "Amendment (2026-07-29): flavor selection retires"
     ],
     "specPath": "specs/014-scaffold-verb/spec.md",
     "status": "approved",
     "summary": "Moves stamping logic from \"factory-side folklore\" into the template itself: a scaffold verb the factory (or a human) invokes inside a fresh clone of this repo to turn it into a named app. Slot substitution, lockfile discipline, registry regeneration, and certificate placement all live in one script with one contract entry. Absorption line item LI-4 of spec 010; fills the scaffold verb reserved by spec 009 §3.2 and bumps the contract to 0.4.0.\n",
     "title": "In-template scaffold verb + repoInit seeding (LI-4)"
   },
-  "shardHash": "5b6d89bab8328242a3f2221336b80915b8a14439429ae985df09ba51d8507f53",
+  "shardHash": "b58d64327fcfac853d27a7bfc79c8c884adbdd5a5c705d1301835f0cc0d7ad76",
   "specVersion": "1.1.0"
 }

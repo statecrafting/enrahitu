@@ -95,3 +95,25 @@ the response's `redirectUrl` points at the same-origin
 RP-initiated logout wire fact, proven against real rauthy by API
 inspection alone. The round-trip is deliberately not navigated, so
 the suite's flake surface is unchanged.
+
+## Amendment (2026-07-29): one frontend install in the e2e workflow
+
+`e2e.yml` (this spec's territory) drops `npm --prefix frontend-react ci`
+and the second lockfile cache path, for the same reason `verify.yml` did
+(spec 010): the flavor slot retired (spec 015) and the parse walk now
+resolves one SPA `vite.config` instead of two.
+
+The suite itself is unchanged and still drives a real password login
+through a real browser against the same-origin `/auth/*` proxy. One thing
+it now exercises differently without any edit to the spec: the SPA under
+test is the React app rather than the Vue one, so the "Sign in with
+rauthy" affordance the test clicks is rendered by React Router's Login
+route. The selectors are behavioral (visible text and form submission),
+not framework-specific, which is why the flavor swap costs this suite
+nothing.
+
+The harness's real fragility is unchanged and still recorded in §3: the
+trailing-slash `RAUTHY_ISSUER`, the `networkidle` wait before submitting,
+and a fresh rauthy volume seeding the client. Those failed only on CI
+before, and the docker-only dev loop (spec 001 §5.1 phase 1b) is what
+removes that asymmetry.

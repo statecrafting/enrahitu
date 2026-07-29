@@ -17,16 +17,15 @@ specs_dir     = "specs"
 derived_dir   = ".derived"
 standards_dir = "standards/spec"
 # Single npm package at the root (no workspaces; key decision 1 in spec 001).
-# The SPA flavors carry their own manifests outside any workspace, so they are
-# declared standalone. The chassis carries every frontend flavor (spec 015):
-# frontend/ (vue) and frontend-react/ (react-rr7); the scaffold verb prunes to
-# one at stamp time. The build toolchain and the hiqlite addon are now consumed
-# as published @statecrafting packages (statecrafting specs 002/003), no longer
-# vendored here, so no Rust crate or toolchain package is declared standalone.
+# The SPA carries its own manifest outside any workspace, so it is declared
+# standalone. The frontend flavor slot retired at contract v0.7 (spec 015): one
+# SPA, React 19 + React Router v7, shipping with the application. The build
+# toolchain and the hiqlite addon are consumed as published @statecrafting
+# packages (statecrafting specs 002/003), no longer vendored here, so no Rust
+# crate or toolchain package is declared standalone.
 standalone_rust_workspaces = []
 standalone_npm_packages = [
   "frontend",
-  "frontend-react",
 ]
 
 [index]

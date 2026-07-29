@@ -1,11 +1,10 @@
 import { Form, useLoaderData } from "react-router";
 
-import KvDemo from "../components/KvDemo";
 import type { Me } from "../lib/api";
 
-// Profile (spec 015 §3): renders GET /api/v1/auth/me, the logout action, and
-// the hiqlite cache demo widget. The loader redirects to /login when there is
-// no session, so `me` is always present here.
+// Profile (spec 015 §3): renders GET /api/v1/auth/me and the logout action.
+// The loader redirects to /login when there is no session, so `me` is always
+// present here.
 export default function Profile() {
   const me = useLoaderData() as Me;
   return (
@@ -28,9 +27,6 @@ export default function Profile() {
           Sign out
         </button>
       </Form>
-
-      <h3>hiqlite cache demo</h3>
-      <KvDemo />
     </section>
   );
 }

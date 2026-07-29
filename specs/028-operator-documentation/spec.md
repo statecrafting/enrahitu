@@ -170,3 +170,17 @@ unauthenticated would be teaching a request that returns 401.
 - Tutorials and application-development guides for people building on a
   stamped app. Different reader, different document, later.
 - Translation and localization of operator documentation.
+
+## Amendment (2026-07-29): the architecture doc's frontend row
+
+`docs/ARCHITECTURE.md` (this spec's territory) records the SPA as React 19
++ React Router v7 in `frontend/`, owned by spec 015, replacing the Vue 3
+row that spec 006 owned. Consequence of the React-only convergence.
+
+This is a small edit against a spec that is otherwise `implementation:
+pending`, and it is worth noting why it lands now rather than waiting: the
+architecture doc is the human overview a contributor reads first, and a
+first-read document that describes a deleted framework is worse than one
+that is incomplete. Operator documentation proper (runbooks, the backup
+and restore procedures, the tenant assurance) is still this spec's pending
+work.

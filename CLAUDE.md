@@ -59,7 +59,7 @@ specs/       Feature specs (000-019), the authoritative design record
 standards/   spec-spine constitution, contract, templates
 template.toml  The versioned template contract the Statecraft factory reads (spec 009)
 backend/     The Encore.ts app (spec 019):
-  hiq/         Encore service over the addon (spec 002)
+  hiq/         hiqlite addon init + GET /hiq/health (spec 002)
   core/        CoreLedger decorator data layer on libSQL/Turso (spec 003)
   auth/        Auth service: JWT cookies, refresh rotation, drivers (spec 004)
   lib/         Shared security library: jwt, cookies, csrf, rate-limit (spec 004)
@@ -69,7 +69,7 @@ backend/     The Encore.ts app (spec 019):
   kernel/      Kernel-native adjudication + the Decision ledger (spec 021)
   obs/         /metrics, OTel tracer, bounded trace buffer (spec 022)
   admin/       Operator dashboard data plane + gated /admin serving (spec 023)
-frontend/    Vue 3 + Vite SPA source, builds into backend/web/dist (spec 006)
+frontend/    React 19 + RR7 SPA source, builds into backend/web/dist (spec 015)
 frontend-admin/  React+RR7 operator dashboard, builds into backend/web/dist-admin (spec 023)
 docker/      Single-container packaging: Dockerfiles, entrypoint, first-boot (specs 007/008)
 scripts/     docker-build.sh (007), generate-keys.ts (004), sync-dev-rauthy-secret.mjs (005)
@@ -86,7 +86,7 @@ This repo is governed by [spec-spine](https://github.com/statecrafting/spec-spin
   together (`spec-spine couple` enforces this at PR time; waiver keyword
   `Spec-Drift-Waiver:` in the PR body).
 - **Manifest linkage.** `package.json` carries `"spec-spine": { "spec": ... }`
-  (root → 001, `frontend/` → 006, `frontend-react/` → 015).
+  (root → 001, `frontend/` → 015).
 - **Governed reads.** Read `.derived/**` only through `spec-spine` subcommands
   (`registry list/show/status-report`, `index check/render/orphans`); never
   ad-hoc `jq`/`python` parsers (`.claude/rules/governed-artifact-reads.md`).

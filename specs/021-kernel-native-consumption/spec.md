@@ -437,3 +437,35 @@ hiq service by construction, so a future regression that drops an `auth`
 annotation re-exposes a demo keyspace rather than the rate limiter. The
 extraction gate enforces the ceiling, and refused an earlier draft of
 spec 025 that would have mounted `apiRateLimit` on this service.
+
+## Amendment (2026-07-29): the hiq service drops to zero capabilities
+
+`app-manifest.json` and the regenerated `app-model.json` (this spec's
+territory) lose five capability definitions and one service's entire
+grant list:
+
+- `cap.kv.demo.put`, `cap.kv.demo.get`, `cap.kv.demo.delete`,
+  `cap.counter.demo.add`, `cap.counter.demo.get` are deleted. They existed
+  solely to authorize the `hiq` HTTP demo endpoints, which retire with the
+  SPA widget that consumed them (spec 002, spec 015).
+- `services.hiq.capabilities` becomes `[]`.
+
+**This is the end state of the spec 025 §3.1 exploit path.** That review
+found the `hiq` service holding an unconstrained `cap.counter.add`, which
+meant an unauthenticated caller could write the rate limiter's own
+`rl:`-prefixed buckets and deny a chosen client its login. Spec 025 closed
+it with two barriers: an operator role gate on the endpoints, and a
+`demo:` keyPrefix constraint narrowing the grants. Both were correct, and
+both were mitigations of a service that still held write authority over
+the store.
+
+It now holds none. `health()` is the service's only remaining call and it
+demands nothing, so there is nothing left to grant. A future endpoint added
+to this service starts from an empty capability list and must justify each
+grant it asks for, which is the deny-by-default posture spec 001 §4.6
+describes, reached by subtraction rather than by constraint.
+
+The declare-verify-enforce loop is unchanged: the manifest is authored, the
+extractor verifies observed usage is a subset, and `npm run check:model`
+gates staleness. This amendment records a narrowing of the declaration, not
+a change to the mechanism.

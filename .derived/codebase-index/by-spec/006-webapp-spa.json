@@ -7,14 +7,6 @@
       {
         "path": "backend/web/",
         "source": "spec-edge"
-      },
-      {
-        "path": "frontend",
-        "source": "manifest-metadata"
-      },
-      {
-        "path": "frontend/",
-        "source": "spec-edge"
       }
     ],
     "resolvedUnits": [
@@ -30,24 +22,11 @@
           "kind": "directory",
           "path": "backend/web/"
         }
-      },
-      {
-        "locations": [
-          {
-            "file": "frontend/"
-          }
-        ],
-        "ownership": true,
-        "sourceField": "establishes",
-        "unit": {
-          "kind": "directory",
-          "path": "frontend/"
-        }
       }
     ],
     "specId": "006-webapp-spa",
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "974b2b7d9afee172b957db379184c4e05732b6e90de8e3fab36f1afa6a514dc0"
+  "shardHash": "e3d60761927c3449edf7ce78ba1d838527cc7a79df70d5cba37dc90a6427c54b"
 }

@@ -127,3 +127,31 @@ derivation (statecrafting spec 002 amendment, consumed by spec 022) is the
 toolchain the chassis actually builds with. Cross-repo: the factory's
 reader (statecraft spec 005) tolerates or adopts 0.6 before pinning a
 template release that carries it (spec 023 acceptance 4).
+
+## Amendment (2026-07-29): contract v0.7 removes the frontend slot
+
+`[slots].frontend` is gone. It offered `vue` and `react-rr7` as sibling
+flavor directories the scaffold verb pruned to one (specs 014/015); the
+React-only convergence (spec 001 §4.3) retires the Vue flavor, and the
+pivot removes the reason for the slot to exist at all: enrahitu ships a
+working membership application rather than a shell to fill in, so the SPA
+carries the product's own screens and there is no framework left to
+choose.
+
+**This is a breaking bump, and the version reflects where a caret pin sees
+it.** §3.1 says removing a key is a "major" bump. The contract is at 0.x,
+where npm's caret makes the *minor* the breaking position: `^0.6.0` means
+`>=0.6.0 <0.7.0`, so 0.7.0 already breaks the pin, which is correct
+because the change is breaking. A literal 1.0.0 would additionally assert
+that this contract is stable, which is a claim this corpus is not ready to
+make mid-pivot. The rule in §3.1 is therefore read as "a removal breaks
+the caret pin", and at 0.x that is the minor position.
+
+**What a factory must do.** Stop passing `--frontend`, and pin `^0.7`.
+`scripts/stamp.mjs` still recognizes the flag and fails with a message
+naming this bump, so a factory that has not caught up gets a directed
+error rather than "unknown argument".
+
+The `admin` slot (v0.6, spec 023) is untouched and remains a real choice:
+an operator dashboard is genuinely optional for a stamped app in a way a
+view framework is not.
