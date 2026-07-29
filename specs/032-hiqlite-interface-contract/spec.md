@@ -606,6 +606,39 @@ side: that every crossing adjudicates against the right kind and resource,
 and the migration runner's ordering, duplicate refusal, and idempotence. Both
 run against a real booted node; neither repeats the other.
 
+## Implementation record (2026-07-29b): a fifth correction, found by phase 3
+
+**The store binds parameters positionally and ignores the number.** Parameters
+are assigned to placeholders in order of FIRST APPEARANCE, so `$1` and `$2`
+look like numbered binding and behave like `?`:
+
+```sql
+-- params: ["A", "B"]
+SELECT * FROM t WHERE b = $2 AND a = $1   -- binds b := "A", a := "B"
+```
+
+There is no error and no warning. A `SELECT` returns the wrong rows, an
+`UPDATE` reports zero rows affected, and an `INSERT ... SELECT` inserts
+nothing. It surfaced in phase 3 as two silently empty tables and a tombstone
+that never appeared, and none of the three symptoms pointed at binding.
+
+This document is the requirement side of the interface and therefore the
+defect report (section 2), so it is recorded here and filed against
+statecrafting spec 003. The addon should honor the number.
+
+Until it does, `backend/state/placeholders.ts` is the contract, and it is part
+of this spec's territory rather than the control plane's because every caller
+of the facade is exposed to it. Every statement crossing the facade is checked:
+the first occurrence of each distinct placeholder must be numbered 1, 2, 3, ...
+in the order it appears, and re-using an already-seen number later is fine and
+is the normal way to use one value twice. A violation throws, naming the
+statement. The scanner skips single-quoted literals, including SQL's
+doubled-quote escape, so `'costs $5'` is not read as a placeholder.
+
+The check runs on every call rather than under a development flag. It is one
+pass over a string that was about to cross a napi boundary and reach a raft
+group, and the failure it prevents is wrong data rather than a crash.
+
 ### Remaining
 
 Nothing in this spec's territory. Phase 3 consumes the facade and is where
