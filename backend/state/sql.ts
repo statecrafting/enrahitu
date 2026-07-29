@@ -16,6 +16,7 @@ import { demand } from "../kernel/adjudicate";
 
 import hiqlite, { ready } from "../hiq/init";
 
+import { assertPlaceholderOrder } from "./placeholders";
 import { SQL_RESOURCE, type SqlOptions } from "./types";
 import type { SqlRow, SqlStatement, SqlValue } from "./types";
 
@@ -50,6 +51,7 @@ export async function query<T = SqlRow>(
   opts?: SqlOptions,
 ): Promise<T[]> {
   demand("db.read", SQL_RESOURCE, { attributes: attrs(opts) });
+  assertPlaceholderOrder(sql);
   await ready;
   return (await hiqlite.query(sql, params)) as T[];
 }
@@ -65,6 +67,7 @@ export async function queryConsistent<T = SqlRow>(
   opts?: SqlOptions,
 ): Promise<T[]> {
   demand("db.read", SQL_RESOURCE, { attributes: attrs(opts) });
+  assertPlaceholderOrder(sql);
   await ready;
   return (await hiqlite.queryConsistent(sql, params)) as T[];
 }
@@ -82,6 +85,7 @@ export async function execute(
   opts?: SqlOptions,
 ): Promise<number> {
   demand("db.write", SQL_RESOURCE, { attributes: attrs(opts) });
+  assertPlaceholderOrder(sql);
   await ready;
   return hiqlite.execute(sql, params);
 }
@@ -93,6 +97,7 @@ export async function executeReturning<T = SqlRow>(
   opts?: SqlOptions,
 ): Promise<T[]> {
   demand("db.write", SQL_RESOURCE, { attributes: attrs(opts) });
+  assertPlaceholderOrder(sql);
   await ready;
   return (await hiqlite.executeReturning(sql, params)) as T[];
 }
@@ -111,6 +116,7 @@ export async function executeReturning<T = SqlRow>(
  */
 export async function txn(statements: SqlStatement[], opts?: SqlOptions): Promise<number[]> {
   demand("db.txn", SQL_RESOURCE, { attributes: attrs(opts) });
+  for (const s of statements) assertPlaceholderOrder(s.sql);
   await ready;
   return hiqlite.txn(statements);
 }

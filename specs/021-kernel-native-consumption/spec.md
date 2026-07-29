@@ -505,3 +505,38 @@ as an importer of the addon handle, split by raft group rather than by file
 layout (spec 032 §2). The extraction ban-list admits both and nothing else;
 that widening is statecrafting spec 002's 0.4.0 amendment, and this repo's
 `^0.4.0` toolchain bump is what carries it.
+
+## Amendment (2026-07-29c): the control plane joins, and the chain records allows
+
+The control plane (spec 034) adds a `control` service to `app-manifest.json`
+and makes one change to `backend/kernel/decisions.ts`.
+
+**Six grants, and the three it does not take.** `control` is `role: library`
+and holds `db.read`, `db.write` and `db.txn` on `state`, `lock.acquire`, and
+both notify capabilities. Those are exactly the six a control plane needs: read
+and list, write a watermark, admit atomically, hold a controller lease, and
+carry the change hint in both directions.
+
+It does **not** hold `db.migrate`: schema belongs to the `state` service, which
+is why `CONTROL_PLANE_MIGRATIONS` is exported as data for the migration runner
+rather than applied from inside the control plane. It does not hold the backup
+grants either, because bracketing a risky operation with a backup is an
+operator verb (spec 027) and a controller that could take backups on its own
+schedule is a controller that can fill a volume. `control.test.ts` asserts the
+migrate denial rather than assuming it.
+
+This leaves exactly one of spec 032's nine declared capabilities still granted
+to nobody: `bucket.write` on `state-backups`. Its holder is spec 027's verb,
+not a service.
+
+**`contextHash` becomes exported.** Denials append through `recordDenial`;
+admission appends an allow from outside the module (spec 034 §3.7), and it must
+hash its context by the same rule. A second implementation of "canonical" would
+be a second answer to what a record commits to, and the chain's verification
+cannot adjudicate between two answers. Exporting the existing function is the
+whole change; no hashing behavior moves.
+
+The Decision store itself does not move. It stays CoreLedger's, reached through
+`rawDriverFromEnv` as the enforcement plane always has, and relocating the chain
+head onto hiqlite with a hot window and sealed segments (spec 032 §3.7, §3.9)
+remains spec 024's.

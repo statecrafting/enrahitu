@@ -148,7 +148,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:de93c65223dea8ce54e37e6022fcfc3107bcbefe008b98a7669683dcead4fedf"
+    "hash": "sha256:76028ceb2fc792b1dab119118884020d171384434ffeb6976f7cd858b9333e9b"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -385,6 +385,19 @@
     },
     {
       "capabilities": [
+        "cap.db.state.read",
+        "cap.db.state.txn",
+        "cap.db.state.write",
+        "cap.lock.state.acquire",
+        "cap.notify.state.listen",
+        "cap.notify.state.publish"
+      ],
+      "endpoints": [],
+      "name": "control",
+      "tier": "ts"
+    },
+    {
+      "capabilities": [
         "cap.db.app.read"
       ],
       "endpoints": [
@@ -504,7 +517,7 @@
     }
   ],
   "source": {
-    "revision": "aff2124fc3bf9c27dd9c85aa7f5eb6971a116d84",
+    "revision": "8e749e6f4128c94002fcb68858c160733fb1ae58",
     "uncommittedChanges": true
   },
   "trust": {
