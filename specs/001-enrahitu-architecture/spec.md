@@ -519,12 +519,18 @@ independent and run in parallel.
   behavior. This rewrite, spec 002's false invariants deleted, spec 030
   rewritten, the license guard added, and the disposition table below so
   that no stale spec reads as current truth.
-- **Phase 1a, the interface contract.** The addon's surface written down
-  before the addon is built: atomicity boundary, notify envelope, read
-  consistency, lease semantics, watermark, migration ownership, chain
-  head placement, backup surface, archive mechanics, and the auth
-  boundary (§5.3). Its own document, because it is read repeatedly during
-  addon work while this spec is read once to orient.
+- **Phase 1a, the interface contract. Landed as spec 032** (2026-07-29).
+  The addon's surface written down before the addon is built: atomicity
+  boundary, notify envelope, read consistency, lease semantics,
+  watermark, migration ownership, chain head placement, backup surface,
+  archive mechanics, and local-only notify, plus the auth boundary
+  (§5.3). Its own document, because it is read repeatedly during addon
+  work while this spec is read once to orient. Checking each decision
+  against hiqlite's implementation rather than its documentation changed
+  three answers: the lock TTL is hardcoded at ten seconds, the lock id is
+  already a fencing token, and the notify bus is one global channel whose
+  events may replay. Four of the ten decisions add nothing to the addon
+  surface, which is the contract doing its job.
 - **Phase 1b, the dev substrate.** Docker-only tiered compose with N=1 as
   the default tier, generated `infra.config.<topology>.json` from one
   source, backend watch, the app-level test harness, and the single-shot
