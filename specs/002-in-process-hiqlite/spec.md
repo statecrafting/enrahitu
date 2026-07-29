@@ -179,3 +179,38 @@ compiles SQLite-C into the `.node` on all three platforms and ends the
 addon's current no-bundled-SQLite-C property. That cost is accepted, and
 it buys `backup = ["dep:cron", "s3", "sqlite"]` in the same change, which
 is the product's durability story rather than a side effect.
+
+## Amendment (2026-07-29): the HTTP demo surface retires
+
+The five data endpoints (`kvPut`, `kvGet`, `kvDel`, `counterAdd`,
+`counterGet`) are deleted. `GET /hiq/health` remains, public and
+unauthenticated, because it returns a status string, leaks nothing, and is
+the probe the image smoke test curls (spec 007).
+
+Spec 025 gated these endpoints behind the operator role and narrowed their
+grants to a `demo:` prefix, which was the right emergency fix. This is the
+correct end state: **hiqlite is a library, not an API.** Publishing the
+governed facade over HTTP added a second, weaker path to the same store
+and put six endpoints into the app model and the operator catalog that no
+feature used. Application code reaches hiqlite in-process through
+`backend/kernel/hiq.ts`, which adjudicates every operation against the
+model before crossing into Rust. That was always the intended shape; the
+endpoints were a demonstration that outlived its purpose.
+
+Retiring them here, in the change that deletes the SPA's cache-demo widget
+(spec 015), is deliberate: the widget was the only consumer, so this is
+the moment the surface has no user rather than a moment it merely has no
+justification.
+
+**The hiq service now holds zero capabilities** in `app-manifest.json`,
+and the five `demo:`-scoped capability definitions are deleted with it.
+That is the true end of the spec 025 §3.1 exploit path: the service that
+once held an unconstrained `cap.counter.add`, and could therefore forge
+the rate limiter's own buckets, can no longer reach the store through the
+kernel at all. `health()` demands nothing, so nothing needs granting, and
+any endpoint added here later starts from zero and must justify each grant
+it asks for.
+
+Unchanged: `backend/hiq/init.ts` (the module-load `init()` that starts the
+node before any service handles a request), the kernel facade, and the
+Phase A seam. Those are the capability. The endpoints were the demo.

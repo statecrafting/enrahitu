@@ -157,3 +157,27 @@ regenerates on the stamped repo's first build under the staleness gate;
 stamping stays install-free per §3.2). The lineage marker records the
 slot value. Idempotent like every other step: a re-run finds everything
 already pruned.
+
+## Amendment (2026-07-29): flavor selection retires
+
+`selectFrontendFlavor()` and the `FLAVOR_DIRS` map are deleted from
+`scripts/stamp.mjs`. They existed to keep one frontend directory and prune
+the rest, and there is now one directory (spec 015, contract v0.7).
+
+Three consequences worth recording, because each is a behavior the stamp
+verb no longer has:
+
+- **No `build:web` / `dev:web` repointing.** Those scripts pointed at the
+  surviving flavor's directory; they now point at `frontend/` in the
+  template and stay there. A stamped app's manifest is one edit shorter.
+- **No `frontend` line in the README lineage marker.** The stamped section
+  records app, org, admin, template commit, and date.
+- **`--frontend` fails loudly rather than being silently unknown.** The
+  flag is still matched in `parseArgs`, and raises a `StampError` naming
+  the contract bump and the required pin. Dropping the case entirely would
+  have produced "unknown argument: --frontend", which tells a factory
+  operator nothing about why.
+
+The admin slot's pruning logic (spec 023) is untouched: it is a boolean
+over a directory pair plus script keys plus the manifest service entry,
+and it remains a real choice.

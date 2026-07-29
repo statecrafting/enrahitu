@@ -7,10 +7,6 @@
     "establishes": [
       {
         "kind": "directory",
-        "path": "frontend/"
-      },
-      {
-        "kind": "directory",
         "path": "backend/web/"
       }
     ],
@@ -26,13 +22,14 @@
       "3. Behavior",
       "4. Out of scope",
       "Amendment (2026-07-22): dist-admin joins the web directory (spec 023)",
-      "Amendment (2026-07-23): logout follows redirectUrl (spec 005)"
+      "Amendment (2026-07-23): logout follows redirectUrl (spec 005)",
+      "Amendment (2026-07-29): the SPA source leaves, the service stays"
     ],
     "specPath": "specs/006-webapp-spa/spec.md",
     "status": "approved",
-    "summary": "The minimal frontend: a Vue 3 + Vite SPA (login, OIDC callback handoff, /me, logout) built from frontend/ into backend/web/dist, and the `web` Encore service that serves the built bundle as static files from the app's own origin. No separate frontend host: the same container serves UI, API, and IdP.\n",
-    "title": "Minimal Vue SPA served by the app itself"
+    "summary": "The `web` Encore service: it serves the built SPA bundle as static files from the app's own origin, so one container serves UI, API, and IdP with no separate frontend host. This spec originally also owned the SPA source (a Vue 3 + Vite app in frontend/); that source retired with the React-only convergence on 2026-07-29 and the surviving SPA is spec 015's. What stays here is the serving contract, which never depended on the framework that produced the bundle.\n",
+    "title": "The web service: the app serves its own SPA"
   },
-  "shardHash": "51047da168bda55b3650ddc4e34b8511b4a78174de128f1c0ab58c1cfb140116",
+  "shardHash": "80f341981899b5b0753026724c7261b1f6dc8b9b59714b8d5b44840c2a0dc412",
   "specVersion": "1.1.0"
 }

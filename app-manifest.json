@@ -2,18 +2,6 @@
   "app": { "name": "enrahitu", "org": "statecrafting" },
   "capabilities": [
     {
-      "id": "cap.counter.demo.add",
-      "kind": "counter.add",
-      "resource": "counters",
-      "constraints": { "keyPrefix": "demo:" }
-    },
-    {
-      "id": "cap.counter.demo.get",
-      "kind": "counter.get",
-      "resource": "counters",
-      "constraints": { "keyPrefix": "demo:" }
-    },
-    {
       "id": "cap.counter.rate-limit.add",
       "kind": "counter.add",
       "resource": "counters",
@@ -31,24 +19,6 @@
     { "id": "cap.db.app.write", "kind": "db.write", "resource": "app" },
     { "id": "cap.egress.rauthy-issuer", "kind": "http.egress", "resource": "rauthy-issuer" },
     { "id": "cap.egress.rauthy-upstream", "kind": "http.egress", "resource": "rauthy-upstream" },
-    {
-      "id": "cap.kv.demo.delete",
-      "kind": "kv.delete",
-      "resource": "cache",
-      "constraints": { "keyPrefix": "demo:" }
-    },
-    {
-      "id": "cap.kv.demo.get",
-      "kind": "kv.get",
-      "resource": "cache",
-      "constraints": { "keyPrefix": "demo:" }
-    },
-    {
-      "id": "cap.kv.demo.put",
-      "kind": "kv.put",
-      "resource": "cache",
-      "constraints": { "keyPrefix": "demo:" }
-    },
     { "id": "cap.secret.jwt-private", "kind": "secret.read", "resource": "jwt_private_key" },
     { "id": "cap.secret.jwt-public", "kind": "secret.read", "resource": "jwt_public_key" },
     {
@@ -89,16 +59,7 @@
       "tier": "ts",
       "capabilities": ["cap.db.app.read"]
     },
-    "hiq": {
-      "tier": "ts",
-      "capabilities": [
-        "cap.counter.demo.add",
-        "cap.counter.demo.get",
-        "cap.kv.demo.delete",
-        "cap.kv.demo.get",
-        "cap.kv.demo.put"
-      ]
-    },
+    "hiq": { "tier": "ts", "capabilities": [] },
     "idp": {
       "tier": "ts",
       "capabilities": ["cap.egress.rauthy-upstream"]

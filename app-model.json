@@ -11,22 +11,6 @@
   "capabilities": [
     {
       "constraints": {
-        "keyPrefix": "demo:"
-      },
-      "id": "cap.counter.demo.add",
-      "kind": "counter.add",
-      "resource": "counters"
-    },
-    {
-      "constraints": {
-        "keyPrefix": "demo:"
-      },
-      "id": "cap.counter.demo.get",
-      "kind": "counter.get",
-      "resource": "counters"
-    },
-    {
-      "constraints": {
         "keyPrefix": "rl:"
       },
       "id": "cap.counter.rate-limit.add",
@@ -70,30 +54,6 @@
       "id": "cap.egress.rauthy-upstream",
       "kind": "http.egress",
       "resource": "rauthy-upstream"
-    },
-    {
-      "constraints": {
-        "keyPrefix": "demo:"
-      },
-      "id": "cap.kv.demo.delete",
-      "kind": "kv.delete",
-      "resource": "cache"
-    },
-    {
-      "constraints": {
-        "keyPrefix": "demo:"
-      },
-      "id": "cap.kv.demo.get",
-      "kind": "kv.get",
-      "resource": "cache"
-    },
-    {
-      "constraints": {
-        "keyPrefix": "demo:"
-      },
-      "id": "cap.kv.demo.put",
-      "kind": "kv.put",
-      "resource": "cache"
     },
     {
       "id": "cap.secret.jwt-private",
@@ -143,7 +103,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:339f0c55e3651977b4a441a8d9d656003d25c2e86a6feb4ffbd452637a71c34d"
+    "hash": "sha256:3a5fbb2779bc1df736c1474c9324e828406b2c065d31013ffa4aefd05d99e074"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -403,30 +363,8 @@
       "tier": "ts"
     },
     {
-      "capabilities": [
-        "cap.counter.demo.add",
-        "cap.counter.demo.get",
-        "cap.kv.demo.delete",
-        "cap.kv.demo.get",
-        "cap.kv.demo.put"
-      ],
+      "capabilities": [],
       "endpoints": [
-        {
-          "access": "auth",
-          "methods": [
-            "POST"
-          ],
-          "name": "counterAdd",
-          "path": "/hiq/counter/:key/add"
-        },
-        {
-          "access": "auth",
-          "methods": [
-            "GET"
-          ],
-          "name": "counterGet",
-          "path": "/hiq/counter/:key"
-        },
         {
           "access": "public",
           "methods": [
@@ -434,30 +372,6 @@
           ],
           "name": "health",
           "path": "/hiq/health"
-        },
-        {
-          "access": "auth",
-          "methods": [
-            "DELETE"
-          ],
-          "name": "kvDel",
-          "path": "/hiq/kv/:key"
-        },
-        {
-          "access": "auth",
-          "methods": [
-            "GET"
-          ],
-          "name": "kvGet",
-          "path": "/hiq/kv/:key"
-        },
-        {
-          "access": "auth",
-          "methods": [
-            "POST"
-          ],
-          "name": "kvPut",
-          "path": "/hiq/kv"
         }
       ],
       "name": "hiq",
@@ -527,7 +441,7 @@
     }
   ],
   "source": {
-    "revision": "60a2430e56a103f4aa1f2ddc9b1402289c989dd5",
+    "revision": "02aebeafeb1f83bf226c57ec96e9048eb426e95a",
     "uncommittedChanges": true
   },
   "trust": {

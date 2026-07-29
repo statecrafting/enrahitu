@@ -14,8 +14,15 @@ license = "Apache-2.0"
 # optional [requires].toolchain key (spec 018); v0.3 added the [provenance]
 # table (spec 012); v0.4 added the scaffold verb (spec 014); v0.5 added the
 # react-rr7 frontend flavor (spec 015); v0.6 added the admin slot (spec 023).
-# Each is a minor bump per spec 009 §3.1.
-version = "0.6.0"
+# Each of those is a minor bump per spec 009 §3.1.
+#
+# v0.7 REMOVES the `frontend` slot (spec 015, the React-only convergence). Under
+# a `^0.6` caret pin this is a BREAKING change, because at 0.x the minor is the
+# breaking position: a factory that passes --frontend must stop. Spec 009 §3.1
+# calls a removal a "major" bump; the literal 1.0.0 is reserved for declaring
+# the contract stable, which this is not, so the break lands where a caret pin
+# actually sees it.
+version = "0.7.0"
 
 [requires]
 node = ">=24"
@@ -32,11 +39,13 @@ toolchain = "^0.3"
 # Values the factory substitutes at stamp time.
 app_name = { required = true, pattern = "^[a-z][a-z0-9-]*$" }
 org = { required = true }
-# frontend is a slot, not a fork (spec 009 §3.1). Each allowed value maps to a
-# sibling flavor directory the scaffold verb keeps or prunes (spec 014/015):
-# vue -> frontend/, react-rr7 -> frontend-react/. The chassis carries every
-# flavor; a stamped app carries exactly one.
-frontend = { default = "vue", allowed = ["vue", "react-rr7"] }
+# The `frontend` slot is GONE as of contract v0.7 (spec 015). It offered vue and
+# react-rr7 as sibling flavor directories the scaffold verb pruned to one. The
+# pivot makes enrahitu a membership platform that ships a working application
+# rather than a shell to fill in, so the SPA carries the product's own screens
+# and there is no framework left to choose: `frontend/` is React 19 + React
+# Router v7, period. A slot with one value is not a knob, it is a lie about
+# where the variation lives.
 # admin (contract v0.6, spec 023): whether the stamped app carries the
 # flag-gated operator dashboard (frontend-admin/ + backend/admin/, served
 # same-origin under /admin, gated on the <app>_operator role). "off" prunes

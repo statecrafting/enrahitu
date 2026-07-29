@@ -3,9 +3,9 @@
     "kind": "npm-package",
     "name": "@enrahitu/frontend",
     "path": "frontend",
-    "specRef": "006-webapp-spa",
+    "specRef": "015-react-rr7-flavor",
     "version": "0.1.0"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "6fdd263269e00ee0bcf960ea7f52f4c7d3500ebe8f03321fc2ebfc16460d61be"
+  "shardHash": "5c5c67403ef52f18d7b11de0c23599784c3f435d59ac99d138e111d2e65a1a30"
 }

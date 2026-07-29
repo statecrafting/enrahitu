@@ -3,6 +3,10 @@
  * request is plain fetch with same-origin credentials; nothing token-like is
  * ever visible to this code. State-changing calls replay the CSRF token from
  * GET /api/v1/auth/csrf-token as the X-CSRF-Token header (double-submit).
+ *
+ * This module is the SPA's only network surface. Everything it touches is
+ * same-origin (spec 005): the API under /api/v1, and the IdP under /auth,
+ * proxied by the backend so the browser never sees a second origin.
  */
 
 export interface AuthStatus {
@@ -71,23 +75,4 @@ export async function logout(): Promise<{ redirectUrl: string }> {
     headers: { "X-CSRF-Token": token },
   });
   return (await res.json()) as { redirectUrl: string };
-}
-
-export interface KvRoundTrip {
-  stored: string;
-  readBack: string | null;
-}
-
-/** Round-trip a value through the embedded hiqlite cache (60s TTL). */
-export async function kvRoundTrip(key: string, value: string): Promise<KvRoundTrip> {
-  await fetch("/hiq/kv", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key, value, ttlSecs: 60 }),
-  });
-  const { value: readBack } = await get<{ value: string | null }>(
-    `/hiq/kv/${encodeURIComponent(key)}`,
-  );
-  return { stored: value, readBack };
 }

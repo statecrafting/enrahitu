@@ -70,7 +70,6 @@ export default defineConfig({
     exclude: [
       "node_modules/**",
       "frontend/**",
-      "frontend-react/**",
       "frontend-admin/**",
       "encore.gen/**",
       // The Playwright login e2e (spec 017) runs under its own runner, never vitest.

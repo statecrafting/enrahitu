@@ -64,7 +64,7 @@ Development and early deployment cost nothing but a container host; scaling is
 | `backend/core/` | library | CoreLedger: stage-3 `@Entity`/`@Column` decorators, `LedgerDriver` interface, libSQL driver (local file + Turso replica), `ensureSchema()`, typed repositories (Phase 1) |
 | `backend/auth/` | Encore service | mock + rauthy OIDC drivers, JWT cookies, refresh rotation, CSRF, roles, audit on CoreLedger; rate limiting on hiqlite counters (Phase 2) |
 | `backend/idp/` | Encore service | raw passthrough proxy mounting `/auth/*` onto rauthy (`RAUTHY_UPSTREAM`, default `127.0.0.1:8081`), one public origin for app + IdP (Phase 3; fallback: expose rauthy on a second port) |
-| `frontend/` | Vue 3 + Vite | minimal SPA: login, callback, `/me`, logout; served by the app in prod (Phase 4); builds into `backend/web/dist` |
+| `frontend/` | React 19 + React Router v7 + Vite | the member-facing SPA: login, callback, `/me`, logout; served same-origin by the app; builds into `backend/web/dist` (spec 015) |
 | `backend/health/` | Encore service | liveness (+ Phase 0 decorator canary) |
 | `docker/` | packaging | final image: `encore build docker` output + rauthy binary + entrypoint supervising both (Phase 5) |
 

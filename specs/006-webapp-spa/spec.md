@@ -1,6 +1,6 @@
 ---
 id: "006-webapp-spa"
-title: "Minimal Vue SPA served by the app itself"
+title: "The web service: the app serves its own SPA"
 status: approved
 created: "2026-07-14"
 implementation: complete
@@ -9,14 +9,15 @@ origin:
 depends_on:
   - "005-rauthy-same-origin"
 establishes:
-  - { kind: directory, path: "frontend/" }
   - { kind: directory, path: "backend/web/" }
 summary: >
-  The minimal frontend: a Vue 3 + Vite SPA (login, OIDC callback handoff,
-  /me, logout) built from frontend/ into backend/web/dist, and the `web`
-  Encore service that serves the built bundle as static files from the app's
-  own origin. No separate frontend host: the same container serves UI, API,
-  and IdP.
+  The `web` Encore service: it serves the built SPA bundle as static files
+  from the app's own origin, so one container serves UI, API, and IdP with
+  no separate frontend host. This spec originally also owned the SPA source
+  (a Vue 3 + Vite app in frontend/); that source retired with the React-only
+  convergence on 2026-07-29 and the surviving SPA is spec 015's. What stays
+  here is the serving contract, which never depended on the framework that
+  produced the bundle.
 ---
 
 # 006: Webapp SPA
@@ -75,3 +76,22 @@ navigates there with `window.location.assign`, completing rauthy's
 RP-initiated logout round-trip (spec 005). Under the mock driver the
 URL is the frontend root, so the visible behavior is a plain reload
 into the signed-out state.
+
+## Amendment (2026-07-29): the SPA source leaves, the service stays
+
+This spec was authored around a Vue 3 SPA and the `web` service that
+serves it. The React-only convergence (spec 001 §4.3, executed in spec
+015) deletes the Vue source, so this spec gives up `frontend/` and keeps
+`backend/web/`.
+
+The split is not arbitrary. The `web` service serves static files out of
+`backend/web/dist` and has never known what produced them: the bundle is
+built by whichever SPA package writes to that directory, and the service's
+contract (same-origin serving, SPA fallback routing, the container
+carrying `dist/` in the image) is unchanged by the framework swap. That
+independence is why the convergence is a directory move rather than a
+rewrite of this spec's behavior.
+
+Nothing in sections 1 through 4 describing the serving behavior is
+amended. What retires is this spec's claim on the SPA source, which now
+belongs to spec 015.

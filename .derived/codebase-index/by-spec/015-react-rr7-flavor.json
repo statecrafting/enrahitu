@@ -6,11 +6,11 @@
     ],
     "implementingPaths": [
       {
-        "path": "frontend-react",
+        "path": "frontend",
         "source": "manifest-metadata"
       },
       {
-        "path": "frontend-react/",
+        "path": "frontend/",
         "source": "spec-edge"
       }
     ],
@@ -18,14 +18,14 @@
       {
         "locations": [
           {
-            "file": "frontend-react/"
+            "file": "frontend/"
           }
         ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
           "kind": "directory",
-          "path": "frontend-react/"
+          "path": "frontend/"
         }
       }
     ],
@@ -33,5 +33,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "8d029669828fb778cd36684afe0f2e1b46d9c144a9e1ba0ed665502a1efe0b32"
+  "shardHash": "61d69328db98f4367e73387dec839078c2a57d08c02fd0ce4a705cb7ae0d7881"
 }

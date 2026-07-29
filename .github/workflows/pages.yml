@@ -59,30 +59,17 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          # The chassis carries every frontend flavor (spec 015); a stamped app
-          # keeps exactly one. Cache off whichever flavor lockfile is present.
-          cache-dependency-path: |
-            frontend/package-lock.json
-            frontend-react/package-lock.json
-      # Resolve the surviving frontend flavor directory: the chassis carries all
-      # of them, a stamped app carries one, and build:web (root) already points
-      # at it. This keeps the Pages build flavor-agnostic (spec 013/015).
-      - name: Resolve frontend flavor directory
-        id: spa
-        run: |
-          if [ -d frontend ]; then dir=frontend
-          elif [ -d frontend-react ]; then dir=frontend-react
-          else echo "::error::no frontend flavor directory found"; exit 1
-          fi
-          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          cache-dependency-path: frontend/package-lock.json
       # Only the SPA is needed for a Pages preview; build:web delegates to the
-      # flavor package's build (no root deps required).
-      - run: npm --prefix "${{ steps.spa.outputs.dir }}" ci
+      # SPA package's build (no root deps required). The flavor-resolution step
+      # that used to run here retired with the frontend slot (contract v0.7,
+      # spec 015): there is exactly one SPA directory now.
+      - run: npm --prefix frontend ci
       - name: Build the SPA (-> backend/web/dist)
         # A project Pages site serves at https://<owner>.github.io/<repo>/, so the
         # SPA is built with that subpath as its base (PAGES_BASE) or every hashed
-        # asset 404s. It flows into each flavor's vite.config base and, for the
-        # React flavor, the router basename (import.meta.env.BASE_URL). Override
+        # asset 404s. It flows into the SPA's vite.config base and the router
+        # basename (import.meta.env.BASE_URL). Override
         # with the PAGES_BASE repo variable (set it to "/") for a user/org site
         # or a custom domain.
         run: npm run build:web

@@ -269,3 +269,17 @@ always-on, unflagged contract for the endpoint is untouched (spec 025
 §3.4). Provisioning stays write-once, so a restart never rotates a token
 an operator has already configured a scraper against;
 `docker/first-boot.test.ts` covers that property.
+
+## Amendment (2026-07-29): the image worktree prunes one SPA directory
+
+`scripts/docker-build.sh` (this spec's territory) no longer removes
+`frontend-react/` from the image worktree, because the directory no longer
+exists (spec 015, the React-only convergence). The prune list keeps
+`frontend/` and `frontend-admin/`.
+
+The reason the prune exists is unchanged and worth restating, since the
+list is now shorter and could look incidental: SPA *source* must not enter
+the image. Only the built bundles (`backend/web/dist` and
+`backend/web/dist-admin`) are carried in, so the container ships compiled
+assets and no build inputs. Removing a name from this list is safe only
+because the directory is gone; it is never safe as a size optimization.

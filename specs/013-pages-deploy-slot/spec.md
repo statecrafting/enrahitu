@@ -110,3 +110,20 @@ configs their owning specs govern:
 Still out of the factory contract (no `template.toml` change): Pages remains a
 born-with CI capability, off by default. Owning-spec edits coupled in the same
 change: 006 (`frontend/vite.config.ts`) and 015 (`frontend-react/`).
+
+## Amendment (2026-07-29): one SPA directory, no flavor resolution
+
+`pages.yml` carried a "Resolve frontend flavor directory" step that probed
+for `frontend/` then `frontend-react/` and failed if neither existed, so
+the Pages build stayed flavor-agnostic across the chassis and any stamped
+app. With the flavor slot retired (spec 015, contract v0.7) there is one
+SPA directory, so the step is deleted and the workflow installs and builds
+`frontend/` directly. The lockfile cache key drops to one path.
+
+The `PAGES_BASE` mechanism is unchanged and still load bearing: a project
+Pages site serves at `/<repo>/`, so the SPA is built with that subpath as
+its Vite `base` or every hashed asset 404s, and the same value feeds the
+React Router `basename` through `import.meta.env.BASE_URL`. The container
+and dev builds leave it unset, so `base` stays `/`.
+
+The workflow's inert-when-Pages-is-disabled posture (§3) is untouched.

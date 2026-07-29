@@ -4,18 +4,25 @@ import { csrfMiddleware } from "../lib/csrf";
 import { securityHeaders } from "../lib/security-headers";
 import { obsMiddleware } from "../obs/middleware";
 
-// In-process hiqlite capability: cache/KV with TTL + replicated counters.
-// Instrumented (spec 022). This service previously carried obsMiddleware
-// alone while exposing unauthenticated writes into the raft-replicated store
-// (spec 025 §3.1); observation outermost so spans and request metrics cover
-// the whole chain.
+// The in-process hiqlite capability. Its only endpoint is now GET /hiq/health;
+// the KV and counter demo surface retired with the SPA widget that consumed it
+// (spec 001 §4.3), and with it the last reason for this service to hold any
+// grant at all.
 //
-// The admin service's chain, not the auth service's. No rate limiter: this is
-// an operator-only surface behind the role gate, and mounting apiRateLimit
-// here would run its rl:-prefixed counter writes under hiq's attribution.
-// Scoped to demo:, those writes are denied and the limiter fails open,
-// enforcing nothing; widening hiq to hold the rl: grant as well would let the
-// demo endpoints satisfy it and reopen the bucket forgery this gating closes.
+// **This service now holds zero capabilities** (`app-manifest.json`). That is
+// the end state of the spec 025 §3.1 exploit path: the service that once held
+// an unconstrained cap.counter.add, and therefore could forge the rate
+// limiter's own buckets, can no longer touch the store through the kernel at
+// all. `health()` demands nothing, so nothing needs granting. A future endpoint
+// here starts from zero and has to justify each grant it adds.
+//
+// The middleware chain is kept despite the surface being one public GET.
+// obsMiddleware is the observability contract (spec 022) and is not optional;
+// securityHeaders and csrfMiddleware cost nothing on a GET and mean that an
+// endpoint added here later is defended by default rather than by the author
+// remembering. Still no rate limiter, for the reason spec 025 recorded:
+// middleware runs under the mounting service's kernel attribution, so the
+// limiter's rl:-prefixed writes would be adjudicated as hiq and denied.
 export default new Service("hiq", {
   middlewares: [obsMiddleware, securityHeaders, csrfMiddleware],
 });

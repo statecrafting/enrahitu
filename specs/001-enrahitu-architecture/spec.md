@@ -297,16 +297,20 @@ today's tree carries `frontend/` (Vue, spec 006) and `frontend-react/`
 (React + RR7, spec 015) as scaffold-selectable flavors. The target tree
 carries the React pair above, period.
 
-**2026-07-27: this is now scheduled, not deferred.** The 2026-07-19
-rewrite left execution to "the follow-up frontend spec", which was never
-authored, so the divergence stood for eight days across three
-disagreeing surfaces (this spec, the tree, and `template.toml`'s
-`frontend = { default = "vue" }`). It lands in phase 1c (§5): Vue
-retires, `frontend-react/` becomes `frontend/`, and the `frontend` slot
-resolves with its own contract bump. The `hiq` HTTP demo surface retires
-in the same change, because the SPA is its only consumer and carrying it
-through the pivot would mean keeping six endpoints working against a
-state layer being rewritten underneath.
+**2026-07-29: executed.** The 2026-07-19 rewrite left execution to "the
+follow-up frontend spec", which was never authored, so the divergence
+stood for ten days across three disagreeing surfaces (this spec, the tree,
+and `template.toml`'s `frontend = { default = "vue" }`). Spec 015 is now
+that spec. Vue retired, `frontend-react/` became `frontend/`, and the
+`frontend` slot was removed outright rather than kept as a one-value knob:
+the pivot ships a working application, so the SPA carries the product's
+own screens and there is no framework left to choose. Contract v0.7,
+breaking under a caret pin (spec 009).
+
+The `hiq` HTTP demo surface retired in the same change, because the SPA's
+cache widget was its only consumer. The `hiq` service now holds zero
+capabilities, which ends the spec 025 §3.1 exploit path outright rather
+than gating it.
 
 `~/DevWork/dashapp` (React 19 + react-router 7 + Vite 7 + TypeScript +
 Tailwind, encore-styled) is a **functional reference for
@@ -536,7 +540,8 @@ independent and run in parallel.
   source, backend watch, the app-level test harness, and the single-shot
   restore marker in `docker/first-boot.mjs`. Closes spec 025 §5 items 1,
   4, and 6, which is what moves spec 025 to `implementation: complete`.
-- **Phase 1c, frontend convergence.** §4.3 executed.
+- **Phase 1c, frontend convergence. Landed as spec 015** (2026-07-29),
+  with amendments to specs 002, 006, 009, 013, and 014. §4.3 executed.
 - **Phase 2, the addon expansion (the gate).** `sqlite`, `dlock`, and
   `listen_notify_local` features, cluster config passthrough, and the
   TS surface (`query` / `execute` / `txn` / `listen` / `notify` / `lock`
@@ -567,20 +572,20 @@ territory, per the coupling gate.
 
 | Spec | Disposition |
 |---|---|
-| 002 in-process hiqlite | **Rewritten, phase 0**: the single-node and clustering-out-of-scope invariants deleted. Rewritten again in phase 2 when the addon surface exists. |
+| 002 in-process hiqlite | **Rewritten, phase 0**: the single-node and clustering-out-of-scope invariants deleted. **Amended, phase 1c**: the HTTP demo surface retired and the service's grants dropped to zero. Rewritten again in phase 2 when the addon surface exists. |
 | 003 CoreLedger | **Rewrite pending, phase 2**: libSQL stops being the primary store; a `HiqliteDriver` joins the driver seam. |
 | 004 auth-core | **Rewrite pending, phase 2**: rauthy becomes the principal authority (§5.3). |
 | 005 rauthy same-origin | **Survives.** The proxy design is verified e2e (spec 017) and unchanged; only its upstream target moves with the topology. |
-| 006 webapp SPA | **Partial retirement, phase 1c**: the Vue source retires; `backend/web/` (the static service) survives here. |
+| 006 webapp SPA | **Partial retirement, DONE (phase 1c)**: the Vue source retired; `backend/web/` (the serving contract) stays here. |
 | 007 packaging | **Survives, amended in phase 1b**: first-boot gains the single-shot restore marker; the entrypoint aligns with the N=1 topology. |
 | 008 toolchain | **Survives.** |
-| 009 template contract | **Amended, phase 1c**: frontend slot resolution and contract bump. The application is not a slot: it ships and stays. |
+| 009 template contract | **Amended, DONE (phase 1c)**: the `frontend` slot removed, contract v0.7, breaking under a caret pin. The application is not a slot: it ships and stays. |
 | 010 template-encore absorption | **Survives** (historical record). |
 | 011 CoreLedger Postgres driver | **Disposition changes, phase 2**: Postgres stops being the durable-state scale path and becomes a candidate for unbounded overflow, pending §4.2 decision 2. |
 | 012 born-with provenance | **Survives.** |
-| 013 Pages deploy slot | **Amended, phase 1c**: targets the surviving frontend. |
-| 014 scaffold verb | **Amended, phase 1c**: flavor pruning changes; no example slot. |
-| 015 react-rr7 flavor | **Absorbed, phase 1c**: `frontend-react/` becomes `frontend/` and this spec becomes the frontend spec. |
+| 013 Pages deploy slot | **Amended, DONE (phase 1c)**: flavor resolution deleted; builds `frontend/` directly. |
+| 014 scaffold verb | **Amended, DONE (phase 1c)**: flavor selection deleted; `--frontend` fails with a directed message. No example slot. |
+| 015 react-rr7 flavor | **Absorbed, DONE (phase 1c)**: `frontend-react/` became `frontend/`; this is now *the* frontend spec. |
 | 016 amd64 image | **Survives.** |
 | 017 IdP login e2e | **Survives, moves in phase 1b** onto the compose topology. |
 | 018 packaged chassis | **Survives.** |

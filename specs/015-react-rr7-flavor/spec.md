@@ -1,6 +1,6 @@
 ---
 id: "015-react-rr7-flavor"
-title: "Second frontend flavor: React + React Router v7"
+title: "The member-facing SPA: React + React Router v7"
 status: approved
 created: "2026-07-14"
 implementation: complete
@@ -8,14 +8,16 @@ depends_on:
   - "006-webapp-spa"
   - "014-scaffold-verb"
 establishes:
-  - { kind: directory, path: "frontend-react/" }
+  - { kind: directory, path: "frontend/" }
 summary: >
-  Makes the frontend slot real by adding a second allowed value:
-  react-rr7. A parallel SPA source directory (frontend-react/, React 19 +
-  React Router v7 in SPA/data-router mode + Vite) builds into the same
-  backend/web/dist that the web static service serves, hitting the same auth and
-  API endpoints as the Vue SPA (spec 006). The scaffold verb selects the
-  flavor at stamp time; the chassis never ships both to a stamped app.
+  The application's one member-facing SPA: React 19 + React Router v7 in
+  SPA/data-router mode on Vite, in frontend/, building into backend/web/dist
+  for the web static service (spec 006) to serve same-origin. It was authored
+  on 2026-07-14 as the second value of a frontend flavor slot; on 2026-07-29
+  the React-only convergence (spec 001 section 4.3) retired the Vue flavor and
+  the slot itself, promoted this source to frontend/, and made this the
+  frontend spec rather than one of two. Contract v0.7 removes the slot, which
+  is a breaking bump under a caret pin.
 ---
 
 # 015: React + RR7 frontend flavor
@@ -131,3 +133,42 @@ the end-session URL lives outside the SPA's route table, so a data
 router redirect would 404 inside the app rather than reach rauthy.
 Under the mock driver the URL is the frontend root and the visible
 behavior is unchanged.
+
+## Amendment (2026-07-29): the convergence, executed
+
+Spec 001 §4.3 decided React-only on 2026-07-19 and left execution to "the
+follow-up frontend spec", which was never authored. The divergence stood
+for ten days across three surfaces that disagreed with each other: this
+corpus said React-only, the tree carried both flavors, and `template.toml`
+defaulted to `vue`. That is the exact failure the coupling gate exists to
+prevent, and it survived because the decision named no owner.
+
+Executed here:
+
+- `frontend-react/` becomes `frontend/`, and this spec's `establishes`
+  moves with it. The Vue source is deleted. Spec 006 keeps `backend/web/`,
+  the serving contract, which never depended on the framework.
+- The package is renamed `@enrahitu/frontend`.
+- The `frontend` slot is removed from `template.toml` (contract v0.7, spec
+  009) and the flavor-selection step is removed from the scaffold verb
+  (spec 014). `--frontend` is still *recognized* by `stamp.mjs` and fails
+  with a directed message naming the contract bump, so a factory that has
+  not caught up learns what happened rather than getting a generic
+  "unknown argument".
+- The cache-demo widget is deleted, which is what allows the `hiq` HTTP
+  surface to retire in the same change (spec 002).
+
+**Why the slot went rather than becoming a one-value knob.** Spec 001 §4.3
+left that open. The pivot closes it: enrahitu ships a working membership
+application, not a shell to fill in, so the SPA carries the product's own
+screens. There is no framework choice left to offer, and a slot with one
+allowed value is not a knob, it is a lie about where the variation lives.
+The extension seam is kinds and controllers (spec 001 §5.1 phase 4), not
+a choice of view library.
+
+**What this bought.** Every frontend change now costs one implementation
+instead of two. CI installs one SPA package instead of two. The Encore
+parse walk resolves one vite config instead of two, and the walk covers
+the whole app root regardless of `tsconfig` excludes, so the second flavor
+was parse cost on every build. And the application baseline (phase 5) gets
+written once.

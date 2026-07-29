@@ -24,12 +24,10 @@ function makeTree(): string {
   cpSync(join(repoRoot, "scripts", "verify-born-with.mjs"), join(dir, "scripts", "verify-born-with.mjs"));
   cpSync(join(repoRoot, ".statecraft", "born-with.schema.json"), join(dir, ".statecraft", "born-with.schema.json"));
   cpSync(join(repoRoot, "template.toml"), join(dir, "template.toml"));
-  // Both flavor directories, mimicking the chassis before pruning (spec 015).
-  // A marker file in each proves the prune is recursive, not a shallow rmdir.
+  // The one SPA directory. The frontend flavor slot retired at contract v0.7
+  // (spec 015), so there is nothing to prune here any more.
   mkdirSync(join(dir, "frontend"), { recursive: true });
-  mkdirSync(join(dir, "frontend-react"), { recursive: true });
-  writeFileSync(join(dir, "frontend", "marker.txt"), "vue flavor\n");
-  writeFileSync(join(dir, "frontend-react", "marker.txt"), "react flavor\n");
+  writeFileSync(join(dir, "frontend", "marker.txt"), "spa\n");
   // The admin slot pair + built bundle (spec 023).
   mkdirSync(join(dir, "frontend-admin"), { recursive: true });
   mkdirSync(join(dir, "backend", "admin"), { recursive: true });
@@ -168,55 +166,26 @@ describe("stamp: slot validation", () => {
     expect(stderr).toContain("--org is required");
   });
 
-  it("rejects a frontend flavor outside the allowed list", () => {
+  // Contract v0.7 retired the frontend slot (spec 015). The flag is still
+  // recognized so a factory that has not caught up is told what happened,
+  // rather than getting a generic "unknown argument" and having to guess.
+  it("rejects --frontend with a directed message naming the contract bump", () => {
     const dir = tree();
-    const { status, stderr } = stamp(dir, [...HAPPY, "--frontend", "svelte"]);
+    const { status, stderr } = stamp(dir, [...HAPPY, "--frontend", "react-rr7"]);
     expect(status).not.toBe(0);
-    expect(stderr).toContain("allowed list");
-  });
-});
-
-describe("stamp: frontend flavor selection", () => {
-  it("react-rr7 prunes the vue dir and repoints build:web/dev:web at frontend-react", () => {
-    const dir = tree();
-    const { status, stdout } = stamp(dir, [...HAPPY, "--frontend", "react-rr7"]);
-    expect(status).toBe(0);
-
-    // The unselected flavor is gone; the selected one survives.
-    expect(dirExists(dir, "frontend")).toBe(false);
-    expect(dirExists(dir, "frontend-react")).toBe(true);
-
-    // The root scripts now drive the survivor.
-    const { scripts } = readJson(dir, "package.json");
-    expect(scripts["build:web"]).toBe("npm --prefix frontend-react run build");
-    expect(scripts["dev:web"]).toBe("npm --prefix frontend-react run dev");
-    expect(stdout).toContain("frontend -> frontend-react/");
+    expect(stderr).toContain("--frontend is retired");
+    expect(stderr).toContain("^0.7");
+    // Refused before any write: the manifest is untouched.
+    expect(readJson(dir, "package.json").name).toBe("enrahitu");
   });
 
-  it("vue (default) prunes the react dir and leaves build:web/dev:web on frontend", () => {
+  it("leaves the SPA directory and build:web/dev:web alone", () => {
     const dir = tree();
-    // No --frontend flag: the default (vue) applies.
     expect(stamp(dir, HAPPY).status).toBe(0);
-
-    expect(dirExists(dir, "frontend-react")).toBe(false);
     expect(dirExists(dir, "frontend")).toBe(true);
-
     const { scripts } = readJson(dir, "package.json");
     expect(scripts["build:web"]).toBe("npm --prefix frontend run build");
     expect(scripts["dev:web"]).toBe("npm --prefix frontend run dev");
-  });
-
-  it("re-stamping the same flavor is idempotent", () => {
-    const dir = tree();
-    expect(stamp(dir, [...HAPPY, "--frontend", "react-rr7"]).status).toBe(0);
-    // Second run: the vue dir is already gone, the scripts already repointed.
-    expect(stamp(dir, [...HAPPY, "--frontend", "react-rr7"]).status).toBe(0);
-
-    expect(dirExists(dir, "frontend")).toBe(false);
-    expect(dirExists(dir, "frontend-react")).toBe(true);
-    expect(readJson(dir, "package.json").scripts["build:web"]).toBe(
-      "npm --prefix frontend-react run build",
-    );
   });
 });
 

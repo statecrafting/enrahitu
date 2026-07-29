@@ -5,7 +5,7 @@
 // regeneration, and a README lineage marker. This is the recipe spec 009 §3.2
 // reserved as the `scaffold` verb; template.toml exposes it at contract 0.4.0.
 //
-//   node scripts/stamp.mjs --app-name <name> --org <org> [--frontend vue] \
+//   node scripts/stamp.mjs --app-name <name> --org <org> [--admin on|off] \
 //     [--cert <path-to-born-with.json>] [--stamped-from <template-commit-sha>]
 //
 // Run from the repo root of a fresh clone. Exit 0 on success; non-zero with the
@@ -73,14 +73,6 @@ export function readSlots(templateTomlPath) {
   const orgLine = slotLine(slots, "org");
   const orgRequired = !!(orgLine && /required\s*=\s*true/.test(orgLine));
 
-  const frontendLine = slotLine(slots, "frontend");
-  const allowedRaw = frontendLine?.match(/allowed\s*=\s*\[([^\]]*)\]/)?.[1] ?? "";
-  const frontendAllowed = allowedRaw
-    .split(",")
-    .map((s) => s.trim().replace(/^["']|["']$/g, ""))
-    .filter(Boolean);
-  const frontendDefault = frontendLine?.match(/default\s*=\s*"([^"]*)"/)?.[1] ?? null;
-
   const adminLine = slotLine(slots, "admin");
   const adminAllowedRaw = adminLine?.match(/allowed\s*=\s*\[([^\]]*)\]/)?.[1] ?? "";
   const adminAllowed = adminAllowedRaw
@@ -92,8 +84,6 @@ export function readSlots(templateTomlPath) {
   return {
     appNamePattern: pattern,
     orgRequired,
-    frontendAllowed,
-    frontendDefault,
     adminAllowed,
     adminDefault,
   };
@@ -108,27 +98,15 @@ export function validateSlots(slots, values) {
   }
   if (slots.orgRequired && !values.org) problems.push("--org is required");
 
-  const frontend = values.frontend ?? slots.frontendDefault;
-  if (slots.frontendAllowed.length > 0 && !slots.frontendAllowed.includes(frontend)) {
-    problems.push(`--frontend "${frontend}" is not in the allowed list [${slots.frontendAllowed.join(", ")}]`);
-  }
   const admin = values.admin ?? slots.adminDefault ?? "on";
   if (slots.adminAllowed.length > 0 && !slots.adminAllowed.includes(admin)) {
     problems.push(`--admin "${admin}" is not in the allowed list [${slots.adminAllowed.join(", ")}]`);
   }
   if (problems.length > 0) throw new StampError("validate slots", problems.join("; "));
-  return { ...values, frontend, admin };
+  return { ...values, admin };
 }
 
 // --- Steps ------------------------------------------------------------------
-// Each frontend flavor (template.toml [slots].frontend.allowed) is a sibling
-// source directory (spec 015). This map is stamp.mjs's half of that contract:
-// the allowed list lives in template.toml (spec 009), the directory each value
-// resolves to lives here. The two are amended together (spec 015 §2). A flavor
-// in the allowed list with no entry here fails the stamp loudly rather than
-// silently pruning nothing.
-const FLAVOR_DIRS = { vue: "frontend", "react-rr7": "frontend-react" };
-
 function writeJson(path, value) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
@@ -153,46 +131,6 @@ function substituteAppName(root, appName) {
     if (lock.packages && lock.packages[""]) lock.packages[""].name = appName;
     writeJson(lockPath, lock);
   }
-}
-
-// Keep the selected frontend flavor, prune the rest, and repoint the root
-// build:web / dev:web scripts at the survivor's directory. A flavor is a slot,
-// not a fork (spec 009 §3.1): the chassis carries every flavor directory, a
-// stamped app carries exactly one. Idempotent: a re-run finds the unselected
-// dirs already gone and the scripts already pointed at the survivor. Only script
-// keys that exist are rewritten, so a minimal tree without them is left intact.
-// Spec 014 (scaffold) x spec 015 (flavors).
-function selectFrontendFlavor(root, frontend) {
-  const chosenDir = FLAVOR_DIRS[frontend];
-  if (!chosenDir) {
-    throw new StampError("select frontend flavor", `no directory mapping for frontend flavor "${frontend}"`);
-  }
-
-  const pruned = [];
-  for (const [flavor, dir] of Object.entries(FLAVOR_DIRS)) {
-    if (flavor === frontend) continue;
-    const abs = join(root, dir);
-    if (existsSync(abs)) {
-      rmSync(abs, { recursive: true, force: true });
-      pruned.push(dir);
-    }
-  }
-
-  const pkgPath = join(root, "package.json");
-  const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-  let rewrote = false;
-  if (pkg.scripts) {
-    if (typeof pkg.scripts["build:web"] === "string") {
-      pkg.scripts["build:web"] = `npm --prefix ${chosenDir} run build`;
-      rewrote = true;
-    }
-    if (typeof pkg.scripts["dev:web"] === "string") {
-      pkg.scripts["dev:web"] = `npm --prefix ${chosenDir} run dev`;
-      rewrote = true;
-    }
-  }
-  if (rewrote) writeJson(pkgPath, pkg);
-  return { chosenDir, pruned, rewrote };
 }
 
 // Keep or prune the admin slot (spec 023 §3.1): unlike the frontend flavor's
@@ -310,7 +248,6 @@ function writeStampedSection(root, info) {
     "",
     `- app: \`${info.appName}\``,
     `- org: \`${info.org}\``,
-    `- frontend: \`${info.frontend}\``,
     `- admin: \`${info.admin}\``,
     `- template: enrahitu @ \`${info.templateCommit}\``,
     `- stamped: ${info.date}`,
@@ -321,7 +258,7 @@ function writeStampedSection(root, info) {
 
 // --- CLI --------------------------------------------------------------------
 const USAGE = `Usage: node scripts/stamp.mjs --app-name <name> --org <org> \\
-  [--frontend vue] [--admin on|off] [--cert <path-to-born-with.json>] \\
+  [--admin on|off] [--cert <path-to-born-with.json>] \\
   [--stamped-from <template-commit-sha>]
 
 Stamp a fresh clone of the enrahitu template into a named app (spec 014).`;
@@ -338,7 +275,18 @@ function parseArgs(argv) {
     switch (a) {
       case "--app-name": out.appName = next(); break;
       case "--org": out.org = next(); break;
-      case "--frontend": out.frontend = next(); break;
+      // Retired at contract v0.7 (spec 015). Recognized rather than falling
+      // through to "unknown argument", so a factory still passing it gets told
+      // what happened instead of a generic parse error.
+      case "--frontend": {
+        const value = next();
+        throw new StampError(
+          "parse args",
+          `--frontend is retired (contract v0.7): the frontend slot no longer exists, ` +
+            `so "${value}" cannot be selected. frontend/ is React 19 + React Router v7 ` +
+            `and ships with the application. Drop the flag and pin template contract ^0.7.`,
+        );
+      }
       case "--admin": out.admin = next(); break;
       case "--cert": out.cert = next(); break;
       case "--stamped-from": out.stampedFrom = next(); break;
@@ -361,7 +309,6 @@ export function main(argv, now = new Date()) {
   const values = validateSlots(slots, args);
 
   substituteAppName(repoRoot, values.appName);
-  const flavor = selectFrontendFlavor(repoRoot, values.frontend);
   const adminSlot = selectAdminSlot(repoRoot, values.admin);
   const certDest = args.cert ? placeCert(repoRoot, args.cert) : null;
   const derived = regenerateDerived(repoRoot);
@@ -370,19 +317,13 @@ export function main(argv, now = new Date()) {
   writeStampedSection(repoRoot, {
     appName: values.appName,
     org: values.org,
-    frontend: values.frontend,
     admin: values.admin,
     templateCommit,
     date,
   });
 
-  console.log(`ok stamped ${values.appName} (org ${values.org}, frontend ${values.frontend})`);
+  console.log(`ok stamped ${values.appName} (org ${values.org})`);
   console.log(`  name -> ${values.appName} in package.json + package-lock.json`);
-  console.log(
-    `  frontend -> ${flavor.chosenDir}/${
-      flavor.pruned.length ? ` (pruned ${flavor.pruned.join(", ")})` : ""
-    }${flavor.rewrote ? "; build:web/dev:web repointed" : ""}`,
-  );
   console.log(
     adminSlot.kept
       ? "  admin -> on (dashboard kept)"
