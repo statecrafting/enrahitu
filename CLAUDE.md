@@ -55,6 +55,8 @@ addon are npm dependencies (`@statecrafting/toolchain` + `hiqlite-native`),
 no longer vendored in the tree.
 
 ```
+app/         YOUR code (spec 035): the one directory an upgrade never
+             touches. Everything else is chassis and is replaced wholesale.
 specs/       Feature specs (000-019), the authoritative design record
 standards/   spec-spine constitution, contract, templates
 template.toml  The versioned template contract the Statecraft factory reads (spec 009)
@@ -69,6 +71,8 @@ backend/     The Encore.ts app (spec 019):
   kernel/      Kernel-native adjudication + the Decision ledger (spec 021)
   obs/         /metrics, OTel tracer, bounded trace buffer (spec 022)
   admin/       Operator dashboard data plane + gated /admin serving (spec 023)
+  state/       Governed facade over hiqlite's SQL/watch/lease/backup (spec 032)
+  control/     Kinds, admission, watch, controllers, audit (spec 034)
 frontend/    React 19 + RR7 SPA source, builds into backend/web/dist (spec 015)
 frontend-admin/  React+RR7 operator dashboard, builds into backend/web/dist-admin (spec 023)
 docker/      Single-container packaging: Dockerfiles, entrypoint, first-boot (specs 007/008)
@@ -102,6 +106,8 @@ npm run dev            # legacy host-run loop; the compose topology above is
                        # the supported one (spec 001 §4.1: dev is docker-only)
 npm run check:licenses # the AGPL boundary guard (spec 001 §4.7)
 npm run gen:infra      # regenerate infra.config.*.json (check:infra gates it)
+npm run gen:manifest   # compose app-manifest.json from chassis + app/ overlay (spec 035)
+npm run upgrade:preflight  # what an upgrade would discard, before it discards it
 npm run build:app      # parse + bundle only (.encore/build/)
 npm run extract:model  # build + write app-model.json (spec 020); check:model verifies it
 npm run typecheck      # tsc --noEmit

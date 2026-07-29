@@ -1,0 +1,26 @@
+{
+  "//": [
+    "The organization's manifest overlay (spec 035 §3.3). This file is YOURS.",
+    "An upgrade replaces every chassis file and never touches this one.",
+    "",
+    "It may declare `capabilities`, `services` and `resources`, and it may add",
+    "capabilities to a chassis service. It may not redefine anything the chassis",
+    "declared: scripts/gen-manifest.mjs refuses the collision rather than",
+    "resolving it, because a silently overridden grant is a widened ceiling that",
+    "reads, in the composed file, exactly like a chassis decision.",
+    "",
+    "After editing, run `npm run gen:manifest` and commit app-manifest.json.",
+    "",
+    "Example: a grants-management extension with its own kind and controller.",
+    "",
+    "  \"capabilities\": [",
+    "    { \"id\": \"cap.db.state.txn.grants\", \"kind\": \"db.txn\", \"resource\": \"state\" }",
+    "  ],",
+    "  \"services\": {",
+    "    \"grants\": { \"tier\": \"ts\", \"capabilities\": [\"cap.db.state.txn.grants\"] }",
+    "  }"
+  ],
+  "capabilities": [],
+  "services": {},
+  "resources": {}
+}

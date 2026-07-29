@@ -56,6 +56,19 @@ jobs:
       # here rather than discovered at boot in an environment nobody develops in.
       - name: Infra config drift
         run: npm run check:infra
+      # app-manifest.json is composed from the chassis manifest and the
+      # organization's overlay (spec 035 §3.3). A hand-edit to the derived file
+      # would be a capability that exists in the model and in nobody's authored
+      # intent, so it is caught here rather than at adjudication.
+      - name: Manifest composition drift
+        run: npm run check:manifest
+      # The chassis lock is what lets a stamped deployment tell an edited
+      # chassis file from an untouched one before it takes an upgrade (spec 035
+      # §3.2). In THIS repo every chassis change is legitimate and the lock has
+      # to keep up, so a stale lock fails here rather than shipping a lock that
+      # would misreport a downstream deployment's local edits.
+      - name: Chassis lock drift
+        run: npm run check:chassis
       # The template carries every frontend flavor (spec 015); the Encore parse
       # walk (build:app) resolves each flavor's vite.config imports, so both
       # flavor packages are installed here. A stamped app keeps only one flavor
