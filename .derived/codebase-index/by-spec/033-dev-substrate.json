@@ -9,6 +9,26 @@
     ],
     "implementingPaths": [
       {
+        "path": "docker/Dockerfile.dev",
+        "source": "spec-edge"
+      },
+      {
+        "path": "docker/compose.yml",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/dev-watch.mjs",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/gen-infra-config.mjs",
+        "source": "spec-edge"
+      },
+      {
+        "path": "scripts/gen-infra-config.test.ts",
+        "source": "spec-edge"
+      },
+      {
         "path": "testing/",
         "source": "spec-edge"
       }
@@ -26,11 +46,76 @@
           "kind": "directory",
           "path": "testing/"
         }
+      },
+      {
+        "locations": [
+          {
+            "file": "docker/Dockerfile.dev"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/Dockerfile.dev"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "docker/compose.yml"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/compose.yml"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/dev-watch.mjs"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/dev-watch.mjs"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/gen-infra-config.mjs"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/gen-infra-config.mjs"
+        }
+      },
+      {
+        "locations": [
+          {
+            "file": "scripts/gen-infra-config.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "scripts/gen-infra-config.test.ts"
+        }
       }
     ],
     "specId": "033-dev-substrate",
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "2bfb4b25e1a3b9c48bd211323ed74da98047451f4cfc5d3a2f5e11c510fd342f"
+  "shardHash": "3d9960921e0d69ffa38b65a8b7340ef15cc89cfd1a63f36c6baa8f5c10aff3d8"
 }

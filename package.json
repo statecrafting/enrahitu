@@ -19,6 +19,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "check:licenses": "node scripts/check-licenses.mjs",
+    "gen:infra": "node scripts/gen-infra-config.mjs",
+    "check:infra": "node scripts/gen-infra-config.mjs --check",
     "generate-keys": "tsx scripts/generate-keys.ts",
     "dev:idp": "docker compose -f docker/compose.dev.yml up -d && node scripts/sync-dev-rauthy-secret.mjs",
     "dev:idp-secret": "node scripts/sync-dev-rauthy-secret.mjs",

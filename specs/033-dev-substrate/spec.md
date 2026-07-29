@@ -12,6 +12,11 @@ depends_on:
   - "032-hiqlite-interface-contract"
 establishes:
   - { kind: directory, path: "testing/" }
+  - "docker/compose.yml"
+  - "docker/Dockerfile.dev"
+  - "scripts/gen-infra-config.mjs"
+  - "scripts/gen-infra-config.test.ts"
+  - "scripts/dev-watch.mjs"
 summary: >
   Phase 1b of the pivot (spec 001 §5.1). Development becomes docker-only, and
   the N=1 dev topology becomes the N=1 deployment topology rather than a
@@ -23,8 +28,10 @@ summary: >
   talks to it over HTTP; and the single-shot restore marker that makes
   HQL_BACKUP_RESTORE safe in a container with a restart policy. The harness
   landed first because it is what closes spec 025 and what specs 026, 027,
-  and the control plane all build on, and because it immediately found two
-  defects nothing else in the repo could see.
+  and the control plane all build on. Between them the harness and a real
+  boot of the topology found five defects nothing else in the repo could
+  see, which is the case for verifying this by running it rather than by
+  reading it.
 ---
 
 # 033: The dev substrate
@@ -70,20 +77,19 @@ Owned now:
   agree. `e2e/` (spec 017) is the existing precedent, and spec 019 already
   reserves the root for what is not an Encore.ts concern.
 
-Owned when the §3.3 to §3.5 work lands, and deliberately absent from
-`establishes` until then, because a declared file unit that does not exist
-is a blocking index diagnostic and this spec should not need a waiver to
-describe its own future:
+Also owned:
 
 - `docker/compose.yml`: the default (N=1) dev topology. The cluster topology
   is spec 030's `compose.cluster.yml`; `compose.dev.yml` (spec 005's
   standalone rauthy) retires into this file.
 - `docker/Dockerfile.dev`: the dev image.
-- `scripts/gen-infra-config.mjs`: the infra config generator.
+- `scripts/gen-infra-config.mjs`: the infra config generator, which now owns
+  `infra.config.json` and `infra.config.dev.json` as generated output.
 - `scripts/dev-watch.mjs`: the backend watch loop.
 
-It amends, without owning, `docker/first-boot.mjs` (spec 007): the restore
-marker in §3.5.
+It amends, without owning, `docker/first-boot.mjs` and `docker/entrypoint.sh`
+(both spec 007): the restore marker in §3.5, and the one-line development
+branch in §3.3.
 
 ## 3. Behavior
 
@@ -142,6 +148,48 @@ app at all. `encore.dev` is now pinned exactly, because a caret range across
 a napi ABI boundary is a floating mismatch waiting to happen rather than a
 convenience.
 
+**Four defects in the dev topology, found by running it rather than by
+reading it.** All are recorded because each is the kind of thing that is
+obvious in hindsight and invisible in review:
+
+1. **rauthy panics without CA certificates.** `node:24-trixie-slim` ships
+   none, and rauthy builds a `reqwest` client during `init_static_vars`, so
+   it aborts with "No CA certificates were loaded from the system" before
+   logging anything of its own. Under the die-together supervisor the only
+   visible symptom is "rauthy exited during startup". `Dockerfile.base`
+   already installed `ca-certificates` for the packaged image; the dev image
+   had to as well, and the fact that one file knew and the other did not is
+   precisely the duplication this spec is trying to reduce.
+2. **A named volume mounted at `node_modules` initializes root-owned.**
+   Docker seeds a named volume from whatever the image has at that path, and
+   creates it root-owned when the path is absent. The container runs as
+   `node`, so the first-boot `npm ci` died with `EACCES` on mkdir. Creating
+   the directory in the image with the right ownership fixes it, which is
+   the same problem and the same fix as the `/data` ownership the packaged
+   image needs (spec 007) and was not obviously the same problem until it
+   failed.
+
+3. **`entrypoint.sh` hardcoded `NODE_ENV=production` and
+   `AUTH_DRIVER=rauthy`**, clobbering whatever the topology asked for. Two
+   consequences, neither of which looked like its cause: `npm ci` omitted
+   devDependencies, so the build toolchain was absent and the watch loop
+   could not compile; and the mock auth driver was disabled, leaving a
+   development container with no way to sign in. Both now use the `${VAR:-…}`
+   idiom already used by `ENRAHITU_METRICS_TOKEN` and `ENRAHITU_LEDGER_URL`
+   three lines below them, so the packaged image lands on the same values as
+   before and the topology can state its own.
+4. **The watch loop did not set the runtime environment.** A compiled bundle
+   is not self-contained: it needs `ENCORE_RUNTIME_LIB`, the app metadata from
+   the parse step, and an infra config with hosted services and gateways
+   merged in. The toolchain's own dev runner does all three; the watch loop
+   had to as well, and until it did the app died at import.
+
+None of these would have been caught by a compose file that was written,
+reviewed, and committed without being run. Two were in code this spec added,
+and two were latent in `entrypoint.sh`, waiting for the first caller that
+was not the packaged image. That is the argument for §4 item 8 being an
+actual boot rather than a lint.
+
 ### 3.3 Tiered topology, docker only
 
 Development is docker-only (spec 001 §4.1), tiered by N rather than by
@@ -152,6 +200,23 @@ whether infrastructure is involved:
   image runs. Source is bind-mounted and the watch loop (§3.4) rebuilds in
   place, so the topology is production's while the iteration loop is not.
 - **The cluster tier** is spec 030's `compose.cluster.yml`.
+
+**One supervisor, not two.** The dev container runs the same
+`docker/entrypoint.sh` as the packaged image, branching on `ENRAHITU_DEV` for
+exactly one thing: whether the app process is the watch loop or the built
+bundle. Everything else (first-boot provisioning, rauthy on loopback, the
+readiness wait, the signal traps, die-together) is shared code rather than a
+copy. That matters more than it looks: the trap handling was hard won, and
+its absence left rauthy's hiqlite holding WAL and state-machine lock files so
+that the next boot was unclean and could escalate to a crash loop (spec 007).
+A second entrypoint would be a second place for that to regress.
+
+The container's `node_modules` is a named volume rather than the host's,
+because the addon and the napi runtime are per-platform binaries and a macOS
+host's tree cannot be loaded by a linux container. The first boot populates it
+and later boots skip, keyed on the toolchain's presence rather than the
+directory's, since an interrupted install leaves the directory there and
+useless.
 
 `docker/compose.dev.yml` (spec 005's standalone rauthy, started by hand
 alongside a host-run app) retires into `compose.yml`. It existed because the
@@ -216,23 +281,47 @@ single-shot. Designing it out beats documenting around it.
    **Met.**
 7. `encore.dev` is pinned to the runtime's exact version and the boot warning
    is gone. **Met.**
-8. `docker compose up` brings the N=1 topology up with no arguments, and a
-   backend edit is live without a manual rebuild. **Pending.**
+8. `docker compose -f docker/compose.yml up` brings the N=1 topology up with
+   no arguments, and a backend edit is live without a manual rebuild.
+   **Met, verified by running it**: from an empty volume, first-boot
+   provisions, rauthy bootstraps and answers on loopback, the container
+   installs its own `node_modules`, the watch loop builds, and the app
+   serves. Observed against the live topology: `/healthz` and `/readyz` 200,
+   `/hiq/health` `{"status":"ok"}` (the addon is up in-process),
+   `/api/v1/auth/status` reporting both drivers, `/metrics` 401 unauthenticated,
+   and rauthy's OIDC discovery 200 **through the app's own origin**, which is
+   spec 005's same-origin invariant holding in the dev topology. Editing
+   `backend/health/api.ts` triggered `rebuilding: backend/health/api.ts` and
+   the app came back serving without intervention.
 9. Every `infra.config.<topology>.json` is generated, and a drift check fails
-   if a committed one differs from its regeneration. **Pending.**
+   if a committed one differs from its regeneration. **Met**, and the
+   generator reproduces the previously hand-written files byte for byte, so
+   adopting it was a diff of zero rather than a reformat that has to be read
+   to be trusted. `check:infra` runs in CI.
 10. A container restarted twice with `HQL_BACKUP_RESTORE` still set applies
-    the backup exactly once. **Pending.**
+    the backup exactly once. **Met** (7 tests), including that a *different*
+    identifier is honoured as a new restore, that a boot without the variable
+    clears a previous decision, and that an operator-supplied identifier
+    containing a single quote survives being sourced by bash.
 
 ## 5. Status
 
-**2026-07-29.** Section 3.1 and 3.2 are delivered: the harness, eighteen
-endpoint-level assertions, and the `encore.dev` pin. Spec 025 moves to
-`implementation: complete` on the back of it (see that spec's §5).
+**2026-07-29, part one.** Sections 3.1 and 3.2: the harness, eighteen
+endpoint-level assertions, and the `encore.dev` pin. Spec 025 moved to
+`implementation: complete` on the back of it (see that spec's closure note).
 
-Sections 3.3 through 3.5 are pending. They are separated deliberately rather
-than by running out of room: the harness is what unblocks specs 026 and 027
-and the control plane, so it ships on its own rather than waiting behind a
-compose topology that nothing else depends on yet.
+**2026-07-29, part two.** Sections 3.3 through 3.5: the compose topology, the
+dev image, the single-supervisor entrypoint branch, the watch loop, the infra
+config generator with its CI drift gate, and the single-shot restore marker.
+Verified by booting the topology from an empty volume rather than by
+inspection, which is how the four defects in §3.2 were found.
+
+What remains before this spec is `complete`: the `compose.dev.yml` retirement
+(§3.3) is described but not executed, because spec 017's Playwright suite
+still starts it through `npm run dev:idp` and moving that suite onto the
+compose topology is its own change. Until then both files exist, which is the
+duplication this spec exists to remove, and saying so is better than quietly
+leaving it.
 
 ## 6. Out of scope
 

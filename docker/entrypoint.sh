@@ -31,6 +31,17 @@ node /enrahitu/first-boot.mjs
 # shellcheck disable=SC1091
 . "$DATA/rauthy/secrets.env"
 
+# restore.env carries first-boot's single-shot restore decision (spec 033 §3.5).
+# hiqlite applies HQL_BACKUP_RESTORE at boot before the raft node starts, and
+# left set in a container with a restart policy it re-applies on EVERY restart,
+# discarding everything written since: a crash loop becomes silent, repeated
+# data loss. first-boot.mjs records which backup it honoured and writes either
+# an export or an unset here, so the operator may set the variable once and
+# leave it set. Sourced before either supervised process starts, because both
+# hiqlite instances would otherwise inherit it.
+# shellcheck disable=SC1091
+. "$DATA/restore.env"
+
 proto="${PUBLIC_URL%%://*}"
 hostport="${PUBLIC_URL#*://}"
 hostport="${hostport%%/*}"
@@ -113,8 +124,16 @@ echo "[entrypoint] rauthy is up on 127.0.0.1:8081"
 # ---------------------------------------------------------------------------
 # the Encore app
 # ---------------------------------------------------------------------------
-export NODE_ENV=production
-export AUTH_DRIVER=rauthy
+# Defaults, not overrides: the packaged image sets neither, so both land on the
+# production value exactly as before. The dev topology (spec 033) sets them, and
+# without the `:-` idiom used elsewhere in this block they were silently
+# clobbered, with two consequences that looked nothing like their cause.
+# NODE_ENV=production made the first-run `npm ci` below omit devDependencies,
+# so the build toolchain was absent and the watch loop could not compile; it
+# also disables the mock auth driver, leaving a dev container with no way to
+# sign in. AUTH_DRIVER=rauthy overrode the driver the topology asked for.
+export NODE_ENV="${NODE_ENV:-production}"
+export AUTH_DRIVER="${AUTH_DRIVER:-rauthy}"
 export FRONTEND_URL="$PUBLIC_URL"
 export RAUTHY_ISSUER="$PUBLIC_URL/auth/v1/"
 export RAUTHY_CLIENT_ID=enrahitu
@@ -143,7 +162,28 @@ export ENRAHITU_HIQ_ADDR_API=127.0.0.1:8400
 # The encore build docker image start command (asserted against the base
 # image by scripts/docker-build.sh).
 cd /workspace
-node --enable-source-maps /workspace/.encore/build/combined/combined/main.mjs &
+# One supervisor for both topologies (spec 033 §3.3). Development and
+# production differ only in the app command: the dev container mounts source
+# and runs the watch loop, the packaged image runs the built bundle. Everything
+# above this line (first-boot, rauthy on loopback, the readiness wait, the
+# signal traps, die-together) is shared, which is the point. The signal
+# handling in particular was hard won and must not exist in two copies.
+if [ "${ENRAHITU_DEV:-0}" = "1" ]; then
+  # node_modules is a named volume, not the host's: the addon and the napi
+  # runtime are per-platform binaries, and a macOS host's tree cannot be used
+  # by a linux container. The volume starts empty, so the first boot populates
+  # it and later boots skip. Keyed on the toolchain rather than on the
+  # directory, because an interrupted install leaves the directory present and
+  # useless.
+  if [ ! -d /workspace/node_modules/@statecrafting/toolchain ]; then
+    echo "[entrypoint] installing dependencies into the container's node_modules (first run)"
+    npm --prefix /workspace ci
+  fi
+  echo "[entrypoint] development mode: watching sources"
+  node /workspace/scripts/dev-watch.mjs &
+else
+  node --enable-source-maps /workspace/.encore/build/combined/combined/main.mjs &
+fi
 APP_PID=$!
 
 # Die together: first exit takes the container down; restart policy recovers.
