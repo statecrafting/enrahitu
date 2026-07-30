@@ -1,0 +1,381 @@
+---
+id: "036-membership-core"
+title: "The membership core: members, tiers, memberships, dues"
+status: approved
+created: "2026-07-30"
+implementation: complete
+depends_on:
+  - "001-enrahitu-architecture"
+  - "021-kernel-native-consumption"
+  - "032-hiqlite-interface-contract"
+  - "034-control-plane"
+  - "035-chassis-boundary"
+establishes:
+  - { kind: directory, path: "backend/members/" }
+summary: >
+  Phase 5 of the pivot (spec 001 §5.1), first slice. The association domain
+  stops being a promise the machinery is built for and becomes ordinary
+  application code: five kinds registered at runtime, a renewal controller that
+  raises dues and lapses memberships, and a service with its own grants and its
+  own endpoints. It is deliberately one domain built completely rather than
+  eleven built shallowly, because the remaining domains are the same shape and
+  the shape is what has to be right. Three decisions are load bearing and none
+  of them was visible before the domain existed: the tenant is an
+  operator-chosen slug required at provisioning and guarded by a boot assertion
+  that refuses to start against rows written under a different one, because the
+  identity that seeds every primary key must not be re-mintable by losing a
+  volume; referential integrity is observed as status rather than enforced at
+  admission, because the store has no foreign keys and a refusal would hide the
+  dangling reference instead of showing it; and the fencing token doubles as
+  optimistic concurrency for human edits, which is what lets a person edit a row
+  a controller has written.
+---
+
+# 036: The membership core
+
+## 1. Purpose
+
+Spec 034 built the control plane and spec 035 drew the boundary around it. Both
+were written for a domain that did not exist yet, and a machine built for a load
+it has never carried is a hypothesis. This is the load.
+
+It is also the first change in the corpus with a buyer's question attached
+rather than an architect's. Spec 001 §4.1 names the reader: a 200-member
+association with no ops team. What that reader wants is to know who is a member,
+what they owe, and who has lapsed. Everything below is that, and the test of the
+substrate is whether it took ordinary code to say it.
+
+**One domain, completely.** The association domain is members, tiers,
+renewals, dues, events, registrations, volunteers, documents, board governance,
+announcements, and discussion. Shipping eleven shallow domains would produce
+eleven half-answers and no proof, because the questions that break a design are
+the second-order ones: what happens when a tier is deleted while memberships
+reference it, what happens when a controller and a person write the same row,
+what happens when the reconciler runs twice. Those only appear when one domain
+is finished. The rest land afterwards in the shape this one establishes.
+
+## 2. Territory
+
+`backend/members/`: the kind registrations and their validators, the tenant
+seam, the renewal rule and its controller, the endpoints, and the barrel. Plus a
+`members` service in `app-manifest.chassis.json` holding six grants.
+
+It amends, without owning:
+
+- **spec 034**: admission gains a status-write path. 034 §5 named `status` as
+  "a column a controller writes through the same admission path" and the
+  implementation had no such path, so status was unwritable. §3.5 below.
+- **spec 001 §5.3**: the definition of `Tenant`, which §3.2 needs to be
+  unambiguous before it goes into a primary key.
+
+It deliberately does **not** carry the schema verb. §3.6 states the precondition
+this domain runs on and fails legibly without it; supplying it is a separate
+change against specs 023 and 027, with its own decision, because an operator
+endpoint and a primary key have nothing in common except that both were needed
+this week. Key shape is expensive to revisit and an endpoint is not, and bundling
+them would put one Decision record over two reversibility profiles.
+
+## 3. Behavior
+
+### 3.1 Five kinds, and what a kind is allowed to be
+
+| kind | scope | written by | holds |
+|---|---|---|---|
+| `tenant` | cluster | operator | the association's display name and contact |
+| `tier` | tenant | operator | dues amount, period, voting rights, grace days |
+| `member` | tenant | operator | a person: display name, email, optional rauthy `sub` |
+| `membership` | tenant | operator (spec), controller (status) | a member bound to a tier for a term |
+| `duesInvoice` | tenant | controller (spec), operator (status) | one term's dues, and whether they are paid |
+
+Every one of them is a runtime registration with no migration, which is the
+property spec 035 §3.4 said would make the boundary cheap, now spent for the
+first time. The five kinds added zero DDL.
+
+**`spec` is intent and `status` is observation, and the writer differs by
+column.** A person says what should be true: this member holds this tier until
+this date. A controller says what is true: the term expired, the invoice is
+open, the membership is pending. Putting both in one column would make every
+reconcile a read-modify-write against a value an operator may have changed
+underneath it.
+
+The one asymmetry worth naming: `duesInvoice` inverts the usual writer. Its
+`spec` is written by the controller, because an invoice is derived from a
+membership and a tier rather than authored, and its `status` is written by a
+person, because payment is something a treasurer records. That inversion is why
+§3.4's fencing rule had to be worked out rather than assumed.
+
+### 3.2 Tenancy: an operator-chosen slug, required at provisioning
+
+**Kinds are tenant-scoped, and the tenant is an operator-chosen slug read from
+`ENRAHITU_TENANT`.** It is required in production and the app refuses to start
+without it; outside production it defaults to the literal `local-dev`. It is
+never `''`, never `"default"`, and never generated.
+
+**Why tenant-scoped, stated as the reason that actually holds.** One deployment
+serves one association (spec 001 §4.1), so a single-value column looks like
+ceremony, and the tempting argument for it is wrong: putting the tenant in the
+key is *not* protecting the Decision chain. The chain hashes Decision records in
+`kernel_decisions`, and `verifyChain` reads that table only, so rewriting a
+resource row's tenant later could not break it. There is no fork and no
+re-anchoring to avoid.
+
+What a later backfill would actually cost is a permanent footnote in the audit
+story: historical records naming `member/-/ada` while the live row is
+`member/hollis-society/ada`, so "who changed this member" needs a documented
+translation rule at the cutover date, forever. Real, permanent, and small.
+
+The decision therefore rests entirely on the cost comparison, and that is enough:
+the cost of carrying the tenant now is approximately zero, because `admit`
+demands a tenant from a tenant-scoped kind and every call site passes one either
+way. A free left-hand side does not need a large right-hand side.
+
+**Why not a generated identifier**, which is where this spec's first draft went.
+An opaque `org-<hex>` minted at first boot is a sentinel with more entropy, and
+it fails three ways. It makes the value that seeds every primary key
+machine-specific, so fixtures, seed data, and cross-environment comparison stop
+lining up. It puts the identity that determines every key in a text file with no
+admission record and no provenance, so losing the volume silently mints a new one
+and orphans every row that survived. And opacity is bought for a collision that
+cannot happen: fleet-hosting produces separate apps (§5.3 as amended), so there
+is nothing to collide with, and the cost is a meaningless string in every URL,
+log line, and Decision reason forever. A fixed dev default is the right answer to
+dev ergonomics; a generated one is strictly worse in dev for the first reason.
+
+**The boot assertion, which matters more than the choice of identifier.** At
+start, if any resource row carries a tenant other than the resolved one, the app
+refuses to start and names both values. This is the only thing standing between a
+deployment and a silently bifurcated dataset, and it catches the three ways that
+happens: an edited environment variable, a lost or swapped volume, and a config
+file copied between deployments. It is a read of one row.
+
+**The narrow claim, so it is not over-trusted later.** This avoids a permanent
+translation rule in the audit story. It does **not** make the app multi-tenant
+ready. `tenantId()` has only ever returned one value, so it is untested for the
+case it exists to serve, and the expensive part of multi-tenancy is isolation
+correctness rather than key shape.
+
+**And the isolation hole has a name.** Two of the three read paths are
+structurally gated: `get` and `list` both resolve the tenant through the same
+helper the write path uses and carry `tenant = $2` in the statement, so a
+tenant-scoped kind cannot be read without one. The third, `changesSince` (spec
+034 §3.4), has no tenant predicate at all and is not going to get one: the
+revision sequence is global and a controller is a cluster-level process, so the
+change feed crosses tenants by construction. Every reconciler must therefore
+thread `change.resource.tenant` into each read and write it makes, and nothing
+structural stops it forgetting. That is the live surface, it is the renewal
+controller, and §4 item 12 asserts it against two tenants rather than leaving it
+as a caveat.
+
+Spec 001 §5.3 is amended in the same change to say what a `Tenant` denotes,
+because a key is a commitment to a denotation and §5.3 named three candidates
+without separating them. A tenant is **the association**. Chapters are
+subordinate scopes within one tenant and never appear on this axis;
+fleet-hosting produces separate apps, not tenants inside one app.
+
+### 3.3 Referential integrity is observed, not enforced
+
+A `membership` names a `tier` and a `member` by name, and nothing stops either
+from being retracted afterwards.
+
+Admission could refuse the dangling case, and deliberately does not. To check a
+reference at admission time it would have to read another resource inside the
+admitting transaction, which is a second store crossing on the write path for a
+guarantee that expires the moment the referent is retracted: the check would
+pass at write time and the row would dangle an hour later anyway. Enforcement
+that cannot hold is worse than no enforcement, because it reads like a
+guarantee.
+
+So the controller reports it. A membership whose tier is not registered gets
+`status.state = "invalid"` naming the missing tier, which is visible in the
+list, visible to the operator, and correct: retracting a tier that memberships
+still reference is a thing an operator may legitimately do, and the right
+response is to show what it broke rather than to make it impossible.
+
+### 3.4 The fencing token is also the human's concurrency control
+
+Spec 034 §3.3 made `fence` a high-water mark per row: a write carrying a token
+below the stored mark raises `SupersededError`. It was designed for one
+question, which is a controller that lost its lease mid-reconcile.
+
+The domain produces a second question 034 did not have to answer. The renewal
+controller writes membership status under its pass token, so the row's mark
+becomes non-zero. A person then edits that membership, holding no lease and no
+token, and a naive `admit` with the default `fence: 0` is refused forever.
+
+**The rule: an endpoint updating an existing resource passes the fence it
+read.** Read the row, send `fence: existing.fence` with the write. This is four
+lines in one helper and it resolves both questions at once:
+
+- A person can always land a write on a controller-written row, because the mark
+  they read equals the mark stored.
+- If a controller wrote in between, the mark moved, the person's write is
+  refused, and the endpoint answers 409 rather than silently clobbering. The
+  fence has become optimistic concurrency for the human plane at no cost.
+
+A person can still overwrite a controller's concurrent write when nothing moved
+between the read and the write, and that is correct: a person editing a record is
+intent, not a lost lease. The fence protects controllers from each other, which
+is what it was built for.
+
+### 3.5 The status-write path (amends spec 034)
+
+`admit` writes `spec`. Its `ON CONFLICT` clause sets `revision`, `fence`,
+`spec`, `deleted_at`, and `updated_at`, and never `status`, so before this change
+`status` could be read and could not be written by anything. Spec 034 §5 assumed
+otherwise, which is the kind of gap that only a consumer finds.
+
+`setStatus(kind, name, status, opts)` is the same five steps in the same order:
+validate is skipped because status has no kind validator (it is the controller's
+own shape, and inventing a second validator vocabulary for it would make the
+kind registry describe two things), then adjudicate, commit the row and its
+outbox row in one `txn`, read back, notify after the commit.
+
+It carries §3.3's no-op rule unchanged and for the same reason: **a status write
+that changes nothing produces no revision.** The renewal controller writes status
+to a kind it watches, so without the rule every reconcile would produce a change
+that triggers a reconcile. With it, a converged membership produces exactly one
+extra pass and then goes quiet, which is what §4 item 5 asserts.
+
+Status writes are fenced by the same mark as spec writes rather than by a second
+column. A separate `status_fence` would be more precise and would need a
+migration, and §3.4's rule already makes the shared mark behave correctly for
+both writers. When two controllers eventually contend for one resource's status,
+that is the moment for spec 034 §5's status subresource, and not before.
+
+### 3.6 The schema precondition, and failing legibly without it
+
+The control plane's tables exist in tests and nowhere else: nothing in the tree
+applies `CONTROL_PLANE_MIGRATIONS` to a deployed container. This domain
+therefore ships on a schema a deployment does not yet have, and says so rather
+than discovering it at the first request.
+
+Spec 032 §3.6 settled that migration is a deploy step and not a boot step, and
+that stands; this spec does not reopen it and does not supply the verb. What it
+owns is the behavior in the meantime:
+
+- Every members endpoint maps a missing `resource` table to a 503 naming the
+  precondition, rather than surfacing `no such table: resource` from four frames
+  down. An operator reading that message learns what to do.
+- The renewal controller starts only once the schema is present, and polls for it
+  rather than failing a pass every second forever. A controller that logs an
+  error per tick trains an operator to ignore the log.
+
+The verb itself is the next change, against specs 023 and 027 (027 §3.4 owns
+`migrate` and currently describes it against CoreLedger only). Its shape is
+already constrained by where the store is: at N=1 the embedded node holds the
+volume open, so no second process can reach it, and the deploy step has to be
+performed by the running app under an authenticated operator rather than by a
+script on the host. That reasoning belongs in that change's spec, with its own
+decision, and is recorded here only so the seam is not mistaken for an oversight.
+
+### 3.7 The renewal loop
+
+The reconcile decision is **a pure function of the membership, its tier, its
+current invoice, and today's date**, returning a plan; the controller performs
+the plan. Splitting it that way is not for testing convenience. A renewal rule is
+a policy a board approves, and a policy that can only be read as a sequence of
+store calls cannot be reviewed by the people whose policy it is.
+
+```
+lifetime tier            -> active, no dues, no expiry
+today < endsOn           -> active, renews on endsOn
+today >= endsOn, manual  -> lapsed on endsOn
+today >= endsOn, auto    -> raise the invoice for the next term, then:
+                              paid           -> extend the term, active
+                              past dueOn     -> lapsed
+                              otherwise      -> pending, dues outstanding
+tier not registered      -> invalid, naming the missing tier (§3.3)
+```
+
+**The invoice name is the idempotence key.** It is
+`<membership>-<periodStart>`, deterministic from the term being billed, so a
+controller that reconciles the same membership a hundred times raises one
+invoice: the hundredth `admit` normalizes to the spec already stored and returns
+without a revision (spec 034 §3.3). The controller does no bookkeeping to achieve
+that, holds no memory of what it has raised, and is correct after a crash, a
+replay, or a watermark reset. This is the single clearest demonstration in the
+tree of why the no-op rule is load bearing rather than an optimization.
+
+The controller watches `membership` and `duesInvoice`, and reconciles by
+membership in both cases: a payment recorded against an invoice is how a
+membership learns it can renew. That is the full loop, and it is the one that
+makes the control plane worth its weight: an operator records a payment on one
+resource, and a different resource converges to a new state without anything
+calling anything.
+
+Convergence after a payment takes three passes and then stops. Pass one extends
+the term (a spec write) and sets status pending to active; pass two observes the
+change it made and computes the same status; pass three has nothing to observe.
+A test asserts the third pass writes nothing, because "converged means quiescent"
+is invisible in code that is working.
+
+### 3.8 The two planes
+
+`members` publishes both an operator plane and a member plane, gated
+differently, which is spec 001 §4.4's separation reaching the domain for the
+first time.
+
+The operator plane (`/api/members`, `/api/tiers`, `/api/memberships`,
+`/api/dues`) requires the `<app>_operator` role and is the association's staff.
+The member plane is one endpoint, `GET /api/me/membership`, which requires only
+an authenticated session and answers strictly about the caller: it resolves the
+`member` whose `sub` matches the session's, and returns that member's own
+membership and outstanding dues. It takes no name parameter, so there is no
+version of it that reads somebody else's record.
+
+## 4. Acceptance
+
+1. The tenant resolves from `ENRAHITU_TENANT`, refuses to resolve in production
+   when it is unset, and defaults to `local-dev` outside production.
+2. Every validator normalizes rather than approving: a member admitted with
+   untrimmed input is stored trimmed, and an invalid tier period is refused
+   naming the field.
+3. A membership whose tier is retracted reports `invalid` naming the missing
+   tier, and reports `active` again when the tier is restored.
+4. An expired auto-renewing membership raises exactly one invoice across
+   repeated reconciles, and the second reconcile produces no revision.
+5. Recording payment renews the term, and the controller reaches quiescence: a
+   third pass writes nothing.
+6. An expired manual membership lapses; an unpaid invoice past its due date
+   lapses; a lifetime membership never lapses.
+7. A person editing a membership the controller has written succeeds when they
+   pass the fence they read, and is refused with 409 when the controller wrote
+   in between.
+8. `setStatus` on an unchanged status produces no revision and no outbox row.
+9. The member plane returns only the caller's own record, and returns 404 rather
+   than another member's row when the session carries no matching `sub`.
+10. With the schema unapplied, a members endpoint answers 503 naming the
+    precondition rather than a SQL error from four frames down.
+11. A service without the state grants is denied admission of a domain kind.
+12. The boot assertion refuses to start when stored rows carry a tenant other
+    than the resolved one, and names both values.
+13. Two tenants reconcile independently through one controller pass: each
+    membership's dues are raised against its own tenant, and neither tenant's
+    pass reads or writes the other's rows. This is asserted rather than assumed
+    because the change feed carries no tenant predicate (§3.2).
+
+All thirteen are asserted in `backend/members/members.test.ts` against a booted
+node, except the pure renewal rule, which is asserted directly in
+`backend/members/renewal.test.ts` at every branch of §3.7's table.
+
+## 5. Out of scope
+
+- **The remaining domains**: events, registrations, volunteers, documents, board
+  governance, announcements, discussion. They are the same shape (kinds, a
+  controller where something converges, a service with its own grants) and land
+  in follow-up specs. This one establishes the shape; it does not gate them.
+- **Payment processing.** Recording that dues were paid is a treasurer's entry.
+  Taking money is a payment provider integration, an egress seam, and a
+  reconciliation problem of its own.
+- **Dues notices by mail.** Spec 026 owns the outbound channel, and a renewal
+  controller that also sent email would own a delivery guarantee it cannot make.
+  The `pending` status and its due date are what a notice would be built from.
+- **Per-kind capability grants.** The `members` service holds `db.txn` on
+  `state`, which is every kind, and spec 034 §3.3 already records why the axis
+  buys nothing while all kinds share one table. Still carried on spec 020 §3.4's
+  extension list.
+- **Proration, partial payments, refunds, and credit balances.** An invoice here
+  is open, paid, or void. The next state a real association asks for is partial
+  payment, and it needs an amounts model rather than a status enum.
+- **A status subresource with its own concurrency** (spec 034 §5), which §3.5
+  records is not needed until two controllers contend for one status.

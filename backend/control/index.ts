@@ -17,6 +17,7 @@
 export {
   admit,
   retract,
+  setStatus,
   get,
   list,
   SupersededError,

@@ -21,13 +21,14 @@
       "4. Acceptance",
       "5. Out of scope",
       "6. Status",
-      "Amendment (2026-07-29): the convergence, executed"
+      "Amendment (2026-07-29): the convergence, executed",
+      "Amendment (2026-07-30): the membership screens (spec 036)"
     ],
     "specPath": "specs/015-react-rr7-flavor/spec.md",
     "status": "approved",
     "summary": "The application's one member-facing SPA: React 19 + React Router v7 in SPA/data-router mode on Vite, in frontend/, building into backend/web/dist for the web static service (spec 006) to serve same-origin. It was authored on 2026-07-14 as the second value of a frontend flavor slot; on 2026-07-29 the React-only convergence (spec 001 section 4.3) retired the Vue flavor and the slot itself, promoted this source to frontend/, and made this the frontend spec rather than one of two. Contract v0.7 removes the slot, which is a breaking bump under a caret pin.\n",
     "title": "The member-facing SPA: React + React Router v7"
   },
-  "shardHash": "8d4f2421a8aa39fa1b4349f1c2ce8843ecb1c871df7efb86147686b5601c2e96",
+  "shardHash": "68b1bd7fd8016ff818d123c8085774844405f6b2c3a3f12e00019edb2bb35cbf",
   "specVersion": "1.1.0"
 }

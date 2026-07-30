@@ -148,7 +148,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:76028ceb2fc792b1dab119118884020d171384434ffeb6976f7cd858b9333e9b"
+    "hash": "sha256:0000460d2e71422f34eafe3068a2721392e14d557e24fab295e522faedf34cfd"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -475,6 +475,140 @@
       "tier": "ts"
     },
     {
+      "capabilities": [
+        "cap.db.state.read",
+        "cap.db.state.txn",
+        "cap.db.state.write",
+        "cap.lock.state.acquire",
+        "cap.notify.state.listen",
+        "cap.notify.state.publish"
+      ],
+      "endpoints": [
+        {
+          "access": "auth",
+          "methods": [
+            "DELETE"
+          ],
+          "name": "deleteMember",
+          "path": "/api/members/:name"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "DELETE"
+          ],
+          "name": "deleteTier",
+          "path": "/api/tiers/:name"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "getMember",
+          "path": "/api/members/:name"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "getOrg",
+          "path": "/api/org"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "listDues",
+          "path": "/api/dues"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "listMembers",
+          "path": "/api/members"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "listMemberships",
+          "path": "/api/memberships"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "listTiers",
+          "path": "/api/tiers"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "myMembership",
+          "path": "/api/me/membership"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "PUT"
+          ],
+          "name": "putMember",
+          "path": "/api/members/:name"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "PUT"
+          ],
+          "name": "putMembership",
+          "path": "/api/memberships/:name"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "PUT"
+          ],
+          "name": "putOrg",
+          "path": "/api/org"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "PUT"
+          ],
+          "name": "putTier",
+          "path": "/api/tiers/:name"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "POST"
+          ],
+          "name": "recordPayment",
+          "path": "/api/dues/:name/paid"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "POST"
+          ],
+          "name": "voidInvoice",
+          "path": "/api/dues/:name/void"
+        }
+      ],
+      "name": "members",
+      "tier": "ts"
+    },
+    {
       "capabilities": [],
       "endpoints": [
         {
@@ -517,7 +651,7 @@
     }
   ],
   "source": {
-    "revision": "8e749e6f4128c94002fcb68858c160733fb1ae58",
+    "revision": "333204fea96be2d3f01eada63793ccbe5ce8208c",
     "uncommittedChanges": true
   },
   "trust": {

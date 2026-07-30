@@ -39,12 +39,33 @@ async function fetchMeOnce(): Promise<Me> {
   return get<Me>("/api/v1/auth/me");
 }
 
-async function refresh(): Promise<boolean> {
+async function rotateOnce(): Promise<boolean> {
   const res = await fetch("/api/v1/auth/refresh", {
     method: "POST",
     credentials: "same-origin",
   });
   return res.ok;
+}
+
+let rotation: Promise<boolean> | undefined;
+
+/**
+ * One silent rotation of the access token, shared with the membership client
+ * and single-flighted.
+ *
+ * The single-flight is not an optimization. Refresh tokens rotate on use (spec
+ * 004), so two concurrent rotations mean the second presents a token the first
+ * just consumed: one caller refreshes and the other is told its session is
+ * invalid. A route with two parallel loaders hits that on every expiry, and it
+ * presents as one card on the page loading and the one beside it claiming the
+ * user is signed out. Observed exactly that way on the members route, which
+ * loads the roster and the association record together.
+ */
+export function refresh(): Promise<boolean> {
+  rotation ??= rotateOnce().finally(() => {
+    rotation = undefined;
+  });
+  return rotation;
 }
 
 /** Profile with one silent-refresh retry on an expired access token. */
@@ -62,7 +83,8 @@ export async function fetchMe(): Promise<Me | null> {
   }
 }
 
-async function csrfToken(): Promise<string> {
+/** The double-submit token, shared with the membership client (spec 036). */
+export async function csrfToken(): Promise<string> {
   const { token } = await get<{ token: string }>("/api/v1/auth/csrf-token");
   return token;
 }

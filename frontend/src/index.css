@@ -85,3 +85,79 @@ dd {
   opacity: 0.7;
   font-size: 0.9rem;
 }
+
+/* The membership screens (spec 036 §3.8). */
+.shell {
+  max-width: 52rem;
+}
+table.roster {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+table.roster th {
+  text-align: left;
+  font-weight: 500;
+  opacity: 0.6;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.5rem 0.4rem 0;
+}
+table.roster td {
+  padding: 0.6rem 0.5rem 0.6rem 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  vertical-align: top;
+}
+table.roster a {
+  color: inherit;
+}
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.8rem;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.badge-active,
+.badge-invoice-paid {
+  color: #2f9e63;
+}
+.badge-pending,
+.badge-invoice-open {
+  color: #c08a2e;
+}
+.badge-lapsed,
+.badge-invalid {
+  color: #e5484d;
+}
+.badge-invoice-void {
+  opacity: 0.6;
+}
+form.stack {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 24rem;
+}
+form.stack label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+form.stack label.kv {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+form.stack input,
+form.stack select {
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+form.stack input[type="checkbox"] {
+  width: auto;
+}

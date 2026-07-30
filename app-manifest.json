@@ -178,6 +178,17 @@
       "role": "library",
       "capabilities": []
     },
+    "members": {
+      "tier": "ts",
+      "capabilities": [
+        "cap.db.state.read",
+        "cap.db.state.txn",
+        "cap.db.state.write",
+        "cap.lock.state.acquire",
+        "cap.notify.state.listen",
+        "cap.notify.state.publish"
+      ]
+    },
     "obs": {
       "tier": "ts",
       "capabilities": []

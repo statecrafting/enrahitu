@@ -594,7 +594,17 @@ independent and run in parallel.
   it lands before the baseline and after the control plane.
 - **Phase 5, the application baseline.** The association domain, written
   against the real store. It ships and it stays; there is no prunable
-  example slot.
+  example slot. **First slice landed as spec 036** (2026-07-30): the
+  membership core, one domain built completely rather than eleven built
+  shallowly, because the questions that break a design are second-order
+  and only a finished domain asks them. It found three: the tenant is an
+  operator-chosen slug required at provisioning and guarded by a boot
+  assertion, because an identity that seeds every primary key must not be
+  re-mintable by losing a volume; referential integrity is observed as
+  status rather than enforced at admission; and the fencing token has to
+  double as the human plane's concurrency control. Events, volunteers,
+  documents, governance, announcements and discussion follow in the same
+  shape and are not gated on further machinery.
 
 Durability is designed in at phases 1a and 1b, not retrofitted: the
 backup surface is part of the addon contract and the restore marker is
@@ -662,6 +672,20 @@ authorization bindings: `Tenant`, principal bindings, and role-to-policy
 bindings are product data joined on rauthy's `sub`. Tenancy does not live
 in rauthy groups, because that would make rauthy's admin UI the tenant
 admin UI.
+
+**What a `Tenant` denotes** (amended 2026-07-30, spec 036). The word was
+carried here against three candidates at once: the association, a chapter
+within one, and a fleet-hosted organization. They are different axes, and
+leaving them merged was harmless until the term entered a primary key,
+which is the layer that cannot be changed cheaply.
+
+A **tenant is the association**. Chapters are subordinate scopes within
+one tenant and never appear on this axis; a chapter is an organizational
+unit inside an association, not a second association. Fleet-hosting
+produces separate stamped apps, each with its own volume and its own IdP
+(§4.1), so a fleet-hosted organization is another app rather than another
+tenant inside one. The identifier is opaque and generated once, so that
+an association's name is data on its record rather than its identity.
 
 The resolution for spec 004, which the pivot left undefined: **a thin
 adapter.** `UserAccount` and `RefreshToken` retire along with the app's

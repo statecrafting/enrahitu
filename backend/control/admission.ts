@@ -250,6 +250,72 @@ export async function retract<TSpec>(
   return stored;
 }
 
+/**
+ * Write a resource's observed state (spec 036 §3.5, amending spec 034 §5).
+ *
+ * `admit` writes intent. Its `ON CONFLICT` clause sets revision, fence, spec,
+ * deleted_at and updated_at, and deliberately never `status`, so a reconcile
+ * writing what it observed cannot clobber an operator's concurrent change to
+ * what they want. That left `status` readable and unwritable until the first
+ * controller needed it.
+ *
+ * The same five steps in the same order, minus validation: status is the
+ * controller's own shape rather than the kind's declared one, and giving the
+ * kind registry a second validator vocabulary would make a kind describe two
+ * different things.
+ *
+ * The no-op rule matters MORE here than it does for spec writes. A reconciler
+ * writes status to a kind it also watches, which is not an edge case but the
+ * normal shape of every controller in the domain: without the early return, each
+ * reconcile produces the change that triggers the next one and the loop spins
+ * until its lease expires (spec 034 §3.3).
+ */
+export async function setStatus<TSpec>(
+  kindName: string,
+  name: string,
+  status: unknown,
+  opts: AdmitOptions = {},
+): Promise<Resource<TSpec> | null> {
+  const kind = requireKind(kindName);
+  const tenant = tenantOf(kind, opts);
+  const fence = opts.fence ?? 0;
+  const now = new Date().toISOString();
+  const body = JSON.stringify(status);
+
+  const before = await queryConsistent<ResourceRow>(SELECT_ONE, [kind.name, tenant, name], {
+    tables: [RESOURCE_TABLE],
+  });
+  const existing = before[0];
+  if (!existing || existing.deleted_at) return null;
+  if (Number(existing.fence) > fence) throw new SupersededError(kind.name, name, fence);
+  if (existing.status === body) return hydrateRow<TSpec>(existing);
+
+  await txn(
+    [
+      {
+        // Numbered ascending by first appearance; `$2` recurs in the predicate,
+        // which is the normal way to bind one value twice (spec 034 §3.6).
+        sql: `UPDATE ${RESOURCE_TABLE}
+                 SET revision = ${NEXT_REVISION}, status = $1, fence = $2, updated_at = $3
+               WHERE kind = $4 AND tenant = $5 AND name = $6 AND fence <= $2`,
+        params: [body, fence, now, kind.name, tenant, name],
+      },
+      {
+        sql: `INSERT INTO ${OUTBOX_TABLE} (revision, kind, tenant, name, op, at)
+              SELECT revision, kind, tenant, name, 'updated', $1 FROM ${RESOURCE_TABLE}
+               WHERE kind = $2 AND tenant = $3 AND name = $4`,
+        params: [now, kind.name, tenant, name],
+      },
+    ],
+    { tables: [RESOURCE_TABLE, OUTBOX_TABLE] },
+  );
+
+  const stored = await readBack<TSpec>(kind.name, tenant, name);
+  await record(kind.name, tenant, name, "updated", stored.revision, opts.actor, "status");
+  await notify({ kind: kind.name, tenant: tenant || undefined, name, revision: stored.revision });
+  return stored;
+}
+
 async function readBack<TSpec>(kind: string, tenant: string, name: string): Promise<Resource<TSpec>> {
   const rows = await queryConsistent<ResourceRow>(SELECT_ONE, [kind, tenant, name], {
     tables: [RESOURCE_TABLE],
@@ -277,8 +343,14 @@ async function record(
   op: Op,
   revision: number,
   actor: string | undefined,
+  column: "spec" | "status" = "spec",
 ): Promise<void> {
   const context: Record<string, unknown> = { kind, name, op, revision, tenant };
+  // Present only on a status write, so the context of every spec write hashes
+  // exactly as it did before this field existed. A record's preimage is not
+  // something to change for tidiness: the chain cannot tell a new shape from a
+  // tampered one.
+  if (column === "status") context.column = "status";
   if (actor) context.actor = actor;
   await appendDecision({
     modelHash: receipt.modelHash,
@@ -291,7 +363,7 @@ async function record(
     capability: { kind: `resource.${op}`, resource: kind },
     contextHash: contextHash(context),
     outcome: "allow",
-    reason: `admitted:${kind}/${tenant || "-"}/${name}@${revision}`,
+    reason: `${column === "status" ? "status" : "admitted"}:${kind}/${tenant || "-"}/${name}@${revision}`,
     checkIds: [],
   });
 }
