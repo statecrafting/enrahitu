@@ -148,7 +148,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:0000460d2e71422f34eafe3068a2721392e14d557e24fab295e522faedf34cfd"
+    "hash": "sha256:6d2a1f93691ed59b392f4c0e2b4c825bb10988654e248af9b89d26a6478e307e"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -209,6 +209,8 @@
   "services": [
     {
       "capabilities": [
+        "cap.db.state.migrate",
+        "cap.db.state.read",
         "cap.secret.jwt-public"
       ],
       "endpoints": [
@@ -233,6 +235,14 @@
         {
           "access": "auth",
           "methods": [
+            "POST"
+          ],
+          "name": "applySchema",
+          "path": "/api/admin/schema/apply"
+        },
+        {
+          "access": "auth",
+          "methods": [
             "GET"
           ],
           "name": "catalog",
@@ -245,6 +255,14 @@
           ],
           "name": "overview",
           "path": "/api/admin/overview"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "schema",
+          "path": "/api/admin/schema"
         },
         {
           "access": "auth",
@@ -651,7 +669,7 @@
     }
   ],
   "source": {
-    "revision": "333204fea96be2d3f01eada63793ccbe5ce8208c",
+    "revision": "02bdc30a606eaeca45eb42163ac8484d0e914995",
     "uncommittedChanges": true
   },
   "trust": {

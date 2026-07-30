@@ -125,6 +125,8 @@
     "admin": {
       "tier": "ts",
       "capabilities": [
+        "cap.db.state.migrate",
+        "cap.db.state.read",
         "cap.secret.jwt-public"
       ]
     },
