@@ -45,7 +45,11 @@
   "services": {
     "admin": {
       "tier": "ts",
-      "capabilities": ["cap.secret.jwt-public"]
+      "capabilities": [
+        "cap.db.state.migrate",
+        "cap.db.state.read",
+        "cap.secret.jwt-public"
+      ]
     },
     "control": {
       "tier": "ts",

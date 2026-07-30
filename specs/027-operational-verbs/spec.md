@@ -282,3 +282,25 @@ unstated RPO is always assumed to be zero:
 - Down migrations. Spec 011 refused them and this spec does not reopen
   it.
 - The operator documentation that every verb here implies: spec 028.
+
+## Amendment (2026-07-30): the state layer's half of `migrate`
+
+§3.4 was written when CoreLedger was the only durable store, and it describes the
+verb against `backend/core/ledger/`. The pivot gave the state layer its own
+schema and its own runner (spec 032 §3.6), and spec 034's control plane put the
+`resource` table behind it. Nothing applied those migrations to a deployed
+container, so phase 5's domain (spec 036) shipped on a schema no deployment had.
+
+The state layer's half lands as an operator-gated pair on the admin data plane
+(spec 023's amendment of the same date) rather than as a script under
+`scripts/ops/`. The reason is the volume: at N=1 the app's embedded hiqlite node
+holds it open, so a separate migrator process cannot reach the store while the
+app is running. "One runner by construction" is satisfied by an operator invoking
+it once, and the invocation is authenticated and recorded rather than anonymous.
+
+This does not settle the rest of this spec. `preflight`, `backup`, and `restore`
+remain pending and remain script-shaped, CoreLedger's half of `migrate` is
+untouched, and `ENRAHITU_MIGRATE_ON_BOOT` still applies only to CoreLedger. When
+this spec is implemented in full, the two halves want one verb over both stores,
+and the admin pair becomes its transport for the state layer rather than a second
+mechanism.

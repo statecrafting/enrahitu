@@ -207,3 +207,36 @@ scope here (§5).
   catalog, `/metrics` remains scrape-oriented (spec 022).
 - The React-only frontend convergence of spec 001 §4.3; this spec
   neither requires nor advances retiring the Vue flavor.
+
+## Amendment (2026-07-30): the schema surface
+
+The admin data plane gains two endpoints: `GET /api/admin/schema` reports the
+applied state-layer version and what is pending, and `POST /api/admin/schema/apply`
+applies it. Both pass the §3.1 gate unchanged.
+
+This is here rather than in a script because of where the store is. Spec 032 §3.6
+requires migration to be a deploy step with one runner, and at N=1 the embedded
+node owns the volume, so no second process can open it while the app runs. The
+deploy step therefore has to be performed by the running app, and the operator
+plane is the correct place for an operator's act: it is authenticated, it is
+role-gated, and the resulting effect is adjudicated and lands on the Decision
+chain naming a principal, which a shell script on the host would not.
+
+The `admin` service holds `cap.db.state.migrate` and `cap.db.state.read` for it,
+declared in the manifest and used under admin's own attribution. It does not
+borrow the `state` service's identity through `runAsService`: a capability
+exercised under a name the manifest does not grant is a ceiling that lies, and
+the ceiling being readable is the whole point of spec 021.
+
+**One implementation note, because the extractor caught it and a reader would
+not.** The first version imported `CONTROL_PLANE_MIGRATIONS` from the control
+plane's barrel, and the model extractor immediately reported `admin` using
+`db.txn` and `notify.publish` on `state` beyond its ceiling: a barrel import
+makes every effect reachable through it part of the importing service's traced
+surface. Importing the schema module directly narrows it back to the constant
+that was wanted. The ceiling is computed from what is reachable, so what a
+service imports is part of what it claims.
+
+No new UI ships with this. The dashboard's existing API caller (§3.3 amendment)
+calls both endpoints under the operator's own session, which is what makes the
+verb usable the day it lands rather than the day a panel is designed for it.
