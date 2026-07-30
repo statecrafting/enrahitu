@@ -478,12 +478,6 @@ export const listDues = api(
   },
 );
 
-export interface RecordPaymentRequest {
-  name: string;
-  /** Defaults to today. Backdating a payment is ordinary bookkeeping. */
-  paidOn?: string;
-}
-
 /**
  * Record a payment: a status write on an invoice.
  *
@@ -491,10 +485,18 @@ export interface RecordPaymentRequest {
  * the invoice change, re-evaluates the membership, and extends the term (spec
  * 036 §3.7). That indirection is the point: the renewal rule lives in one place
  * and every route into it converges through the same code.
+ *
+ * **It takes no parameters beyond the path, deliberately.** The obvious design
+ * carries an optional `paidOn` so a treasurer can backdate, and that one
+ * optional field makes the request body mandatory: a plain `POST .../paid` then
+ * fails with "EOF while parsing a value at line 1 column 0", which is a terrible
+ * answer to a correct request. Moving it to a query parameter parsed on the host
+ * and failed in the container against the same toolchain version, so it is out
+ * until backdating is asked for and can be given its own shape.
  */
 export const recordPayment = api(
   { expose: true, auth: true, method: "POST", path: "/api/dues/:name/paid" },
-  async (req: RecordPaymentRequest): Promise<InvoiceView> => {
+  async (req: ByName): Promise<InvoiceView> => {
     const actor = requireOperator();
     const tenant = tenantId();
     return guarded(async () => {
@@ -502,7 +504,7 @@ export const recordPayment = api(
       if (!invoice) throw APIError.notFound(`no invoice '${req.name}'`);
       const status: InvoiceStatus = {
         state: "paid",
-        paidOn: req.paidOn ?? today(),
+        paidOn: today(),
         recordedBy: actor,
       };
       const stored = await setStatus<DuesInvoiceSpec>(DUES_INVOICE, req.name, status, {

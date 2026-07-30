@@ -10,7 +10,7 @@
  * when the deployment's schema has not been applied yet (spec 036 §3.6), and 404
  * when no member record is linked to their account.
  */
-import { csrfToken } from "./api";
+import { csrfToken, refresh } from "./api";
 
 export type MembershipState = "active" | "pending" | "lapsed" | "invalid";
 export type InvoiceState = "open" | "paid" | "void";
@@ -114,17 +114,34 @@ async function describe(res: Response): Promise<Failure> {
   return { failed: true, status: res.status, message };
 }
 
+/**
+ * Send it, and on a 401 rotate the access token once and send it again.
+ *
+ * `fetchMe` has done this since spec 015 and these screens have to as well.
+ * Without it, the first request after the access token's TTL renders "the
+ * request does not have valid authentication credentials" to somebody with a
+ * perfectly good session, and the fix they will find is reloading the page.
+ * Found by leaving a tab open across a container restart, which is a thing that
+ * happens to a user roughly as often as it happened here.
+ */
+async function send(path: string, init: RequestInit = {}): Promise<Response> {
+  const options: RequestInit = { credentials: "same-origin", ...init };
+  const res = await fetch(path, options);
+  if (res.status !== 401) return res;
+  if (!(await refresh())) return res;
+  return fetch(path, options);
+}
+
 async function read<T>(path: string): Promise<Result<T>> {
-  const res = await fetch(path, { credentials: "same-origin" });
+  const res = await send(path);
   if (!res.ok) return describe(res);
   return (await res.json()) as T;
 }
 
 async function write<T>(path: string, method: string, body?: unknown): Promise<Result<T>> {
   const token = await csrfToken();
-  const res = await fetch(path, {
+  const res = await send(path, {
     method,
-    credentials: "same-origin",
     headers: {
       "X-CSRF-Token": token,
       ...(body === undefined ? {} : { "Content-Type": "application/json" }),
@@ -179,10 +196,10 @@ export const putMembership = (
   write<MembershipView>(`/api/memberships/${encodeURIComponent(name)}`, "PUT", input);
 
 export const recordPayment = (name: string): Promise<Result<InvoiceView>> =>
-  write<InvoiceView>(`/api/dues/${encodeURIComponent(name)}/paid`, "POST", {});
+  write<InvoiceView>(`/api/dues/${encodeURIComponent(name)}/paid`, "POST");
 
 export const voidInvoice = (name: string): Promise<Result<InvoiceView>> =>
-  write<InvoiceView>(`/api/dues/${encodeURIComponent(name)}/void`, "POST", {});
+  write<InvoiceView>(`/api/dues/${encodeURIComponent(name)}/void`, "POST");
 
 /** Cents as the association would write it on a notice. */
 export function money(cents: number): string {
