@@ -643,3 +643,47 @@ group, and the failure it prevents is wrong data rather than a crash.
 
 Nothing in this spec's territory. Phase 3 consumes the facade and is where
 the withheld grants find their holder.
+
+## Implementation record (2026-07-30): the decision this contract never made
+
+**Nothing in the addon surface ends a node.** `init()` has no counterpart. Ten
+decisions asked how the node reads, writes, watches, leases, backs up and
+archives, and not one asked what happens when the process holding it stops. The
+omission is legible in the section list: every decision here is about a call
+that application code makes, and shutdown is the one thing the application does
+not call, so it was never designed.
+
+The consequence is section 3.9's failure mode with the sign flipped. hiqlite
+writes `<data>/state_machine/lock` when the SQLite state machine opens and
+removes it only in `Client::shutdown()`. The addon exposes no `shutdown()`, so
+the lock is never released, and the *next* start panics with "Node did not shut
+down gracefully - needs manual interaction". Not on unclean stops: on all of
+them. A graceful `docker compose stop` leaves it exactly as a `docker kill`
+does, because from the store's point of view there is no difference between the
+two when neither reaches the client.
+
+This is the requirement side of the interface and therefore the defect report
+(section 2), so it is recorded here and filed against statecrafting spec 003.
+**The addon should expose `shutdown()`**, and this application should call it
+on SIGTERM, which for the packaged image means `docker/entrypoint.sh` already
+has the signal plumbing in place and only the leaf call is missing. Two details
+belong in that work rather than being rediscovered: hiqlite's `Client::shutdown`
+deliberately delays about ten seconds to smooth rolling releases and gives up
+at fifteen, so any stop timeout under that turns the graceful path back into
+the ungraceful one; and at N=3 the same call is what lets a node leave the
+cluster cleanly, so the cost of not having it grows with the topology rather
+than staying a single-node annoyance.
+
+Until it lands, spec 002's amendment for the same date is the contract: the
+node records its owner (pid and host) at the data-dir root before `init()`, and
+a start that finds a lock removes it only when it can prove the recorded owner
+is dead. Recovery does not become redundant once `shutdown()` exists. SIGKILL,
+the OOM killer, and power loss never call anything, so a store that can only be
+opened after a clean close is a store that eventually cannot be opened.
+
+**What this costs the contract as written.** Nothing above is contradicted;
+section 3.9's archive mechanics and section 3.8's backup surface are unchanged.
+What changes is the claim in section 4 that the surface is complete enough for
+the state layer to be governed through it, which held for every operation and
+not for the lifecycle around them. A contract that specifies twenty-one calls
+and no teardown describes a process that never ends.

@@ -335,3 +335,60 @@ leaving it.
   a real rauthy and answers a question this harness does not: whether a human
   can log in. Moving it onto the compose topology is §3.3's job; retiring it
   is not a goal.
+
+## Amendment (2026-07-30): the watch loop stops going deaf
+
+§3.4 shipped the loop and a session of real use found two ways it stops
+working. Both were expensive out of proportion to their size, for the same
+reason: neither announces itself, and both look exactly like "the code I just
+wrote does not work."
+
+**A stop that never finishes wedges everything.** `stopApp` resolved on the
+app process's `exit` event. A process that had *already* exited never emits it
+again, so the promise never settled, `rebuild` never reached its `finally`,
+`building` stayed true, and every later change took the `if (building)` early
+return. The watcher was then alive, silent, and useless. The only tell was
+negative: the previous rebuild had printed `rebuilding:` and never printed an
+outcome. Recovery was a container restart, which is how a wedge that costs five
+seconds to fix became a habit.
+
+Three changes, each closing one path into that state. A process that has
+already exited is recognized (`exitCode`/`signalCode`) rather than waited on.
+An absolute deadline settles the promise no matter what, on the judgment that
+proceeding with a process that refused to die is worse in theory and much
+better in practice: a duplicate app is a loud port conflict, while a deaf
+watcher is invisible. And the `exit` handler now matches on process *identity*
+rather than on `child !== null`, dropping the reference on every exit including
+a signal or a clean zero. That last one is what produced the corpse the next
+`stopApp` waited on, because the original guard cleared the reference only for
+a non-zero exit with no signal, which is the one case that was already handled.
+
+**inotify is not dependable across the bind mount.** Sources are mounted from
+the host and events cross that boundary on the filesystem driver's good
+behavior rather than on a guarantee. Observed: the watcher delivered events,
+then quietly stopped delivering them for modifications to existing files while
+still noticing newly created ones. Nothing distinguishes that from code that
+does not work, which is what makes it expensive.
+
+`fs.watch` therefore stays as the fast path and a periodic fingerprint of the
+same file set becomes the floor (`ENRAHITU_WATCH_POLL_MS`, default 1000, zero
+disables). Content hashes rather than mtimes, because a build step that rewrote
+a watched file byte-for-byte would otherwise drive the loop in circles, and the
+whole watched tree is well under a megabyte of TypeScript, so the scan is not
+worth optimizing. Both detectors converge on the existing debounce, and the
+fingerprint is refreshed when a rebuild is scheduled so that whichever detector
+fired first does not leave the other holding a stale view and scheduling the
+same rebuild again.
+
+Also fixed: a watched *file* target reported its path as
+`app-manifest.json/app-manifest.json`, because the callback's `file` argument
+is a basename and was being joined onto its own path. Cosmetic, and it has been
+in the log since the loop shipped.
+
+**Not fixed here, and the larger half of the same session's pain:** the
+hiqlite state-machine lock, which is spec 002's amendment for this date. It is
+worth recording where the two met. Every rebuild stops and restarts the app
+process, and because nothing releases that lock, every rebuild left the store
+unopenable; the domain then answered 503 while `/healthz` stayed green. A
+developer editing code therefore saw two unrelated-looking failures at once, one
+of which made the other harder to see.

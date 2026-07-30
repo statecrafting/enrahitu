@@ -214,3 +214,90 @@ it asks for.
 Unchanged: `backend/hiq/init.ts` (the module-load `init()` that starts the
 node before any service handles a request), the kernel facade, and the
 Phase A seam. Those are the capability. The endpoints were the demo.
+
+## Amendment (2026-07-30): reclaiming a state machine whose owner is gone
+
+`backend/hiq/init.ts` now clears a stale state-machine lock before it starts
+the node, and records which process owns the data directory so a later start
+can tell "stale" from "in use". `backend/hiq/lock.ts` holds the decision.
+
+**The defect.** hiqlite writes `<data>/state_machine/lock` when the SQLite
+state machine opens and removes it in exactly one place, `Client::shutdown()`.
+The addon does not expose `shutdown()` and nothing here has ever called it, so
+the lock is never released: not on SIGTERM, not on a clean `docker compose
+stop`, not between the watch loop's rebuilds. Every start after the first finds
+it and panics.
+
+```
+Lock file already exists: /data/hiqlite/state_machine/lock
+Node did not shut down gracefully - needs manual interaction
+```
+
+The message means what it says. A human deletes a file inside the container,
+or the store stays shut.
+
+**Why this reads as a development papercut and is not one.** Spec 036 §3.2
+keeps a store that will not open from taking down `/healthz`, the admin
+dashboard, and the login flow with it. That is the right behavior and it is
+also excellent camouflage: the symptom is `/readyz` answering 500 on a
+container whose liveness probe is green, and it survives every restart, because
+each restart leaves the lock exactly as it found it. Under the watch loop it
+arrives on the *first* edit of a session, since a rebuild stops and restarts
+the app process; the container log for 2026-07-30 carries the panic after
+nearly every rebuild, for hours. Under a restart policy it arrives after any
+hard kill and never clears on its own. A deployment whose thesis is one
+container and one volume cannot require a human with a shell after an OOM.
+
+**Why not simply delete the lock at boot.** The lock is load bearing. Two
+processes opening one SQLite state machine is corruption, and this panic is the
+only thing standing between a mistake and that outcome. Deleting it
+unconditionally trades a recoverable outage for an unrecoverable one. The
+question is therefore not whether to remove the lock but whether it is
+*provably* stale, and hiqlite's own lock file cannot answer that: it is zero
+bytes and names no owner.
+
+**The decision: supply the missing half.** Every node start writes
+`enrahitu-owner.json` (pid, hostname, timestamp) at the data-dir root, before
+`init()` rather than after, so a node that dies during startup still leaves the
+evidence its successor needs. A start that finds a lock then asks whether that
+owner is still alive:
+
+- **no lock**: nothing to reclaim; record ownership and continue.
+- **lock, owner is a live process on this host**: a second node is genuinely
+  starting against a directory in use. Keep the lock and let hiqlite panic.
+  That panic is correct and this is the case it exists for.
+- **lock, owner is gone**: provably stale. Clear it and continue.
+- **lock, owner recorded on a different host**: its pid means nothing in this
+  namespace, so staleness cannot be proven. Keep the lock.
+- **lock, no owner record**: a volume written before this code existed, so no
+  live process ever recorded ownership of it. Clear it, once. Every start from
+  here on leaves a record, so the case does not recur.
+
+Liveness is signal 0, which performs the existence and permission checks
+without delivering anything; EPERM counts as alive, being a process that is
+there and simply not ours to signal. The owner record sits at the data-dir root
+rather than beside the lock inside `state_machine/`, because hiqlite chmods
+that directory during `build_folders` and there is no reason to hand it a file
+it did not create.
+
+**The recovery may never throw.** It runs at module load, so an exception is
+not a failed recovery: it is a failed import, taking down a process that would
+otherwise have started, served `/healthz`, and reported the store's condition.
+That inverts spec 036 §3.2 and would make a store that will not open strictly
+worse than before this code existed. A read-only volume or a lock owned by
+another uid reaches that path through `rmSync`, which honours `force` for a
+missing file and not for a permission denial. Every outcome is therefore a
+returned value, including the failure to decide, and a recovery that cannot run
+leaves the question to hiqlite exactly as it sat before.
+
+**What this does not fix**, and the distinction matters: releasing the lock on
+the way down. That is the actual defect, it lives in the addon, and spec 032's
+implementation record for the same date files it as the contract hole it is.
+Recovery is still needed after that lands, because SIGKILL, the OOM killer, and
+power loss are not going anywhere.
+
+Verified against the running N=1 container rather than argued: a volume
+carrying a legacy lock recovered through the `no-owner-record` path, the next
+restart through `owner-gone`, and three consecutive watch-loop rebuilds each
+logged the reclaim and then `members: runtime started`, where before this
+change the first rebuild of a session ended the domain until a human intervened.
