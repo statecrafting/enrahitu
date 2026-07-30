@@ -21,7 +21,8 @@
  * larger problem than it looks, and the rebuild is seconds.
  */
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, watch } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readdirSync, readFileSync, statSync, watch } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -69,17 +70,56 @@ let building = false;
 let pendingRebuild = false;
 let timer = null;
 
+/**
+ * Stop the running app and resolve once it is actually gone.
+ *
+ * Every guard below is here because its absence wedged the entire loop. The
+ * failure has one shape: this promise never settles, so `rebuild` never
+ * reaches its `finally`, `building` stays true forever, and every later change
+ * takes the `if (building)` early return. The watcher is then alive, silent,
+ * and useless, and the only tell is that the previous rebuild never printed an
+ * outcome. Recovering it took a container restart, which is how a five-second
+ * papercut became a habit.
+ *
+ * So: a process that has already exited is recognized rather than waited on,
+ * and an absolute deadline settles the promise no matter what. Continuing with
+ * a process that refused to die is worse than the alternative in theory and
+ * much better in practice, because a duplicate app is a loud port conflict
+ * while a deaf watcher looks exactly like code that does not work.
+ */
 function stopApp() {
-  if (child === null) return Promise.resolve();
   const dying = child;
   child = null;
+  if (dying === null) return Promise.resolve();
+  // `exit` has already fired and will not fire again; a listener added now
+  // would wait forever.
+  if (dying.exitCode !== null || dying.signalCode !== null) return Promise.resolve();
   return new Promise((resolve) => {
-    const kill = setTimeout(() => dying.kill("SIGKILL"), 5_000);
-    dying.on("exit", () => {
-      clearTimeout(kill);
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(escalate);
+      clearTimeout(abandon);
       resolve();
-    });
-    dying.kill("SIGTERM");
+    };
+    const escalate = setTimeout(() => {
+      try {
+        dying.kill("SIGKILL");
+      } catch {
+        finish();
+      }
+    }, 5_000);
+    const abandon = setTimeout(() => {
+      log(`app pid ${dying.pid} did not exit; continuing without it`);
+      finish();
+    }, 15_000);
+    dying.once("exit", finish);
+    try {
+      dying.kill("SIGTERM");
+    } catch {
+      finish();
+    }
   });
 }
 
@@ -120,18 +160,26 @@ function startApp() {
     log(`cannot start: ${err.message}`);
     return;
   }
-  child = spawn(process.execPath, ["--enable-source-maps", main], {
+  const proc = spawn(process.execPath, ["--enable-source-maps", main], {
     cwd: repoRoot,
     stdio: "inherit",
     env: { ...process.env, ...runtime, PORT },
   });
-  child.on("exit", (code, signal) => {
+  child = proc;
+  proc.on("exit", (code, signal) => {
     // A crash must not take the watcher down with it: the whole value of a
     // watch loop is that the next edit is what fixes the crash.
-    if (child !== null && signal === null && code !== 0) {
-      log(`app exited with ${code}; waiting for the next change`);
-      child = null;
-    }
+    //
+    // Identity, not nullness. Two things were wrong with checking `child !==
+    // null`: a late exit from a process that had already been replaced would
+    // clear the reference to its successor, and an exit by signal or with
+    // status 0 was not cleared at all. That second case is the one that bit,
+    // because it left `child` pointing at a corpse and the next `stopApp`
+    // waiting on an `exit` event that had already been delivered.
+    if (child !== proc) return;
+    child = null;
+    if (signal !== null) log(`app killed by ${signal}; waiting for the next change`);
+    else if (code !== 0) log(`app exited with ${code}; waiting for the next change`);
   });
 }
 
@@ -171,6 +219,10 @@ function schedule(path) {
   if (timer !== null) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = null;
+    // Absorb the tree we are about to compile, so whichever detector fired
+    // first does not leave the other one holding a stale fingerprint and
+    // scheduling the same rebuild again the moment this one finishes.
+    fingerprint = snapshot();
     void rebuild(`rebuilding: ${path}`);
   }, DEBOUNCE_MS);
 }
@@ -183,19 +235,136 @@ function isSource(file) {
   return file.endsWith(".ts") || file.endsWith(".json") || file.endsWith(".app");
 }
 
+/**
+ * Change detection, twice, because inotify alone is not dependable here.
+ *
+ * The sources are bind-mounted from the host, and events cross that boundary
+ * on the filesystem driver's good behavior rather than on any guarantee. In
+ * practice the watch delivers events for a while and then quietly stops: the
+ * process is alive, the last rebuild succeeded, and edits simply produce
+ * nothing. Nothing distinguishes that from "my change did not work", which is
+ * what makes it expensive; the reflex is to debug the code.
+ *
+ * So `fs.watch` stays as the fast path, and a periodic fingerprint of the same
+ * files is the floor. Content hashes rather than mtimes, because a build step
+ * that rewrites a watched file byte-for-byte would otherwise drive the loop in
+ * circles, and the whole watched tree is well under a megabyte of TypeScript.
+ */
+const POLL_DEFAULT_MS = 1000;
+const configuredPoll = Number(process.env.ENRAHITU_WATCH_POLL_MS ?? POLL_DEFAULT_MS);
+// A typo in the variable must not silently remove the floor: that would leave
+// the loop depending on exactly the mechanism this exists to backstop, and the
+// only evidence would be `polling every NaNms` in a line nobody rereads.
+const POLL_MS = Number.isFinite(configuredPoll) && configuredPoll >= 0 ? configuredPoll : POLL_DEFAULT_MS;
+
+/** Output and dependency trees, none of which is a source of the build. */
+const SKIP_DIRS = new Set(["node_modules", "dist", "dist-admin", ".encore", ".git", "coverage"]);
+
+function hashFile(abs) {
+  try {
+    return createHash("sha1").update(readFileSync(abs)).digest("hex");
+  } catch {
+    // Raced with a write, or vanished. The next tick sees the settled state.
+    return null;
+  }
+}
+
+function isDirectory(abs) {
+  try {
+    return statSync(abs).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function snapshot() {
+  const seen = new Map();
+  const visit = (abs, rel) => {
+    let entries;
+    try {
+      entries = readdirSync(abs, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        if (!SKIP_DIRS.has(entry.name)) visit(join(abs, entry.name), `${rel}/${entry.name}`);
+      } else if (isSource(entry.name)) {
+        const hash = hashFile(join(abs, entry.name));
+        if (hash !== null) seen.set(`${rel}/${entry.name}`, hash);
+      }
+    }
+  };
+  for (const target of WATCHED) {
+    const abs = join(repoRoot, target);
+    if (!existsSync(abs)) continue;
+    if (isDirectory(abs)) visit(abs, target);
+    else if (isSource(target)) {
+      const hash = hashFile(abs);
+      if (hash !== null) seen.set(target, hash);
+    }
+  }
+  return seen;
+}
+
+let fingerprint = new Map();
+
+function poll() {
+  // A build writes nothing under the watched paths, but skipping while one
+  // runs keeps the pre-build fingerprint intact, so an edit that lands mid
+  // build is still detected on the tick after it finishes.
+  if (building) return;
+  // Nothing in a scan is worth the loop's life. An interval callback that
+  // throws is an uncaught exception, and the process this one belongs to is
+  // the one thing keeping the container useful.
+  let next;
+  try {
+    next = snapshot();
+  } catch (err) {
+    log(`poll failed: ${err.message}`);
+    return;
+  }
+  let changed = null;
+  for (const [file, hash] of next) {
+    if (fingerprint.get(file) !== hash) {
+      changed = file;
+      break;
+    }
+  }
+  if (changed === null && next.size !== fingerprint.size) {
+    for (const file of fingerprint.keys()) {
+      if (!next.has(file)) {
+        changed = file;
+        break;
+      }
+    }
+  }
+  fingerprint = next;
+  if (changed !== null) schedule(changed);
+}
+
 log(`starting on port ${PORT}`);
 await rebuild("initial build");
+fingerprint = snapshot();
 
 for (const target of WATCHED) {
   const abs = join(repoRoot, target);
   if (!existsSync(abs)) continue;
-  watch(abs, { recursive: true }, (_event, file) => {
+  const isDir = isDirectory(abs);
+  watch(abs, { recursive: isDir }, (_event, file) => {
+    // For a watched file rather than a directory, `file` is the basename, and
+    // joining it onto its own path produced the `app-manifest.json/app-manifest.json`
+    // that has been in the log since this loop shipped.
     const name = file ? String(file) : target;
     if (!isSource(name)) return;
-    schedule(relative(repoRoot, join(abs, name)));
+    schedule(isDir ? relative(repoRoot, join(abs, name)) : target);
   });
 }
-log(`watching ${WATCHED.join(", ")}`);
+// Deliberately not unref'd. The failure this backstops is `fs.watch` going
+// quiet, and an unref'd timer would let the process exit at exactly the moment
+// the watch handles stopped holding it open and no app child was running.
+if (POLL_MS > 0) setInterval(poll, POLL_MS);
+log(`watching ${WATCHED.join(", ")} (polling every ${POLL_MS}ms)`);
 
 // The container stops this process, not the app: forward so hiqlite releases
 // its lock files cleanly (the failure spec 007 documents at length).
