@@ -289,3 +289,31 @@ node.
   column a controller writes through the same admission path. Splitting it
   into an independently versioned subresource is a real design, and it is not
   needed until two writers contend for one resource's status.
+
+## Amendment (2026-07-30): the status-write path (spec 036)
+
+§5 recorded that "`status` is a column a controller writes through the same
+admission path" and left splitting it into a subresource out of scope. The first
+consumer found that the admission path had no such write: `admit`'s `ON
+CONFLICT` clause sets `revision`, `fence`, `spec`, `deleted_at`, and
+`updated_at`, so `status` was readable and unwritable by anything in the tree.
+
+`setStatus(kind, name, status, opts)` closes it, as the same five steps of §3.3
+in the same order. Validation is skipped, because status is the controller's own
+shape rather than the kind's declared one, and giving the kind registry a second
+validator vocabulary would make a kind describe two things. Everything else
+holds unchanged: the state facade adjudicates before the crossing, the row and
+its outbox row commit in one `txn` at one revision, the revision is read back,
+and the notify follows the commit.
+
+**§3.3's no-op rule extends to it verbatim, and for a sharper reason.** A
+controller that writes status to a kind it also watches is not an edge case here;
+it is the normal shape of every reconciler the domain has. Without the rule each
+reconcile would produce the change that triggers the next one, which is the same
+spin §3.3 records, reached by a different route.
+
+Fencing uses the row's existing mark rather than a second column. A
+`status_fence` would be more precise, needs a migration, and is not yet earning
+it: spec 036 §3.4 shows that one mark behaves correctly for both writers once an
+endpoint passes the fence it read. The subresource in §5 remains the answer for
+when two controllers contend for one status, and that has still not happened.

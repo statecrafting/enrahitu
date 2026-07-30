@@ -62,7 +62,8 @@ export async function fetchMe(): Promise<Me | null> {
   }
 }
 
-async function csrfToken(): Promise<string> {
+/** The double-submit token, shared with the membership client (spec 036). */
+export async function csrfToken(): Promise<string> {
   const { token } = await get<{ token: string }>("/api/v1/auth/csrf-token");
   return token;
 }

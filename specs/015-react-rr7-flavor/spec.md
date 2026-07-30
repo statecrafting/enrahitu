@@ -172,3 +172,36 @@ parse walk resolves one vite config instead of two, and the walk covers
 the whole app root regardless of `tsconfig` excludes, so the second flavor
 was parse cost on every build. And the application baseline (phase 5) gets
 written once.
+
+## Amendment (2026-07-30): the membership screens (spec 036)
+
+The SPA carries the product's own screens, and this is the first change that
+makes good on it. Phase 5's first domain (spec 036) adds four routes and the
+client behind them: the roster, one member's detail with their membership and
+dues, the outstanding-dues page with the treasurer's record-payment action, and
+`my membership` for a member's own record.
+
+Three things about the shape, because they are decisions rather than layout:
+
+**The membership client returns refusals rather than throwing.** This surface has
+three that a member of staff actually meets, and each deserves a sentence: 403
+when they are not one of the association's staff, 503 when the deployment has not
+applied its schema (spec 036 §3.6), and 404 when no member record is linked to
+their account. The auth loaders redirect to `/login` on refusal; these must not,
+because telling a signed-in operator that they are signed out is a worse answer
+than the true one.
+
+**No screen renews a membership and no screen raises an invoice.** The dues page
+records a payment against an invoice and stops there; the membership renews
+because the renewal controller notices (spec 036 §3.7). A renew button would be a
+second implementation of the association's policy, and the two would diverge on
+the first change to the grace period.
+
+**The state a row shows is the controller's finding, not a date comparison in the
+view.** `active`, `dues outstanding`, `lapsed` and `needs attention` are read from
+the stored status. A view that recomputed them would disagree with the ledger
+about when somebody lapsed, and the ledger is what the board minutes cite.
+
+The shell's tagline changes with it. It read "Encore.ts + rauthy + hiqlite (+
+Turso), one container", which named a stack that no longer exists (Turso is
+benched, spec 001 §4.7) to a reader who is running membership software.
