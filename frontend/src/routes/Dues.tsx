@@ -1,7 +1,14 @@
 import { Form, Link, useActionData, useLoaderData } from "react-router";
 
 import { InvoiceBadge, Refusal } from "../components";
-import { isFailure, money, type Failure, type InvoiceView, type Result } from "../lib/members";
+import {
+  isFailure,
+  money,
+  todayUtc,
+  type Failure,
+  type InvoiceView,
+  type Result,
+} from "../lib/members";
 
 /**
  * Every invoice the renewal controller has raised (spec 036 §3.8).
@@ -56,6 +63,15 @@ export default function Dues() {
                     <td>
                       <Form method="post">
                         <input type="hidden" name="invoice" value={invoice.name} />
+                        {/* Empty means today. A treasurer entering a cheque that
+                            arrived last week sets the day it arrived; the server
+                            refuses a future one. */}
+                        <input
+                          type="date"
+                          name="paidOn"
+                          max={todayUtc()}
+                          aria-label={`payment date for ${invoice.member}`}
+                        />
                         <button className="button primary" name="intent" value="pay" type="submit">
                           Record payment
                         </button>

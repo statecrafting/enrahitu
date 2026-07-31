@@ -12,13 +12,13 @@
  * is why this service declares its own state grants rather than calling through
  * the control plane's (spec 034 §2).
  */
-import { api, APIError } from "encore.dev/api";
+import { api, APIError, Query } from "encore.dev/api";
 import { getAuthData } from "~encore/auth";
 
 import { get, list, retract, setStatus } from "../control";
 import { operatorRole, requireRole } from "../lib/roles";
 
-import { today } from "./dates";
+import { resolvePaidOn, today } from "./dates";
 import { findLinkedMember } from "./identity";
 import {
   DUES_INVOICE,
@@ -486,25 +486,41 @@ export const listDues = api(
  * 036 §3.7). That indirection is the point: the renewal rule lives in one place
  * and every route into it converges through the same code.
  *
- * **It takes no parameters beyond the path, deliberately.** The obvious design
- * carries an optional `paidOn` so a treasurer can backdate, and that one
- * optional field makes the request body mandatory: a plain `POST .../paid` then
- * fails with "EOF while parsing a value at line 1 column 0", which is a terrible
- * answer to a correct request. Moving it to a query parameter parsed on the host
- * and failed in the container against the same toolchain version, so it is out
- * until backdating is asked for and can be given its own shape.
+ * **`paidOn` is a query parameter and not a body field**, which is forced rather
+ * than chosen. An optional field in the body makes the body mandatory: a plain
+ * `POST .../paid` then fails with "unable to decode request body: EOF while
+ * parsing a value at line 1 column 0", which is a terrible answer to a correct
+ * request. A query parameter leaves the bare POST answering 200 and carries the
+ * day when a treasurer sends one.
+ *
+ * An earlier revision recorded that the query-parameter form "parsed on the host
+ * and failed in the container". That was wrong, and spec 036 §3.9 records how
+ * the wrong conclusion was reached; both forms are asserted at both ends now.
+ * The body-field failure above is real and reproduces; the divergence did not.
+ *
+ * Backdating cannot move a term. The renewal rule reads only the invoice's state
+ * and its `periodEnd` (§3.7), so `paidOn` is a record of when money arrived and
+ * never an input to what it bought.
  */
+interface RecordPaymentReq {
+  name: string;
+  /** The day payment was received, when that was not today. A UTC calendar day. */
+  paidOn?: Query<string>;
+}
+
 export const recordPayment = api(
   { expose: true, auth: true, method: "POST", path: "/api/dues/:name/paid" },
-  async (req: ByName): Promise<InvoiceView> => {
+  async (req: RecordPaymentReq): Promise<InvoiceView> => {
     const actor = requireOperator();
     const tenant = tenantId();
+    const paidOn = resolvePaidOn(req.paidOn, today());
+    if (!paidOn.ok) throw APIError.invalidArgument(paidOn.problem);
     return guarded(async () => {
       const invoice = await get<DuesInvoiceSpec>(DUES_INVOICE, req.name, { tenant });
       if (!invoice) throw APIError.notFound(`no invoice '${req.name}'`);
       const status: InvoiceStatus = {
         state: "paid",
-        paidOn: today(),
+        paidOn: paidOn.day,
         recordedBy: actor,
       };
       const stored = await setStatus<DuesInvoiceSpec>(DUES_INVOICE, req.name, status, {

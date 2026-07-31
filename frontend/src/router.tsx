@@ -34,6 +34,18 @@ import Root from "./routes/Root";
 // one of the association's staff" and "this deployment has not applied its
 // schema yet" are different answers and bouncing both to /login would tell a
 // signed-in operator that they are signed out.
+/**
+ * The backdate field, or nothing at all.
+ *
+ * An untouched `<input type="date">` submits an empty string, and forwarding
+ * that would send `?paidOn=` and earn a 400 for the ordinary "paid today" case.
+ * Absent means today, and the server decides which day that is.
+ */
+function paidOnFrom(form: FormData): string | undefined {
+  const value = String(form.get("paidOn") ?? "").trim();
+  return value === "" ? undefined : value;
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -101,7 +113,10 @@ export const router = createBrowserRouter([
             });
             return isFailure(result) ? result : null;
           }
-          const result = await recordPayment(String(form.get("invoice") ?? ""));
+          const result = await recordPayment(
+            String(form.get("invoice") ?? ""),
+            paidOnFrom(form),
+          );
           return isFailure(result) ? result : null;
         },
         element: <MemberDetail />,
@@ -115,7 +130,7 @@ export const router = createBrowserRouter([
           const result =
             form.get("intent") === "void"
               ? await voidInvoice(invoice)
-              : await recordPayment(invoice);
+              : await recordPayment(invoice, paidOnFrom(form));
           return isFailure(result) ? result : null;
         },
         element: <Dues />,

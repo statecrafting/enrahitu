@@ -27,6 +27,36 @@ export function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+export type PaidOn = { ok: true; day: string } | { ok: false; problem: string };
+
+/**
+ * Resolve the day a payment was received (spec 036 §3.9).
+ *
+ * Absent, it is today. Present, it is a treasurer entering a cheque that arrived
+ * last week, and two days are refused: one that does not exist, and one in the
+ * future. A receipt dated forward records nothing that has happened, and the
+ * ordinary way to produce one is a typo in the year.
+ *
+ * `now` is an argument rather than a clock read so the default and the
+ * comparison cannot straddle midnight: read twice, a payment recorded at
+ * 23:59:59.999 could default to one day and then be refused for being after the
+ * next. It also makes every branch reachable in a test at the date that produces
+ * it.
+ *
+ * It answers rather than throwing, so this module keeps no dependency on the
+ * edge's error vocabulary; the endpoint turns a refusal into a 400.
+ */
+export function resolvePaidOn(provided: string | undefined, now: string): PaidOn {
+  if (provided === undefined) return { ok: true, day: now };
+  if (!isDay(provided)) {
+    return { ok: false, problem: `paidOn '${provided}' is not a calendar day (YYYY-MM-DD)` };
+  }
+  if (provided > now) {
+    return { ok: false, problem: `paidOn '${provided}' is in the future; today is ${now}` };
+  }
+  return { ok: true, day: provided };
+}
+
 export function addDays(day: string, count: number): string {
   const date = new Date(`${day}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + count);

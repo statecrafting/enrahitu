@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { addDays, addPeriod, isDay, today } from "./dates";
+import { addDays, addPeriod, isDay, resolvePaidOn, today } from "./dates";
 import { findLinkedMember } from "./identity";
 import type { DuesInvoiceSpec, MemberSpec, MembershipSpec, TierSpec } from "./kinds";
 import { evaluate, invoiceNameFor } from "./renewal";
@@ -183,6 +183,42 @@ describe("calendar arithmetic (spec 036 §3.7)", () => {
   it("clamps a leap-day annual term to February 28th in a common year", () => {
     expect(addPeriod("2028-02-29", "annual")).toBe("2029-02-28");
     expect(addPeriod("2026-06-30", "annual")).toBe("2027-06-30");
+  });
+});
+
+describe("the payment date (spec 036 §3.9)", () => {
+  const now = "2026-07-31";
+
+  it("defaults to today when the treasurer sends nothing", () => {
+    expect(resolvePaidOn(undefined, now)).toEqual({ ok: true, day: now });
+  });
+
+  it("accepts a backdated day, which is the whole point", () => {
+    expect(resolvePaidOn("2026-07-01", now)).toEqual({ ok: true, day: "2026-07-01" });
+    // The boundary: today itself is not the future.
+    expect(resolvePaidOn(now, now)).toEqual({ ok: true, day: now });
+  });
+
+  it("refuses a day that does not exist, naming the field", () => {
+    for (const bad of ["2026-02-30", "2026-13-01", "2026-7-1", "yesterday", ""]) {
+      const answer = resolvePaidOn(bad, now);
+      expect(answer.ok).toBe(false);
+      expect(answer.ok === false && answer.problem).toContain("paidOn");
+    }
+  });
+
+  it("refuses a future day, because a receipt records what happened", () => {
+    // The failure this prevents is a typo in the year, which is how a payment
+    // ends up dated 2027 and sorts to the top of every report thereafter.
+    const answer = resolvePaidOn("2027-07-01", now);
+    expect(answer.ok).toBe(false);
+    expect(answer.ok === false && answer.problem).toContain("in the future");
+  });
+
+  it("takes the day as an argument so the default cannot straddle midnight", () => {
+    // Read from the clock twice, a payment recorded at 23:59:59.999 could default
+    // to one day and then be refused for being after the next.
+    expect(resolvePaidOn(undefined, "2026-12-31")).toEqual({ ok: true, day: "2026-12-31" });
   });
 });
 
