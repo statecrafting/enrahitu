@@ -195,11 +195,34 @@ export const putMembership = (
 ): Promise<Result<MembershipView>> =>
   write<MembershipView>(`/api/memberships/${encodeURIComponent(name)}`, "PUT", input);
 
-export const recordPayment = (name: string): Promise<Result<InvoiceView>> =>
-  write<InvoiceView>(`/api/dues/${encodeURIComponent(name)}/paid`, "POST");
+/**
+ * Record a payment, optionally on the day it actually arrived.
+ *
+ * `paidOn` rides the query string rather than a body, and that is the server's
+ * constraint rather than a preference here: an optional body field would make
+ * the body mandatory and break the bare "paid today" call, which is the common
+ * one. Omitted, the server dates it today.
+ */
+export const recordPayment = (name: string, paidOn?: string): Promise<Result<InvoiceView>> =>
+  write<InvoiceView>(
+    `/api/dues/${encodeURIComponent(name)}/paid` +
+      (paidOn ? `?paidOn=${encodeURIComponent(paidOn)}` : ""),
+    "POST",
+  );
 
 export const voidInvoice = (name: string): Promise<Result<InvoiceView>> =>
   write<InvoiceView>(`/api/dues/${encodeURIComponent(name)}/void`, "POST");
+
+/**
+ * Today as the server reckons it, which is UTC.
+ *
+ * Used as the date picker's ceiling. The browser's own local day is the wrong
+ * bound: east of UTC it can be a day ahead, and the picker would then offer a
+ * day the server refuses as future.
+ */
+export function todayUtc(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 /** Cents as the association would write it on a notice. */
 export function money(cents: number): string {

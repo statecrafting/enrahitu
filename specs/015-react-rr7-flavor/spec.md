@@ -205,3 +205,29 @@ about when somebody lapsed, and the ledger is what the board minutes cite.
 The shell's tagline changes with it. It read "Encore.ts + rauthy + hiqlite (+
 Turso), one container", which named a stack that no longer exists (Turso is
 benched, spec 001 §4.7) to a reader who is running membership software.
+
+## Amendment (2026-07-31): the payment date (spec 036 §3.9)
+
+The record-payment action gains an optional date, because dues arrive by cheque
+and get entered on the day somebody opens the envelope. Three decisions, none of
+them layout:
+
+**Empty means today, and empty is never sent.** An untouched `<input type="date">`
+submits an empty string, and forwarding it would put `?paidOn=` on the wire and
+earn a 400 for the ordinary case. The client drops an empty value entirely and
+lets the server decide which day today is, which is also the only way the two
+agree at a midnight boundary.
+
+**The picker's ceiling is UTC today, not the browser's local day.** The server
+refuses a future day, and it reckons days in UTC (spec 036 §3.7). East of UTC the
+browser's local date can be a day ahead, so a picker bounded by it would offer a
+day the server then refuses, which reads as a bug in the form.
+
+**The field sits inline on the row rather than behind a dialog.** The common case
+is payment received today, and it stays one click; backdating costs one more
+interaction and no navigation. A dialog would price the common case at the rate
+of the rare one.
+
+The refusal still renders as a sentence through the same path as the rest of this
+surface: an invalid date is a 400 the action returns rather than throws, so the
+treasurer sees which field is wrong without losing the page.

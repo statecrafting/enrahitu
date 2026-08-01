@@ -323,6 +323,52 @@ an authenticated session and answers strictly about the caller: it resolves the
 membership and outstanding dues. It takes no name parameter, so there is no
 version of it that reads somebody else's record.
 
+### 3.9 Backdating a payment, and a divergence that was not one
+
+A treasurer records a cheque that arrived last week. `POST /api/dues/:name/paid`
+therefore takes an optional `paidOn`, and where that field rides is forced by
+the toolchain rather than chosen:
+
+- **In the body it would not work.** One optional body field makes the body
+  mandatory, so a bare `POST .../paid` (the common case, "paid today") answers
+  400 `unable to decode request body: EOF while parsing a value at line 1
+  column 0`. That is a terrible answer to a correct request.
+- **In the query string it works.** The bare POST answers 200 and the value
+  arrives when one is sent.
+
+The first revision of this domain recorded that the query-string form "parsed on
+the host and failed in the container against the same toolchain version", and
+shipped the endpoint with no backdating at all on that basis. **The divergence
+does not exist.** At the same toolchain version (0.4.0, unchanged since spec 032
+landed and therefore unchanged across the whole life of this domain), the
+container parses the query parameter, builds it into the same 24623-byte
+metadata the host produces, and decodes it correctly at runtime on the
+linux-arm64 runtime binary, both present and absent.
+
+Recording why the wrong conclusion was reached is the point of this section,
+because the same trap is still available. The container was observed to reject
+the endpoint during the window when the dev loop had the two defects spec 033
+later fixed: a failed parse left the watcher believing a build was still running,
+so it stopped rebuilding and went on serving the previous bundle, and every
+restart left a stale state-machine lock that made the restarted app answer 500
+on `/readyz`. Both present as "the host is fine and the container is broken," and
+neither has anything to do with the code being edited. **A host/container
+divergence claimed while the dev loop is unsound is a claim about the dev loop.**
+The general form: an observation whose mechanism cannot be named is a symptom,
+and writing it into a spec as a constraint gives it an authority the evidence
+never had.
+
+The rule itself is small and lives as a pure function so its branches are
+reachable without a node. Absent, the day is today. Present, it must be a day
+that exists and must not be in the future, refused naming the field: a receipt
+dated forward records nothing that happened, and the ordinary way to produce one
+is a typo in the year. The clock is read once and passed in, so the default and
+the comparison cannot straddle midnight.
+
+Backdating cannot move a term. §3.7's rule reads the invoice's state and its
+`periodEnd` and never `paidOn`, so the day money arrived is bookkeeping and never
+an input to what it bought.
+
 ## 4. Acceptance
 
 1. The tenant resolves from `ENRAHITU_TENANT`, refuses to resolve in production
@@ -354,9 +400,14 @@ version of it that reads somebody else's record.
     pass reads or writes the other's rows. This is asserted rather than assumed
     because the change feed carries no tenant predicate (§3.2).
 
-All thirteen are asserted in `backend/members/members.test.ts` against a booted
-node, except the pure renewal rule, which is asserted directly in
-`backend/members/renewal.test.ts` at every branch of §3.7's table.
+14. A payment records today when no day is sent, records the day sent when one
+    is, and refuses both a day that does not exist and a day in the future,
+    naming the field (§3.9).
+
+All fourteen are asserted in `backend/members/members.test.ts` against a booted
+node, except the pure renewal rule and the payment-date rule, which are asserted
+directly in `backend/members/renewal.test.ts` at every branch of §3.7's table
+and §3.9's.
 
 ## 5. Out of scope
 

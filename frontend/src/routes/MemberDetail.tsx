@@ -4,6 +4,7 @@ import { InvoiceBadge, Refusal, StateBadge } from "../components";
 import {
   isFailure,
   money,
+  todayUtc,
   type Failure,
   type MemberDetail as Detail,
   type Result,
@@ -148,6 +149,13 @@ export default function MemberDetail() {
                       <Form method="post">
                         <input type="hidden" name="intent" value="pay" />
                         <input type="hidden" name="invoice" value={invoice.name} />
+                        {/* Empty means today (spec 036 §3.9). */}
+                        <input
+                          type="date"
+                          name="paidOn"
+                          max={todayUtc()}
+                          aria-label="payment date"
+                        />
                         <button className="button" type="submit">
                           Record payment
                         </button>
