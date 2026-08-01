@@ -392,3 +392,43 @@ process, and because nothing releases that lock, every rebuild left the store
 unopenable; the domain then answered 503 while `/healthz` stayed green. A
 developer editing code therefore saw two unrelated-looking failures at once, one
 of which made the other harder to see.
+
+## Amendment (2026-08-01): a mail catcher in the topology (spec 026)
+
+`docker/compose.yml` gains a second service. It is the first thing in this
+topology that is not the application, so the reason is worth recording rather
+than being inferred from a diff.
+
+The IdP sends mail: password reset, email verification, registration,
+invitation. Spec 026 owns that surface and had to concede that its delivery path
+was unverifiable, because a live SMTP server is external state and neither CI nor
+a laptop has one. A mail catcher converts that external state into internal
+state, which is the same move this spec made for the whole dev loop: the reason
+`npm run dev` was retired is that anything only reproducible on CI is a defect
+you meet late.
+
+**Mailpit**, on the compose network, SMTP on 1025 and a web UI on 8025. The app
+service points spec 026's own `ENRAHITU_SMTP_*` variables at it, so the code path
+under test is the production one and only the relay differs. Three properties
+decided it over MailHog (unmaintained), Maildev, and Inbucket: a single static
+binary, which is the shape this topology already uses for rauthy; MIT licensing,
+which clears the permissive posture of spec 001 §4.7; and a REST API, so a test
+can assert on what was delivered rather than a human reading a UI.
+
+Two things it deliberately is not:
+
+- **Not in any other topology.** It appears in the dev compose file and nowhere
+  else. The packaged image takes a real relay through the same variables, and
+  §3.3's tiering already establishes that the tiers differ in configuration
+  rather than in shape.
+- **Not a stored inbox.** Messages are held in memory and capped. A dev mail
+  catcher that accumulates a volume is a dev mail catcher somebody eventually
+  has to garbage-collect, and nothing here is worth keeping across a restart.
+
+One consequence for anyone changing `docker/entrypoint.sh` or
+`docker/first-boot.mjs`: both are COPIED into the dev image rather than read
+from the mount (`docker/Dockerfile.dev`), deliberately, so a container still
+boots when the working tree is mid-edit. The watch loop therefore does not pick
+them up, and a change to either needs `docker compose up -d --build`. This cost
+a confusing round trip while building spec 026 and is recorded so it costs the
+next person none.

@@ -42,6 +42,56 @@ node /enrahitu/first-boot.mjs
 # shellcheck disable=SC1091
 . "$DATA/restore.env"
 
+# Ambient mail configuration is removed before anything starts (spec 026 §3.1).
+#
+# The prefix alone does not deliver what §3.1 claims for it. Mapping
+# ENRAHITU_SMTP_* onto SMTP_* stops an ambient variable being mapped, and does
+# nothing at all about it being INHERITED: rauthy reads SMTP_URL from its
+# environment either way, so an orchestrator that exports a shared SMTP_* for
+# some other workload would silently configure this IdP's mail path with nobody
+# having asked. Scrubbing first is what makes ENRAHITU_SMTP_* the only surface
+# that can configure mail here.
+#
+# It runs at top level rather than in the rauthy subshell so the app process is
+# covered too: an ambient SMTP_PASSWORD is a credential, and the app has no more
+# business holding one it inherited than one we handed it.
+scrub_smtp_env() {
+  local name
+  for name in ${!SMTP_*}; do
+    unset "$name"
+  done
+}
+
+# Mail passthrough (spec 026 §3.1): ENRAHITU_SMTP_* into rauthy's own SMTP_*.
+#
+# Called from inside the rauthy subshell, which is the whole point of it being
+# a function rather than inline exports: mail credentials must not enter the app
+# process environment, and ENRAHITU_SMTP_PASSWORD is a secret the app has no
+# business holding.
+#
+# Only variables that are SET are exported. An unset one is not exported as
+# empty, because rauthy distinguishes absent from empty for several of these:
+# an empty SMTP_URL is a configured-but-blank relay rather than an unconfigured
+# one, and the two behave differently.
+#
+# The ENRAHITU_ prefix is load bearing beyond consistency. Without it an ambient
+# SMTP_* in the host or orchestrator environment would silently reconfigure the
+# IdP's mail path with nobody having asked for it.
+#
+# Every rauthy name is `SMTP_` plus the same suffix, so this loops over suffixes
+# rather than listing pairs. A table of pairs is a table that can drift.
+export_smtp_env() {
+  local suffix src
+  for suffix in URL PORT USERNAME PASSWORD FROM STARTTLS_ONLY CONNECT_RETRIES DANGER_INSECURE; do
+    src="ENRAHITU_SMTP_$suffix"
+    if [ -n "${!src+set}" ]; then
+      export "SMTP_$suffix=${!src}"
+    fi
+  done
+}
+
+scrub_smtp_env
+
 proto="${PUBLIC_URL%%://*}"
 hostport="${PUBLIC_URL#*://}"
 hostport="${hostport%%/*}"
@@ -79,6 +129,7 @@ host="${hostport%%:*}"
   export BOOTSTRAP_ADMIN_EMAIL="${ENRAHITU_ADMIN_EMAIL:-admin@example.com}"
   BOOTSTRAP_ADMIN_PASSWORD_PLAIN="$(cat "$DATA/rauthy/admin-password")"
   export BOOTSTRAP_ADMIN_PASSWORD_PLAIN
+  export_smtp_env
   cd /rauthy
   exec ./rauthy serve
 ) &

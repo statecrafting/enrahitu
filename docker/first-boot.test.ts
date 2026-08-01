@@ -160,3 +160,28 @@ describe("first-boot: restore is single-shot", () => {
     expect(marker().backup).toBe("s3:backup-2026-07-01");
   });
 });
+
+describe("first-boot: the mail notice (spec 026 §3.2)", () => {
+  it("names what is inert when no relay is configured", () => {
+    // The failure this prevents is a silent one: rauthy treats mail as optional
+    // and degrades quietly, so without this line the first sign that delivery
+    // was never configured is a locked-out admin who cannot reset a password.
+    const out = runFirstBoot({ ENRAHITU_SMTP_URL: "" });
+    expect(out).toContain("no ENRAHITU_SMTP_URL");
+    for (const flow of ["password reset", "email verification", "registration", "invitation"]) {
+      expect(out).toContain(flow);
+    }
+  });
+
+  it("says nothing once a relay is configured", () => {
+    const out = runFirstBoot({ ENRAHITU_SMTP_URL: "smtp.example.com" });
+    expect(out).not.toContain("no ENRAHITU_SMTP_URL");
+  });
+
+  it("is a notice, not a failure: the container still provisions and boots", () => {
+    // A local trial of the packaged image must keep working with no mail server.
+    const out = runFirstBoot({ ENRAHITU_SMTP_URL: "" });
+    expect(out).toContain("[first-boot] ready");
+    expect(readFileSync(join(data, "keys", "metrics-token"), "utf8")).toHaveLength(48);
+  });
+});

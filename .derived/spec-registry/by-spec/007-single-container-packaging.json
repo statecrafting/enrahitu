@@ -54,13 +54,14 @@
       "Amendment (2026-07-25): container stop must reach the supervised processes",
       "Amendment (2026-07-25b): a health check, and a provisioned metrics token (spec 025)",
       "Amendment (2026-07-29): the image worktree prunes one SPA directory",
-      "Amendment (2026-07-29): the dev branch and the restore marker (spec 033)"
+      "Amendment (2026-07-29): the dev branch and the restore marker (spec 033)",
+      "Amendment (2026-08-01): the entrypoint scrubs before it maps (spec 026)"
     ],
     "specPath": "specs/007-single-container-packaging/spec.md",
     "status": "approved",
     "summary": "The deliverable image: one container running rauthy (loopback :8081) and the Encore app (:8080) under a die-together entrypoint, all durable state on a single /data volume, every secret self-provisioned at first boot. scripts/docker-build.sh builds from a clean git worktree of HEAD, injects the cross-built addon, the built SPA, and production node_modules, runs `encore build docker`, asserts the base-image entrypoint, and layers rauthy + the entrypoint on top.\n",
     "title": "Single-container packaging: app + rauthy in one image"
   },
-  "shardHash": "868909fec3a7db9563a570325b44eff1b840154f0f259f8c81bb10d5174e8b5a",
+  "shardHash": "964d021c52450de65516d0414f7d094c9ce25c98006b0ad3e70cb11d8b02507f",
   "specVersion": "1.1.0"
 }

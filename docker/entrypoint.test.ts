@@ -10,7 +10,7 @@
  * shipped script and exercised against stub children here: the test breaks if
  * someone edits the function, not if someone edits a copy of it.
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -137,4 +137,125 @@ describe("entrypoint shutdown", () => {
     expect(log).not.toContain("app-term");
     expect(code).toBe(0);
   }, 15_000);
+});
+
+/**
+ * The mail passthrough (spec 026 §3.1, §4 items 1 and 2).
+ *
+ * Lifted out of the shipped script for the same reason `shutdown` is: the
+ * assertion has to break when someone edits the entrypoint, not when someone
+ * edits a copy of it. What is verified here is the mapping, because that is
+ * where the defect would be. Delivery itself needs a relay and is exercised in
+ * the dev topology against Mailpit (§3.3), not here.
+ */
+function bashFunction(script: string, name: string): string {
+  const start = script.indexOf(`${name}() {`);
+  if (start === -1) throw new Error(`entrypoint.sh no longer defines ${name}()`);
+  const end = script.indexOf("\n}\n", start);
+  if (end === -1) throw new Error(`${name}() is not closed at column 0`);
+  return script.slice(start, end + 3);
+}
+
+/**
+ * Call the real function inside a subshell, exactly as the entrypoint does, and
+ * report the environment on both sides of that boundary.
+ */
+function runSmtp(env: Record<string, string>): { inner: string[]; outer: string[] } {
+  const script = readFileSync(ENTRYPOINT, "utf8");
+  const harness = join(dir, "smtp.sh");
+  writeFileSync(
+    harness,
+    [
+      "#!/bin/bash",
+      "set -euo pipefail",
+      bashFunction(script, "scrub_smtp_env"),
+      bashFunction(script, "export_smtp_env"),
+      // Both in the order the entrypoint runs them: scrub at top level, map
+      // inside the subshell that becomes rauthy's environment.
+      "scrub_smtp_env",
+      '( export_smtp_env; env | grep "^SMTP_" | sort | sed "s/^/inner /" ) || true',
+      // Back outside it is the app process's environment, which must be clean.
+      'env | grep "^SMTP_" | sort | sed "s/^/outer /" || true',
+      "",
+    ].join("\n"),
+    { mode: 0o755 },
+  );
+  const out = spawnSync("bash", [harness], { env: { ...process.env, ...env }, encoding: "utf8" });
+  const lines = out.stdout.trim().split("\n").filter(Boolean);
+  return {
+    inner: lines.filter((l) => l.startsWith("inner ")).map((l) => l.slice(6)),
+    outer: lines.filter((l) => l.startsWith("outer ")).map((l) => l.slice(6)),
+  };
+}
+
+describe("entrypoint mail passthrough (spec 026)", () => {
+  it("maps every documented variable into its rauthy name", () => {
+    const { inner } = runSmtp({
+      ENRAHITU_SMTP_URL: "smtp.example.com",
+      ENRAHITU_SMTP_PORT: "587",
+      ENRAHITU_SMTP_USERNAME: "postmaster",
+      ENRAHITU_SMTP_PASSWORD: "hunter2",
+      ENRAHITU_SMTP_FROM: "Example Society <noreply@example.org>",
+      ENRAHITU_SMTP_STARTTLS_ONLY: "true",
+      ENRAHITU_SMTP_CONNECT_RETRIES: "3",
+      ENRAHITU_SMTP_DANGER_INSECURE: "false",
+    });
+    expect(inner).toEqual([
+      "SMTP_CONNECT_RETRIES=3",
+      "SMTP_DANGER_INSECURE=false",
+      "SMTP_FROM=Example Society <noreply@example.org>",
+      "SMTP_PASSWORD=hunter2",
+      "SMTP_PORT=587",
+      "SMTP_STARTTLS_ONLY=true",
+      "SMTP_URL=smtp.example.com",
+      "SMTP_USERNAME=postmaster",
+    ]);
+  });
+
+  it("leaves an unset variable absent rather than empty", () => {
+    // rauthy distinguishes the two for several of these, so exporting an unset
+    // variable as "" would configure a blank relay rather than no relay.
+    const { inner } = runSmtp({ ENRAHITU_SMTP_URL: "smtp.example.com" });
+    expect(inner).toEqual(["SMTP_URL=smtp.example.com"]);
+    expect(inner.some((l) => l.startsWith("SMTP_PASSWORD"))).toBe(false);
+  });
+
+  it("keeps mail credentials out of the app process environment", () => {
+    // The subshell is the only reason this holds, and it is the reason the
+    // mapping is a function called there rather than exports at top level.
+    const { outer } = runSmtp({
+      ENRAHITU_SMTP_URL: "smtp.example.com",
+      ENRAHITU_SMTP_PASSWORD: "hunter2",
+    });
+    expect(outer).toEqual([]);
+  });
+
+  it("removes an ambient SMTP_* that no operator asked for", () => {
+    // Mapping alone does not achieve this. rauthy reads SMTP_URL from its
+    // environment whether we set it or it was merely inherited, so without the
+    // scrub an orchestrator exporting a shared SMTP_* for some other workload
+    // silently configures this IdP's mail path.
+    const { inner, outer } = runSmtp({ SMTP_URL: "relay.somebody-elses.example" });
+    expect(inner).toEqual([]);
+    expect(outer).toEqual([]);
+  });
+
+  it("lets ENRAHITU_SMTP_* win over an ambient value of the same setting", () => {
+    const { inner } = runSmtp({
+      SMTP_URL: "relay.somebody-elses.example",
+      ENRAHITU_SMTP_URL: "smtp.example.com",
+    });
+    expect(inner).toEqual(["SMTP_URL=smtp.example.com"]);
+  });
+
+  it("scrubs before the app starts, and maps only inside the rauthy subshell", () => {
+    // Placement is the whole guarantee: mapping at top level would hand the app
+    // process the IdP's mail credentials.
+    const script = readFileSync(ENTRYPOINT, "utf8");
+    expect(script.match(/^\s*export_smtp_env$/gm) ?? []).toHaveLength(1);
+    expect(script.match(/^scrub_smtp_env$/gm) ?? []).toHaveLength(1);
+    expect(script.indexOf("\nscrub_smtp_env\n")).toBeLessThan(
+      script.indexOf("  export_smtp_env\n"),
+    );
+  });
 });

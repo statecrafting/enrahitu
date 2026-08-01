@@ -319,3 +319,31 @@ before starting either process (the same handshake as `secrets.env`, because
 a separate process cannot unset a variable in the entrypoint's shell). A
 different identifier is a new restore and is honoured. The operator sets the
 variable once and may leave it set forever.
+
+## Amendment (2026-08-01): the entrypoint scrubs before it maps (spec 026)
+
+Spec 026 owns the IdP's mail surface and the reasoning behind it. What belongs
+here is the change to this entrypoint's environment discipline, because that
+discipline is this spec's concern: which variables reach which of the two
+supervised processes.
+
+Two functions, and their placement is the whole guarantee:
+
+- `export_smtp_env` maps `ENRAHITU_SMTP_*` onto rauthy's own `SMTP_*` names and
+  is called **inside the rauthy subshell**, so mail credentials never enter the
+  app process. It is a function rather than inline exports for exactly that
+  reason. Only variables that are set are exported, because rauthy distinguishes
+  absent from empty for several of them.
+- `scrub_smtp_env` removes any `SMTP_*` already in the container's environment
+  and is called **at top level**, before either process starts. This one is not
+  about mail configuration at all, which is why it is worth stating in this
+  spec: an inherited `SMTP_PASSWORD` is a credential the app process would
+  otherwise hold, and this entrypoint's job is that nothing reaches a process
+  that has no business with it. That an `ENRAHITU_`-prefixed surface cannot by
+  itself prevent an unprefixed ambient variable from being inherited is the
+  general lesson; spec 026 §3.1 carries it.
+
+`docker/first-boot.mjs` gains one notice when no relay is configured, naming
+what is inert. It is a notice and not a failure: a local trial of the packaged
+image must keep working with no mail server, and `ENRAHITU_REQUIRED_ENV` (this
+spec's own amendment of 2026-07-23) is how a fleet makes it mandatory instead.

@@ -447,3 +447,15 @@ covered: material is written once, so a restart or upgrade never rotates a
 token an operator has already configured a scraper against. The restore guard
 is spec 033's behavior; it lives in this file because the file is the
 first-boot suite, not because it is this spec's concern.
+
+## Amendment (2026-08-01): first-boot's test harness widens again (spec 026)
+
+`docker/first-boot.test.ts` gains three assertions covering spec 026's mail
+notice: that it names every inert flow when no relay is configured, that it
+stays quiet once one is, and that it remains a notice rather than a failure, so
+the container still provisions and still reaches ready.
+
+Recorded for the same reason as the 2026-07-29 amendment above, and with the
+same boundary. The provisioning properties this spec cares about are unchanged
+and still covered. The mail notice is spec 026's behavior; it lives in this file
+because the file is the first-boot suite, not because it is this spec's concern.

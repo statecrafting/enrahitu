@@ -3,7 +3,8 @@
     "created": "2026-07-25",
     "dependsOn": [
       "005-rauthy-same-origin",
-      "007-single-container-packaging"
+      "007-single-container-packaging",
+      "033-dev-substrate"
     ],
     "establishes": [
       {
@@ -12,7 +13,7 @@
       }
     ],
     "id": "026-idp-mail-delivery",
-    "implementation": "pending",
+    "implementation": "complete",
     "sectionHeadings": [
       "026: IdP mail delivery",
       "1. Purpose",
@@ -20,7 +21,7 @@
       "3. Behavior",
       "3.1 The passthrough",
       "3.2 The unconfigured case, stated rather than silent",
-      "3.3 Verification",
+      "3.3 Verification, and the mail catcher that makes it possible",
       "4. Acceptance",
       "5. Out of scope"
     ],
@@ -29,6 +30,6 @@
     "summary": "rauthy ships inside the image with exactly one bootstrapped admin and no mail configuration anywhere: not in docker/rauthy/config.prod.toml, not in the entrypoint's rauthy subshell, not in first-boot. Password reset, email verification, user registration, and invitation are therefore all silently inert. For a template whose stated deliverable is a complete authenticated application, the first user works and the second cannot be onboarded. This spec passes an ENRAHITU_SMTP_* operator surface through the entrypoint into rauthy's SMTP_* variables, scoped to the rauthy subshell so nothing leaks into the app process, and converts the unconfigured case from silent breakage into a stated limitation logged at boot.\n",
     "title": "IdP mail delivery: the second user"
   },
-  "shardHash": "394de8ae91707b15e744945820e41659db0e4faca55c852c81561300837e8248",
+  "shardHash": "b9bc16fe96e09b1e6e6a7e9e01a08b1c71220e564eef5e561eebd0eb53f42272",
   "specVersion": "1.1.0"
 }
