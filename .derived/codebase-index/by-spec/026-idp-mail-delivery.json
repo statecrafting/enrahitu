@@ -1,23 +1,23 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '026-idp-mail-delivery' file unit 'docker/smtp.env.example' does not exist",
-        "path": "docker/smtp.env.example"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "005-rauthy-same-origin",
-      "007-single-container-packaging"
+      "007-single-container-packaging",
+      "033-dev-substrate"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "docker/smtp.env.example",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "docker/smtp.env.example"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -30,5 +30,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "ff072c99dca6c0add9089cf71122158397a006652983b22f61b2c3cc56a27566"
+  "shardHash": "0dc12f43cab57b5864349cdb352841ce1073adf441b7d7211d598ff7b93e97e3"
 }

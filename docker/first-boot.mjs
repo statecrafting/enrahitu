@@ -206,4 +206,25 @@ if (restoreRequest) {
   writeFileSync(restoreEnvPath, "unset HQL_BACKUP_RESTORE\n", { mode: 0o600 });
 }
 
+// --- mail, stated rather than silent (spec 026 §3.2) ------------------------
+//
+// rauthy treats mail as optional and degrades quietly, so nothing fails loudly
+// and every flow that depends on delivery becomes a dead end at the moment a
+// user needs it most: a forgotten password on the one account this file
+// bootstrapped, a new user who can never verify an address, an operator who
+// cannot invite a colleague.
+//
+// This is a notice and not a failure. A local trial of the packaged image must
+// keep working with no mail server. A fleet that wants SMTP to be mandatory has
+// ENRAHITU_REQUIRED_ENV (spec 007) already: adding ENRAHITU_SMTP_URL to it turns
+// this notice into a hard pre-flight failure without this file deciding the
+// policy for everyone.
+if (!process.env.ENRAHITU_SMTP_URL) {
+  console.log(
+    "[first-boot] no ENRAHITU_SMTP_URL: password reset, email verification,\n" +
+      "             registration, and invitation will not deliver. The\n" +
+      "             bootstrapped admin is the only usable account.",
+  );
+}
+
 console.log("[first-boot] ready");

@@ -49,13 +49,14 @@
       "4. Acceptance",
       "5. Status",
       "6. Out of scope",
-      "Amendment (2026-07-30): the watch loop stops going deaf"
+      "Amendment (2026-07-30): the watch loop stops going deaf",
+      "Amendment (2026-08-01): a mail catcher in the topology (spec 026)"
     ],
     "specPath": "specs/033-dev-substrate/spec.md",
     "status": "approved",
     "summary": "Phase 1b of the pivot (spec 001 §5.1). Development becomes docker-only, and the N=1 dev topology becomes the N=1 deployment topology rather than a parallel arrangement that resembles it. Five parts: a tiered compose topology whose default tier is one container and one volume; a single generator for infra.config.<topology>.json, replacing hand-maintained twins; a backend watch loop, which the toolchain's dev runner has never had; the app-level test harness, which boots the real compiled bundle and talks to it over HTTP; and the single-shot restore marker that makes HQL_BACKUP_RESTORE safe in a container with a restart policy. The harness landed first because it is what closes spec 025 and what specs 026, 027, and the control plane all build on. Between them the harness and a real boot of the topology found five defects nothing else in the repo could see, which is the case for verifying this by running it rather than by reading it.\n",
     "title": "The dev substrate: docker-only development and the app-level harness"
   },
-  "shardHash": "4e3be39162b8f1586a29b71f66b2933dff6e691521374392c71ee0d53903a4ec",
+  "shardHash": "86e0b38007187ed7f8575c7a5195056a8116fc253db6aa01521b1a6872b82937",
   "specVersion": "1.1.0"
 }

@@ -3,10 +3,11 @@ id: "026-idp-mail-delivery"
 title: "IdP mail delivery: the second user"
 status: approved
 created: "2026-07-25"
-implementation: pending
+implementation: complete
 depends_on:
   - "005-rauthy-same-origin"
   - "007-single-container-packaging"
+  - "033-dev-substrate"
 establishes:
   - "docker/smtp.env.example"
 summary: >
@@ -92,9 +93,22 @@ Only variables that are set are exported. An unset variable is not
 exported as empty, because rauthy distinguishes absent from empty for
 several of these.
 
-The prefix is load bearing beyond consistency: it prevents an ambient
-`SMTP_*` in the host or orchestrator environment from silently
-reconfiguring the IdP's mail path without an operator having said so.
+The prefix is load bearing beyond consistency, and **the mapping alone
+does not deliver what it is for.** The intent is that an ambient `SMTP_*`
+in the host or orchestrator environment cannot silently reconfigure the
+IdP's mail path without an operator having said so. Mapping
+`ENRAHITU_SMTP_*` onto `SMTP_*` stops an ambient variable being *mapped*
+and does nothing whatever about it being *inherited*: rauthy reads
+`SMTP_URL` from its environment either way, so an orchestrator exporting
+a shared `SMTP_*` for some other workload would configure this IdP's mail
+exactly as before.
+
+So the entrypoint **scrubs `SMTP_*` before either process starts**, and
+only then maps. That is what makes `ENRAHITU_SMTP_*` the sole surface
+that can configure mail here. The scrub runs at top level rather than in
+the rauthy subshell so the application process is covered too: an ambient
+`SMTP_PASSWORD` is a credential, and the app has no more business holding
+one it inherited than one this spec handed it.
 
 `ENRAHITU_SMTP_PASSWORD` is a secret and is named in the operational
 documentation (spec 028) as one, alongside the existing rule that
@@ -119,16 +133,48 @@ mandatory for its own deployments: adding `ENRAHITU_SMTP_URL` to that
 list turns the notice into a hard precondition without this spec
 deciding the policy.
 
-### 3.3 Verification
+### 3.3 Verification, and the mail catcher that makes it possible
 
-The delivery path is not exercised by CI: a live SMTP server is
-external state, and spec 017 already established that IdP flows needing
-real infrastructure are gated rather than universal. What is verified
-here is the mapping, which is where the defect would be: the entrypoint
-harness (`docker/entrypoint.test.ts`) asserts that a set
-`ENRAHITU_SMTP_*` variable reaches the rauthy process environment under
-its rauthy name, that an unset one is absent rather than empty, and
-that no `SMTP_*` variable appears in the app process environment.
+The first version of this section conceded that "the delivery path is not
+exercised by CI: a live SMTP server is external state." That concession
+was avoidable. **A mail catcher makes the external state internal**, and
+the dev topology (spec 033) gains one.
+
+`docker/compose.yml` runs Mailpit alongside the app: MIT-licensed, a
+single static binary, an SMTP sink on 1025 and a web UI on 8025 that a
+developer reads like an inbox. It is chosen over MailHog (unmaintained),
+Maildev, and Inbucket because it is the only one that is both a static
+binary and carries a REST API, and the API is the half that matters here:
+an automated test can fetch what was delivered instead of a human
+squinting at a UI. The app service points the same `ENRAHITU_SMTP_*`
+surface at it, which is the property worth having: **dev and production
+differ in which relay is configured, not in whether the code path runs.**
+
+Two layers, because they fail differently:
+
+- **The mapping**, in `docker/entrypoint.test.ts`, which is where a defect
+  would actually be. A set variable reaches the rauthy environment under
+  its rauthy name; an unset one is absent rather than empty; an ambient
+  `SMTP_*` is removed rather than honoured; and no `SMTP_*` reaches the
+  app process. The assertions lift the real functions out of the shipped
+  script, so they break when someone edits the entrypoint rather than
+  when someone edits a copy of it. `docker/first-boot.test.ts` covers the
+  section 3.2 notice on both sides of the condition.
+- **Delivery**, in the running topology. A password reset requested
+  through the app's own origin arrives in Mailpit, addressed from the
+  configured `ENRAHITU_SMTP_FROM` rather than a rauthy default, carrying
+  a reset link on the app's origin. That last detail is worth stating:
+  spec 005's same-origin invariant holds through the mail path as well,
+  which nothing previously checked.
+
+What is still not automated is a browser following that link to a
+completed password change. The pieces now exist for it (spec 017's
+Playwright harness plus Mailpit's REST API, which is why the REST API
+decided the tool choice) and it lands with the next change to that
+harness. Naming it here keeps the seam from being mistaken for an
+oversight: rauthy guards the reset request with a proof of work, so the
+test has to solve one, which is a test-harness concern rather than a
+delivery one.
 
 ## 4. Acceptance
 
@@ -144,7 +190,13 @@ that no `SMTP_*` variable appears in the app process environment.
    unauthenticated internal relay.
 5. Adding `ENRAHITU_SMTP_URL` to `ENRAHITU_REQUIRED_ENV` causes the
    documented pre-flight failure, with no change to this spec's code.
-6. `npm run typecheck && npm test` green, coupling gate green.
+6. An `SMTP_*` variable already present in the container's environment is
+   removed rather than honoured, and an `ENRAHITU_SMTP_*` for the same
+   setting wins (§3.1).
+7. In the dev topology, a password reset requested through the app's own
+   origin is delivered to the mail catcher, from the configured
+   `ENRAHITU_SMTP_FROM`, carrying a reset link on the app's origin.
+8. `npm run typecheck && npm test` green, coupling gate green.
 
 ## 5. Out of scope
 

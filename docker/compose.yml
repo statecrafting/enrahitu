@@ -46,6 +46,19 @@ services:
       # rauthy's embedded hiqlite owns 8100/8200 in this network namespace.
       ENRAHITU_HIQ_ADDR_RAFT: "127.0.0.1:8300"
       ENRAHITU_HIQ_ADDR_API: "127.0.0.1:8400"
+      # Mail, caught locally (spec 026 §3.3). The entrypoint passes these into
+      # rauthy, so password reset, email verification, registration and
+      # invitation actually deliver in the dev loop instead of being silently
+      # inert. Plaintext with no auth is correct here and nowhere else: the
+      # relay is a catcher on the compose network that never forwards anything.
+      ENRAHITU_SMTP_URL: mailpit
+      ENRAHITU_SMTP_PORT: "1025"
+      ENRAHITU_SMTP_FROM: enrahitu-dev@localhost
+      ENRAHITU_SMTP_DANGER_INSECURE: "true"
+    depends_on:
+      # Ordering only. Mailpit accepts connections immediately and rauthy does
+      # not send during startup, so a health condition would buy nothing.
+      - mailpit
     volumes:
       - ..:/workspace
       - dev-node-modules:/workspace/node_modules
@@ -64,6 +77,33 @@ services:
       timeout: 5s
       start_period: 90s
       retries: 5
+
+  # The mail catcher (spec 026 §3.3). It exists so the IdP's delivery path is
+  # exercised rather than conceded: before it, spec 026's mapping could be
+  # asserted but nothing could confirm that a message actually arrives, because
+  # a live SMTP server is external state and CI has none.
+  #
+  # It is development-only and appears in no other topology. The packaged image
+  # takes a real relay through the same ENRAHITU_SMTP_* surface, which is the
+  # property worth having: dev and production differ in which relay is
+  # configured, not in whether the code path runs.
+  #
+  # MIT-licensed and a single static binary, which is why it clears the
+  # permissive-licensing posture this repository holds (spec 001 §4.7) and why
+  # it costs one small container rather than a runtime to host it.
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      # 8025 is the web UI: open http://localhost:8025 to read what the IdP
+      # sent. 1025 is SMTP and stays on the compose network, unpublished,
+      # because nothing outside it has any business submitting mail here.
+      - "127.0.0.1:8025:8025"
+    environment:
+      # Keep caught mail in memory only. A dev mail catcher that accumulates a
+      # volume is a dev mail catcher somebody has to garbage-collect.
+      MP_MAX_MESSAGES: "500"
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
 
 volumes:
   dev-node-modules:
