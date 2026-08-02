@@ -23,7 +23,10 @@ if (reclaim.action === "cleared") {
   logWarn("hiq: state-machine lock left in place; hiqlite will refuse to open it", {
     reason: reclaim.reason,
     ownerPid: reclaim.owner.pid,
-    ownerHost: reclaim.owner.host,
+    // On `foreign-node` these two are the whole diagnosis: the volume belongs to
+    // a different node than the one booting, which is the wrong PVC attached.
+    ownerNode: reclaim.owner.node,
+    ownerNs: reclaim.owner.ns,
   });
 } else if (reclaim.action === "failed") {
   logWarn("hiq: could not check the state-machine lock; leaving it to hiqlite", {

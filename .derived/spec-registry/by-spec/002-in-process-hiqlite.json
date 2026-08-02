@@ -28,13 +28,14 @@
       "Amendment (2026-07-25): the demo surface is operator-gated (spec 025)",
       "Pivot (2026-07-27): two invariants deleted, nothing added",
       "Amendment (2026-07-29): the HTTP demo surface retires",
-      "Amendment (2026-07-30): reclaiming a state machine whose owner is gone"
+      "Amendment (2026-07-30): reclaiming a state machine whose owner is gone",
+      "Amendment (2026-08-02): ownership stops being keyed on the hostname"
     ],
     "specPath": "specs/002-in-process-hiqlite/spec.md",
     "status": "approved",
     "summary": "The hiqlite runtime embedded in the Node process: a napi-rs cdylib (@enrahitu/hiqlite-native) exposing init/health, TTL'd KV, and counters, plus the thin `hiq` Encore service that starts the node at service load and fronts the addon over HTTP. Replaces Redis for cache and rate-limit state with zero extra processes.\n",
     "title": "In-process hiqlite via a napi-rs native addon"
   },
-  "shardHash": "21e664b53e123b990cb21de7079b8c732bb0e4123e2c91262a854da4d96b00a8",
+  "shardHash": "5d7de5604c5d813f713193652df2068251c39b38321cc46eb8c4d18270247ef5",
   "specVersion": "1.1.0"
 }
