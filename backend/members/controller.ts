@@ -157,8 +157,23 @@ export async function sweepOnce(budgetMs = 7000): Promise<number> {
       if (Date.now() >= deadline) break;
       for (const membership of await list<MembershipSpec>(MEMBERSHIP, { tenant: tenant.name })) {
         if (Date.now() >= deadline) break;
-        await reconcileMembership(tenant.name, membership.name, fence, day);
-        reconciled++;
+        try {
+          await reconcileMembership(tenant.name, membership.name, fence, day);
+          reconciled++;
+        } catch (err) {
+          // One membership that cannot be reconciled must not stop the pass.
+          // The enumeration is ordered, so an exception here would silently drop
+          // every membership after this one: a single malformed row would leave
+          // the rest of the association unbilled, every hour, indefinitely, and
+          // the only symptom would be dues that never appear. Skipping is safe
+          // because the sweep keeps no watermark and re-lists from the top, so
+          // the next pass tries this row again.
+          logWarn("renewal sweep: membership did not reconcile", {
+            tenant: tenant.name,
+            membership: membership.name,
+            error: String(err),
+          });
+        }
       }
     }
     return reconciled;
