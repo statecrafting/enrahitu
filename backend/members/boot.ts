@@ -20,6 +20,8 @@ import {
   startRenewalSweep,
   type RunningSweep,
 } from "./controller";
+import { registerMailKinds } from "../mail/notice";
+
 import { TENANT, registerMembershipKinds, type TenantSpec } from "./kinds";
 import { schemaPresent } from "./store";
 import { TenantMismatchError, assertTenantConsistency, tenantId } from "./tenant";
@@ -74,6 +76,12 @@ async function ensureOrgRecord(): Promise<void> {
  */
 export async function startMembershipRuntime(opts: { sweepIntervalMs?: number } = {}): Promise<void> {
   registerMembershipKinds();
+  // The renewal controller raises mail notices (spec 036 §3.7, spec 037), and a
+  // kind must be registered before it can be admitted. Registration is
+  // idempotent for an identical definition (spec 034 §3.2), so doing it from
+  // both services removes the boot-order hazard rather than creating one: which
+  // service loads first is not something either of them should have to know.
+  registerMailKinds();
   await ready;
 
   return runAsService(SERVICE, async () => {

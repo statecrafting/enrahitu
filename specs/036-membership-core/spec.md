@@ -487,6 +487,43 @@ Backdating cannot move a term. §3.7's rule reads the invoice's state and its
 `periodEnd` and never `paidOn`, so the day money arrived is bookkeeping and never
 an input to what it bought.
 
+### 3.10 When a member is told (the scheduling half of spec 037)
+
+Spec 037 delivers what this domain raises and deliberately does not decide when.
+This is that decision, and it is small on purpose.
+
+**Two notices per term, each raised on the branch that creates its occasion.** A
+`dues-reminder` is raised on the branch that raises the invoice, because the
+moment dues become owed is the moment to say so. A `dues-receipt` is raised on
+the branch that renews the term, because that is the moment a payment turned into
+something the member received.
+
+**Both are named for the invoice**, so they inherit the same idempotence
+everything else here has: a controller reconciling the same membership a hundred
+times raises one reminder, and the rule needs no memory of what it has sent. It
+is worth noticing that raising the reminder on the invoice-creating branch is
+therefore redundant with the name, and it is done anyway: "one reminder per term"
+should be legible in the rule rather than be an accident of how `admit`
+normalizes.
+
+**The pure rule decides whether and which; the controller decides to whom and
+with what.** A recipient's address and the association's display name are two
+more resources, and reading them inside the rule would put the store back in the
+middle of a policy a board is supposed to be able to read. So the rule returns an
+intent naming a template and an invoice, and nothing else.
+
+**A notice that cannot be raised does not fail the reconcile.** Dues are what
+must converge; a notice is a courtesy on top of that, and a misconfigured mail
+subsystem must not stop a membership from lapsing or renewing correctly. The
+failure is logged with the invoice that caused it. A member holding no email
+address is a skip rather than an error, because a postal-only member is a real
+thing an association has.
+
+Chasing a member repeatedly (30 days, 7 days, overdue) is a different decision
+with a different shape: it needs a distinct notice name per occasion so that each
+is separately idempotent, and it needs somebody to say how often an association
+may write to a member who has not paid. It is named in §5 and not built.
+
 ## 4. Acceptance
 
 1. The tenant resolves from `ENRAHITU_TENANT`, refuses to resolve in production
@@ -538,6 +575,11 @@ an input to what it bought.
     serving and the domain answering 503, rather than taking the process down
     (§3.6). The association record is created when absent and is not overwritten
     on a subsequent boot.
+19. Raising the invoice raises exactly one `dues-reminder` addressed to the
+    member however many times the membership reconciles, with the amount
+    formatted for a person and the tier's grace period reflected in the due
+    date. Recording payment raises exactly one `dues-receipt` carrying the day
+    the money arrived (§3.10).
 
 All of these are asserted in `backend/members/members.test.ts` against a booted
 node, except the pure renewal rule, the calendar arithmetic, the payment-date
@@ -553,12 +595,12 @@ rule and the identity join, which are asserted directly in
 - **Payment processing.** Recording that dues were paid is a treasurer's entry.
   Taking money is a payment provider integration, an egress seam, and a
   reconciliation problem of its own.
-- **Dues notices by mail.** Spec 037 owns the application's outbound channel
+- **Delivering** dues notices. Spec 037 owns the application's outbound channel
   (spec 026 owns the IdP's, which is a different surface for a different
   sender), and a renewal controller that also sent email would own a delivery
-  guarantee it cannot make. The `pending` status and its due date are what a
-  notice is built from, and *when* to raise one stays this spec's decision:
-  037 delivers what the domain raises and does not schedule it.
+  guarantee it cannot make. *When* to raise one is this spec's decision and is
+  now made, in §3.10; 037 delivers what the domain raises and does not schedule
+  it.
 - **Per-kind capability grants.** The `members` service holds `db.txn` on
   `state`, which is every kind, and spec 034 §3.3 already records why the axis
   buys nothing while all kinds share one table. Still carried on spec 020 §3.4's
@@ -566,5 +608,11 @@ rule and the identity join, which are asserted directly in
 - **Proration, partial payments, refunds, and credit balances.** An invoice here
   is open, paid, or void. The next state a real association asks for is partial
   payment, and it needs an amounts model rather than a status enum.
+- **Currency.** A tier carries `duesCents` and no currency, so a notice reads
+  "dues of 45.00" with no symbol. That is deliberate rather than overlooked: a
+  symbol chosen here would be a guess, and formatting money correctly is locale
+  work (separators, symbol placement, minor-unit count) that arrives with the
+  amounts model above rather than before it. Naming it because the gap is
+  visible in the very first mail a member receives.
 - **A status subresource with its own concurrency** (spec 034 §5), which §3.5
   records is not needed until two controllers contend for one status.

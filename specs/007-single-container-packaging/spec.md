@@ -347,3 +347,29 @@ Two functions, and their placement is the whole guarantee:
 what is inert. It is a notice and not a failure: a local trial of the packaged
 image must keep working with no mail server, and `ENRAHITU_REQUIRED_ENV` (this
 spec's own amendment of 2026-07-23) is how a fleet makes it mandatory instead.
+
+## Amendment (2026-08-02): each mail surface reaches exactly one process (spec 037)
+
+The amendment above scrubbed the **mapped** names (`SMTP_*`) and deliberately
+left the prefixed originals inherited. That was sufficient for what spec 026
+claimed. Spec 037 gives the application its own relay under `ENRAHITU_MAIL_*`,
+and with two mail surfaces in one container the prefix stops carrying the
+guarantee on its own: a subshell inherits its parent's whole environment, so
+rauthy would hold the application's relay password and the application would
+hold the IdP's, neither because anything mapped them but because inheritance is
+the default.
+
+So the entrypoint now drops each surface at the point the other process no
+longer needs it, and the ORDER is the guarantee:
+
+- `ENRAHITU_MAIL_*` is unset **inside the rauthy subshell**, after
+  `export_smtp_env` has run. rauthy reads `SMTP_*` and has no use for these.
+- `ENRAHITU_SMTP_*` is unset **at top level, after that subshell has captured
+  them and before the app starts**. Doing it any earlier would leave the IdP
+  with no relay at all, which is why the placement is asserted rather than
+  described.
+
+The general form, which is this entrypoint's whole job stated once: a credential
+sitting in a process that has no use for it is still that process's blast
+radius. Two surfaces means two holders, and that has to be true in both
+directions or it is one surface with extra prefixes.

@@ -20,6 +20,17 @@ const jwtRefreshPublicKey = secret("JWT_REFRESH_PUBLIC_KEY");
 // Driver secrets (read directly where needed).
 const rauthyClientSecret = secret("RAUTHY_CLIENT_SECRET");
 
+// The application's own relay password (spec 037 §3.1). Deliberately NOT
+// rauthy's: ENRAHITU_SMTP_* stays scoped to the rauthy subshell (spec 026 §3.1)
+// and this process never holds it. Two surfaces, two holders.
+const mailPassword = secret("ENRAHITU_MAIL_PASSWORD");
+
+/** The application relay's password, or empty when the relay needs none. */
+export function mailPasswordValue(): string {
+  demand("secret.read", "enrahitu_mail_password");
+  return mailPassword() || process.env.ENRAHITU_MAIL_PASSWORD || "";
+}
+
 /**
  * The rauthy OIDC client secret: the Encore secret in deployed environments,
  * falling back in dev to keys/rauthy-client-secret (written by

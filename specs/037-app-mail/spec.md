@@ -3,7 +3,7 @@ id: "037-app-mail"
 title: "Application mail: the notices the association sends"
 status: approved
 created: "2026-08-01"
-implementation: pending
+implementation: complete
 depends_on:
   - "020-app-model-contract"
   - "021-kernel-native-consumption"
@@ -81,6 +81,24 @@ An operator may point both at the same relay, and most will. That is
 configuration duplication, which is cheap. Sharing one variable would be
 privilege duplication, which is not.
 
+**Two holders has to be enforced in both directions, or it is one surface with
+extra prefixes.** The container runs both processes, and a subshell inherits its
+parent's whole environment, so prefixing alone achieves nothing: rauthy would
+hold the application's relay password and the application would hold the IdP's,
+neither because anything mapped them but because inheritance is the default.
+`docker/entrypoint.sh` therefore drops each surface at the point the other
+process no longer needs it: `ENRAHITU_MAIL_*` is unset inside the rauthy
+subshell, and `ENRAHITU_SMTP_*` is unset after that subshell has captured it and
+before the app starts.
+
+This extends spec 026 §3.1 rather than restating it. That scrub removed the
+*mapped* names (`SMTP_*`) and deliberately left the prefixed originals
+inherited, which was sufficient for what 026 claimed. It is not sufficient for
+what §4 item 1 below claims, because `ENRAHITU_SMTP_PASSWORD` is the IdP's relay
+credential and an application that never sends through that relay has no
+business holding it. A credential sitting in a process that has no use for it is
+still that process's blast radius.
+
 ### 3.2 The kernel gains a second transport
 
 `backend/kernel/egress.ts` is the only module in `backend/` permitted a bare
@@ -123,6 +141,32 @@ substrate: an association with an internal relay and no SaaS account.
 `cap.smtp.<name>` enters `app-manifest.json` alongside the existing
 `cap.egress.rauthy`, and spec 020's capability inventory grows by one kind.
 
+**A new capability kind is a three-layer change, and only one layer is here.**
+This was written as though the kind were a string this repo could choose, and it
+is not. Adding `smtp.egress` required, in order:
+
+1. `contracts/app-model.schema.json`'s `capKind` enum (spec 020 §3.3), in this
+   repo.
+2. The toolchain's usage extractor, which passed unchanged: it attributes
+   touches to grants and treats an unrecognized kind as one it makes no claim
+   about.
+3. **The kernel's kind table, compiled into the `@statecrafting/kernel-native`
+   binary**, which refuses to boot a model declaring a kind it cannot classify.
+   That is enrahitu spec 021's ceiling working exactly as designed, and it means
+   a new effect family cannot be introduced by the consumer at all: it takes an
+   upstream change and a published release
+   (`@statecrafting/kernel-native` 0.2.0).
+
+The third is the one worth recording, because the instinct on meeting it is to
+route mail through `http.egress` and move on. That would have bought a green
+build by describing an SMTP socket as an HTTP request in the audit record, which
+is worse than having no capability at all: an ungoverned channel is visible,
+whereas a mislabelled one is not. **The cost of the closed vocabulary is a
+release on the critical path of every new effect family; the benefit is that a
+model cannot name its own ceiling into existence.** That trade is the whole
+kernel plane in one line, and it is only legible from the consumer side when
+something is refused.
+
 ### 3.3 A notice is a resource, not a function call
 
 The obvious design calls `mailer.send(...)` where the decision is made. It is
@@ -160,9 +204,26 @@ guarantee and is why the name carries the dedupe rather than the delivery.
 
 **Retry is a status, not a queue.** A failed attempt records `attempts`,
 `lastError` and a `nextAttemptAt` with exponential backoff; the controller skips
-notices not yet due. After a bounded number of attempts the notice is `failed`
-and stays visible, because a notice that gave up silently is worse than one that
-was never raised: the treasurer believes the member was told.
+notices not yet due. After a bounded number of attempts (six, spanning about
+half a day) the notice is `failed` and stays visible, because a notice that gave
+up silently is worse than one that was never raised: the treasurer believes the
+member was told.
+
+"Stays visible" is a claim that needs a surface, so this spec publishes one
+endpoint: `GET /api/notices`, operator-gated and read-only. **Retrying by hand is
+deliberately not offered.** A notice is retried by the schedule, and a button
+that re-sends is a button that sends a member their third copy of the same
+reminder, which is precisely the failure the whole design is arranged to
+prevent.
+
+A second loop is needed for the same reason spec 036 §3.7 needs a calendar
+sweep: **a deferred retry is not a write**, so the change feed can never deliver
+"this notice's backoff has now elapsed". The change loop delivers newly raised
+notices within a tick; a sweep every minute picks up the ones that have come
+due. It enumerates tenants from the notices themselves rather than from the
+tenant registry, so `backend/mail/` carries no dependency on the membership
+domain: mail is a channel, and dues merely happen to be the first thing to use
+it.
 
 This is the research position that mail must not block a request, delivered
 without a second piece of infrastructure. Nothing awaits a relay inside a
@@ -181,6 +242,31 @@ interface MailTransport {
   send(message: Message): Promise<void>;
 }
 ```
+
+**A domain must not be able to reach this interface, and that is a structural
+claim rather than a stylistic one.** Capability attribution is per service over
+the import graph (spec 020 §3.4), so when `backend/members/` imported the mail
+barrel, model verification refused the build:
+
+```
+service 'members' uses http.egress (via backend/mail/transport.ts)
+beyond its declared ceiling
+```
+
+The barrel re-exported the transport, so importing it handed the membership
+domain the transport's egress ceiling. The fix was a second module,
+`backend/mail/notice.ts`, holding `raiseNotice` and the kind and reaching
+nothing but the store; domains import that and never the barrel.
+
+What makes this worth recording is the fix that was NOT taken. Granting
+`members` the egress capability would have turned the build green in one line
+and made §3.3's whole design ornamental: a domain that can reach the transport
+can send inside a request, and the retry story, the idempotence and the
+non-blocking guarantee all stop applying the first time somebody does. **The
+extractor caught a coupling that a comment in the barrel was actively denying.**
+An architectural boundary that is enforced only by where people choose to put
+their imports is a boundary that lasts until the first hurry; this one is now
+checked on every build.
 
 `ENRAHITU_MAIL_TRANSPORT` selects it: `smtp` (through §3.2's capability), an
 HTTPS provider (through `governedFetch`), or `none`.
@@ -242,9 +328,19 @@ API rather than only a UI.
 - **Delivery**, against Mailpit in the dev topology: a raised notice arrives,
   addressed from `ENRAHITU_MAIL_FROM`, and a second reconcile pass delivers
   nothing further.
-- **The boundary**, mechanically: extraction fails when a module outside
-  `backend/mail/transport.ts` imports a socket or mailer library, and a service
-  without `cap.smtp.*` is denied and ledgered.
+- **The boundary**, mechanically: a module outside `backend/mail/transport.ts`
+  importing a socket fails the check, and a service without `cap.smtp.*` is
+  denied and ledgered.
+
+  §3.2 says this check belongs in the toolchain's extraction ban-list, which is
+  where the sibling rules live (`bare fetch`, the raw addon import). It is
+  asserted in this repo instead, as a test that scans `backend/` for
+  `node:net`/`node:tls`/`node:dgram` and expects exactly one file. The rule is
+  mechanical either way and the enforcement point is not load bearing, but the
+  in-repo version is strictly weaker in one respect worth naming: it protects
+  this repo and not an app stamped from it. Moving it upstream is a follow-up
+  against spec 020's ban-list, and until then a stamped app has the socket
+  boundary as a convention rather than as a gate.
 
 ## 4. Acceptance
 
@@ -270,7 +366,14 @@ API rather than only a UI.
    transport is not `none`, naming the variable.
 10. In the dev topology a raised notice is delivered to the catcher from the
     configured sender, and a second reconcile pass delivers nothing further.
+    Verified end to end on 2026-08-03: an expired membership raised its invoice
+    and a `dues-reminder` arrived from `ENRAHITU_MAIL_FROM` with both parts
+    rendered; two further sweeps delivered nothing; recording a backdated
+    payment extended the term and produced exactly one `dues-receipt`.
 11. `npm run typecheck && npm test` green, coupling gate green.
+12. A domain package importing the mail barrel fails model verification, because
+    the barrel reaches the transport and a domain must not (§3.4). Domains
+    import `backend/mail/notice.ts`.
 
 ## 5. Out of scope
 
@@ -288,4 +391,12 @@ API rather than only a UI.
 - **Scheduling policy.** *When* a dues reminder is raised is the domain's
   decision and belongs with the domain (spec 036 §3.7's rule already knows the
   dates). This spec delivers what the domain raises.
-- **Rendering engine choice**, beyond §3.5's one constraint.
+- **Rendering engine choice**, beyond §3.5's one constraint. What shipped is
+  plain text with `{{param}}` substitution, rendering to text and to HTML from
+  the one source, which satisfies the constraint and adds no dependency.
+- **Chasing a member more than once per term.** One reminder is raised when dues
+  become outstanding and one receipt when they are paid. A schedule of reminders
+  (30 days, 7 days, overdue) is a policy with a shape of its own: it needs a
+  notice name per occasion, so that each is idempotent separately, and it needs
+  somebody to decide how often an association may write to a member who has not
+  paid. That is spec 036's decision to make, not this one's.

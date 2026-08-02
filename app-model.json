@@ -76,6 +76,11 @@
       "resource": "state"
     },
     {
+      "id": "cap.egress.mail-provider",
+      "kind": "http.egress",
+      "resource": "mail-provider"
+    },
+    {
       "id": "cap.egress.rauthy-issuer",
       "kind": "http.egress",
       "resource": "rauthy-issuer"
@@ -121,9 +126,19 @@
       "resource": "jwt_refresh_public_key"
     },
     {
+      "id": "cap.secret.mail-password",
+      "kind": "secret.read",
+      "resource": "enrahitu_mail_password"
+    },
+    {
       "id": "cap.secret.rauthy-client",
       "kind": "secret.read",
       "resource": "rauthy_client_secret"
+    },
+    {
+      "id": "cap.smtp.mail-relay",
+      "kind": "smtp.egress",
+      "resource": "mail-relay"
     }
   ],
   "contract": {
@@ -148,7 +163,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:6d2a1f93691ed59b392f4c0e2b4c825bb10988654e248af9b89d26a6478e307e"
+    "hash": "sha256:42bbfe20cf15fd378f536f8d53f0a5ef5b306a9593b5afa1b595c39b4e93f7b5"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -189,6 +204,9 @@
       }
     ],
     "secrets": [
+      {
+        "name": "enrahitu_mail_password"
+      },
       {
         "name": "jwt_private_key"
       },
@@ -497,6 +515,31 @@
         "cap.db.state.read",
         "cap.db.state.txn",
         "cap.db.state.write",
+        "cap.egress.mail-provider",
+        "cap.lock.state.acquire",
+        "cap.notify.state.listen",
+        "cap.notify.state.publish",
+        "cap.secret.mail-password",
+        "cap.smtp.mail-relay"
+      ],
+      "endpoints": [
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "listNotices",
+          "path": "/api/notices"
+        }
+      ],
+      "name": "mail",
+      "tier": "ts"
+    },
+    {
+      "capabilities": [
+        "cap.db.state.read",
+        "cap.db.state.txn",
+        "cap.db.state.write",
         "cap.lock.state.acquire",
         "cap.notify.state.listen",
         "cap.notify.state.publish"
@@ -669,7 +712,7 @@
     }
   ],
   "source": {
-    "revision": "02bdc30a606eaeca45eb42163ac8484d0e914995",
+    "revision": "af96313759db3a70781380e98dd645db05457434",
     "uncommittedChanges": true
   },
   "trust": {

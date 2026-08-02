@@ -37,6 +37,7 @@ let controller: typeof import("./controller");
 let store: typeof import("./store");
 let tenantMod: typeof import("./tenant");
 let boot: typeof import("./boot");
+let mail: typeof import("../mail/notice");
 
 const asMembers = <T>(fn: () => Promise<T>): Promise<T> => runAsService("members", fn);
 
@@ -54,11 +55,15 @@ beforeAll(async () => {
   store = await import("./store");
   tenantMod = await import("./tenant");
   boot = await import("./boot");
+  mail = await import("../mail/notice");
   await state.ready;
 
   // The state service owns schema; the domain never migrates (spec 036 §3.6).
   await runAsService("state", () => state.migrate(control.CONTROL_PLANE_MIGRATIONS));
   kinds.registerMembershipKinds();
+  // The renewal controller raises mail notices (spec 037), so the kind has to be
+  // registered here exactly as boot registers it.
+  mail.registerMailKinds();
 }, 60_000);
 
 /** A tier, a member and a membership, ready to reconcile. */
@@ -337,6 +342,62 @@ describe("the renewal loop against the store (spec 036 §3.7)", () => {
     expect(
       (await asMembers(() => control.get(kinds.MEMBERSHIP, "forever", { tenant: TENANT_A })))?.status,
     ).toEqual({ state: "active" });
+  });
+
+  it("raises one dues notice per term, addressed to the member (spec 037)", async () => {
+    await seed(TENANT_A, "noticed");
+    const invoice = "noticed-individual-2026-01-01";
+    const notice = `dues-reminder-${invoice}`;
+
+    // Reconciling repeatedly must produce ONE notice, for the same reason it
+    // produces one invoice: the name is derived from what it is about. A member
+    // who receives a reminder per reconcile stops reading them.
+    for (let i = 0; i < 4; i++) {
+      await asMembers(() =>
+        controller.reconcileMembership(TENANT_A, "noticed-individual", 0, "2026-02-01"),
+      );
+    }
+
+    const raised = await asMembers(() =>
+      control.get(mail.MAIL_NOTICE, notice, { tenant: TENANT_A }),
+    );
+    expect(raised).not.toBeNull();
+    const spec = raised!.spec as import("../mail/notice").MailNoticeSpec;
+    expect(spec.to).toBe("noticed@example.org");
+    expect(spec.template).toBe("dues-reminder");
+    // The amount is formatted here rather than in the template: a member should
+    // not receive "your dues of 4500".
+    expect(spec.params.amount).toBe("45.00");
+    // The term ended 2026-01-01 and the tier allows 30 days' grace.
+    expect(spec.params.dueOn).toBe("2026-01-31");
+
+    const all = await asMembers(() => control.list(mail.MAIL_NOTICE, { tenant: TENANT_A }));
+    expect(all.filter((n) => n.name === notice)).toHaveLength(1);
+  });
+
+  it("raises a receipt when the payment lands, and never a second one", async () => {
+    await seed(TENANT_A, "receipted");
+    const invoice = "receipted-individual-2026-01-01";
+    await asMembers(() =>
+      controller.reconcileMembership(TENANT_A, "receipted-individual", 0, "2026-02-01"),
+    );
+    await asMembers(() =>
+      control.setStatus(kinds.DUES_INVOICE, invoice, { state: "paid", paidOn: "2026-02-02" }, {
+        tenant: TENANT_A,
+      }),
+    );
+
+    for (let i = 0; i < 3; i++) {
+      await asMembers(() =>
+        controller.reconcileMembership(TENANT_A, "receipted-individual", 0, "2026-02-03"),
+      );
+    }
+
+    const receipt = await asMembers(() =>
+      control.get(mail.MAIL_NOTICE, `dues-receipt-${invoice}`, { tenant: TENANT_A }),
+    );
+    expect(receipt).not.toBeNull();
+    expect((receipt!.spec as import("../mail/notice").MailNoticeSpec).params.paidOn).toBe("2026-02-02");
   });
 
   it("drives the same convergence through the real controller loop", async () => {

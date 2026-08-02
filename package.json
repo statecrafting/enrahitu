@@ -44,7 +44,7 @@
     "@opentelemetry/sdk-trace-node": "^2.10.0",
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "@statecrafting/hiqlite-native": "^0.2.0",
-    "@statecrafting/kernel-native": "^0.1.0",
+    "@statecrafting/kernel-native": "^0.2.0",
     "encore.dev": "1.57.9",
     "jsonwebtoken": "^9.0.3",
     "openid-client": "^6.8.4",

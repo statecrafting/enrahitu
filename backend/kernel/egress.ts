@@ -17,3 +17,24 @@ export async function governedFetch(
   demand("http.egress", resource, { attributes: { domain: url.hostname } });
   return fetch(url, init);
 }
+
+/**
+ * The kernel's second transport (spec 037 §3.2).
+ *
+ * The facade above is HTTP-shaped, and mail is the first thing to escape it: an
+ * SMTP transport opens a TCP socket, which `governedFetch` does not see and the
+ * extraction ban-list did not forbid. Spec 030 §3.5 settled the general question
+ * for pub/sub and its sentence is exact here: a governed deployment whose
+ * messages leave unadjudicated has an ungoverned channel, and the whole kernel
+ * plane would be arguable. Mail is the channel that reaches people, so a
+ * deployment that can be made to send without a ledger entry has an audit record
+ * incomplete in the direction that matters.
+ *
+ * Only the adjudication lives here, not the socket. `backend/mail/transport.ts`
+ * is to SMTP what this module is to HTTP, and it calls this before connecting.
+ * The relay host rides as an attribute exactly as `domain` does for HTTP, so a
+ * fleet may pin which relay a cell is allowed to reach.
+ */
+export function demandSmtpEgress(resource: string, host: string): void {
+  demand("smtp.egress", resource, { attributes: { host } });
+}
