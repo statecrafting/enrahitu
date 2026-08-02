@@ -418,9 +418,12 @@ and §3.9's.
 - **Payment processing.** Recording that dues were paid is a treasurer's entry.
   Taking money is a payment provider integration, an egress seam, and a
   reconciliation problem of its own.
-- **Dues notices by mail.** Spec 026 owns the outbound channel, and a renewal
-  controller that also sent email would own a delivery guarantee it cannot make.
-  The `pending` status and its due date are what a notice would be built from.
+- **Dues notices by mail.** Spec 037 owns the application's outbound channel
+  (spec 026 owns the IdP's, which is a different surface for a different
+  sender), and a renewal controller that also sent email would own a delivery
+  guarantee it cannot make. The `pending` status and its due date are what a
+  notice is built from, and *when* to raise one stays this spec's decision:
+  037 delivers what the domain raises and does not schedule it.
 - **Per-kind capability grants.** The `members` service holds `db.txn` on
   `state`, which is every kind, and spec 034 §3.3 already records why the axis
   buys nothing while all kinds share one table. Still carried on spec 020 §3.4's

@@ -210,5 +210,8 @@ delivery one.
   configuration surface, not this substrate's.
 - Application-originated mail (transactional mail from the app itself,
   as opposed to the IdP's). That needs an outbox and a sender identity
-  and is a candidate consumer for the queue work in spec 030's
-  territory, not an IdP concern.
+  and is not an IdP concern. **Spec 037 now owns it** and supplies both,
+  on a deliberately separate credential surface: the subshell scoping in
+  §3.1 exists to keep these variables out of the application process, so
+  application mail reusing them would dismantle the invariant this spec
+  was written to establish.
