@@ -1,0 +1,52 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '037-app-mail' directory unit 'backend/mail/' is not a directory",
+        "path": "backend/mail/"
+      },
+      {
+        "code": "W-001",
+        "message": "spec '037-app-mail' file unit 'app/mail/README.md' does not exist",
+        "path": "app/mail/README.md"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "020-app-model-contract",
+      "021-kernel-native-consumption",
+      "026-idp-mail-delivery",
+      "034-control-plane",
+      "035-chassis-boundary",
+      "036-membership-core"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "backend/mail/"
+        }
+      },
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "app/mail/README.md"
+        }
+      }
+    ],
+    "specId": "037-app-mail",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "25695dde4b65667f8d668ce8ce2029ce93dcdc88b2cfae15eaadb62d3a88aa09"
+}

@@ -30,6 +30,6 @@
     "summary": "rauthy ships inside the image with exactly one bootstrapped admin and no mail configuration anywhere: not in docker/rauthy/config.prod.toml, not in the entrypoint's rauthy subshell, not in first-boot. Password reset, email verification, user registration, and invitation are therefore all silently inert. For a template whose stated deliverable is a complete authenticated application, the first user works and the second cannot be onboarded. This spec passes an ENRAHITU_SMTP_* operator surface through the entrypoint into rauthy's SMTP_* variables, scoped to the rauthy subshell so nothing leaks into the app process, and converts the unconfigured case from silent breakage into a stated limitation logged at boot.\n",
     "title": "IdP mail delivery: the second user"
   },
-  "shardHash": "b9bc16fe96e09b1e6e6a7e9e01a08b1c71220e564eef5e561eebd0eb53f42272",
+  "shardHash": "6e3d6cb6ebc11af5bd30e3e5a5841587da12e2fd01e081be165a6fa3c53216b5",
   "specVersion": "1.1.0"
 }
