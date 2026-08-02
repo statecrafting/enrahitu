@@ -36,6 +36,7 @@ let kinds: typeof import("./kinds");
 let controller: typeof import("./controller");
 let store: typeof import("./store");
 let tenantMod: typeof import("./tenant");
+let boot: typeof import("./boot");
 
 const asMembers = <T>(fn: () => Promise<T>): Promise<T> => runAsService("members", fn);
 
@@ -52,6 +53,7 @@ beforeAll(async () => {
   controller = await import("./controller");
   store = await import("./store");
   tenantMod = await import("./tenant");
+  boot = await import("./boot");
   await state.ready;
 
   // The state service owns schema; the domain never migrates (spec 036 §3.6).
@@ -437,6 +439,66 @@ describe("the ceiling (spec 021, spec 036 §2)", () => {
       await asMembers(() => control.get(kinds.MEMBER, "smuggled", { tenant: TENANT_A })),
     ).toBeNull();
   });
+});
+
+describe("the calendar sweep (spec 036 §3.7)", () => {
+  it("reconciles memberships the change feed has already delivered and moved past", async () => {
+    // The sweep enumerates associations, so the association needs its record.
+    // A display name an operator would have chosen, reused by the boot test below.
+    await asMembers(() =>
+      control.admit(kinds.TENANT, TENANT_A, { displayName: "Hollis Society" }, { actor: "test" }),
+    );
+    await seed(TENANT_A, "sweeper");
+
+    const memberships = await asMembers(() =>
+      control.list(kinds.MEMBERSHIP, { tenant: TENANT_A }),
+    );
+    expect(memberships.length).toBeGreaterThan(0);
+
+    // A membership whose term expires tomorrow is not WRITTEN tomorrow, so the
+    // change feed can never deliver its expiry: this loop is the only thing that
+    // can ever lapse anyone. It reconciles EVERY membership rather than the ones
+    // a feed happened to deliver.
+    //
+    // `contended-individual` carries a hand-raised fence from the concurrency
+    // test above and cannot be reconciled, which is convenient here: it sorts
+    // before `sweeper-individual`, so if one bad row aborted the pass, the
+    // membership seeded by this test would never be reached.
+    const swept = await asMembers(() => controller.sweepOnce());
+    expect(swept).toBeGreaterThanOrEqual(memberships.length - 1);
+
+    const sweeper = await asMembers(() =>
+      control.get(kinds.MEMBERSHIP, "sweeper-individual", { tenant: TENANT_A }),
+    );
+    expect((sweeper?.status as { state: string } | null)?.state).toBeDefined();
+
+    // And it does it again on the next pass: it keeps no watermark and re-lists
+    // from the top, which is what makes stopping early at the budget free.
+    const again = await asMembers(() => controller.sweepOnce());
+    expect(again).toBe(swept);
+  });
+
+  it("shares the change loop's lease key, so the two can never run concurrently", () => {
+    // `startController` derives its key as `ctl:<name>`, and the sweep hardcodes
+    // the same string. If either side ever drifts, both loops write the same
+    // rows under interleaved tokens and each supersedes the other for no reason.
+    expect(controller.RENEWAL_LEASE).toBe(`ctl:${controller.RENEWAL_CONTROLLER}`);
+  });
+});
+
+describe("bringing the domain up (spec 036 §3.6)", () => {
+  it("ensures the association record without overwriting what an operator named", async () => {
+    // `admit` writes the spec it is given, so an unconditional admit at boot
+    // would reset this to the tenant slug on every restart: a change that
+    // reverts itself overnight and looks like somebody else undid it.
+    await boot.startMembershipRuntime({ sweepIntervalMs: 3_600_000 });
+    try {
+      const org = await asMembers(() => control.get(kinds.TENANT, TENANT_A));
+      expect((org?.spec as { displayName: string }).displayName).toBe("Hollis Society");
+    } finally {
+      await boot.stopMembershipRuntime();
+    }
+  }, 30_000);
 });
 
 // Last, because both properties below put a second tenant's rows in the store

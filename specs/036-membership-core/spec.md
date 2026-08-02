@@ -260,6 +260,29 @@ owns is the behavior in the meantime:
   rather than failing a pass every second forever. A controller that logs an
   error per tick trains an operator to ignore the log.
 
+**Exactly one startup failure is fatal, and the distinction is the point.** A
+tenant mismatch (§3.2) exits the process, because serving past it would write a
+second, invisible dataset alongside the real one: silent, compounding, and worse
+the longer it runs.
+
+**Everything else leaves the application up with the domain down.** The first
+version exited on any startup error and was wrong within a minute of meeting a
+real container: hiqlite refused to open a volume left locked by an unclean
+shutdown, and a domain that could not start took `/healthz`, the operator
+dashboard and the login flow down with it. Those are precisely the surfaces an
+operator needs in order to diagnose a store that will not open. So the domain
+stays down, its endpoints answer the 503 above, and the rest of the application
+keeps serving. The general form: a subsystem's failure may not be allowed to
+remove the instruments used to diagnose it.
+
+Bringing the domain up therefore has a fixed order, and each step depends on the
+one before: wait for the schema, refuse a foreign dataset, ensure the
+association's own record exists, and only then start the loops. **Ensuring the
+record means create-if-absent and nothing else.** `admit` writes the spec it is
+given, so admitting unconditionally at every boot would reset an operator's
+chosen display name back to the tenant slug on every restart: a change that
+reverts itself overnight and looks like somebody else undid it.
+
 The verb itself is the next change, against specs 023 and 027 (027 §3.4 owns
 `migrate` and currently describes it against CoreLedger only). Its shape is
 already constrained by where the store is: at N=1 the embedded node holds the
@@ -277,15 +300,48 @@ a policy a board approves, and a policy that can only be read as a sequence of
 store calls cannot be reviewed by the people whose policy it is.
 
 ```
-lifetime tier            -> active, no dues, no expiry
-today < endsOn           -> active, renews on endsOn
-today >= endsOn, manual  -> lapsed on endsOn
-today >= endsOn, auto    -> raise the invoice for the next term, then:
-                              paid           -> extend the term, active
-                              past dueOn     -> lapsed
-                              otherwise      -> pending, dues outstanding
-tier not registered      -> invalid, naming the missing tier (§3.3)
+tier not registered         -> invalid, naming the missing tier (§3.3)
+lifetime tier, no endsOn    -> active, no dues, no expiry
+lifetime tier, with endsOn  -> invalid: the term contradicts the tier
+billed tier, no endsOn      -> invalid: a billed tier needs a term to bill
+today < endsOn              -> active, renews on endsOn
+today >= endsOn, manual     -> lapsed on endsOn
+today >= endsOn, auto       -> raise the invoice for the next term, then:
+                                 paid        -> extend the term, active
+                                 void        -> lapsed on endsOn
+                                 past dueOn  -> lapsed on the day it was due
+                                 otherwise   -> pending, dues outstanding
 ```
+
+The branches are evaluated in that order, and three of them are the shape checks
+that §3.3's decision forces into the rule. A validator cannot reject a lifetime
+membership carrying an end date, or a billed one missing it, because whether
+`endsOn` is required depends on the tier's period and the tier is a second
+resource: reading it at admission would be enforcing referential integrity there,
+which this domain deliberately does not do. So a contradiction between a
+membership and its tier is reported the same way a missing tier is, as `invalid`
+with a problem an operator can act on.
+
+**Voiding is how an association declines to renew somebody** without pretending
+the invoice was paid. It lapses the membership on the day the term ended rather
+than on the day of the void, because the void records a decision about the term
+and not a new event in it.
+
+**A term is a calendar day, never an instant.** Terms, due dates and payment
+dates are `YYYY-MM-DD` and the arithmetic is UTC-anchored string arithmetic. A
+timestamp would make the answer depend on the reader's timezone: two operators in
+different offsets would see different lapse dates for the same row, and the one
+who is wrong would have no way to tell. The only clock read in the whole renewal
+path is `today()`, and the rule takes the day as an argument rather than calling
+it, so every branch is reachable in a test at the date that produces it.
+
+**Advancing a period clamps to the end of the target month.** Adding one month to
+January 31st is March 3rd under naive arithmetic, so a monthly membership taken
+out on the 31st would skip February and drift forward a month every year; the
+same arithmetic sends a leap-day annual term to March 1st in a common year rather
+than to February 28th. Both are wrong in the direction that silently moves
+somebody's renewal date, so the period advance clamps and the two cases are
+asserted rather than reasoned about.
 
 **The invoice name is the idempotence key.** It is
 `<membership>-<periodStart>`, deterministic from the term being billed, so a
@@ -303,6 +359,38 @@ makes the control plane worth its weight: an operator records a payment on one
 resource, and a different resource converges to a new state without anything
 calling anything.
 
+**But a change feed cannot observe the passage of time, so there are two loops.**
+Spec 034's watch answers "what has been written since revision N", and a
+membership whose term expires tomorrow is not written tomorrow: nothing happens,
+which is precisely the event the rule cares about. A purely change-driven
+controller would lapse nobody until somebody happened to edit their row, and the
+defect would be invisible in every test that writes something.
+
+So the change loop reacts to writes and a **calendar sweep** reacts to the
+clock, listing every membership in every tenant and reconciling each one. It runs
+hourly: the rule's inputs change at most once a day, so a shorter interval buys
+nothing an operator would notice and a longer one delays a lapse past the day it
+happens. It keeps no watermark and re-lists from the top, which is what makes it
+safe to bound with a time budget and stop early.
+
+**One membership that cannot be reconciled does not stop the pass.** The
+enumeration is ordered, so a reconcile that threw would silently drop every
+membership after it: a single malformed row would leave the rest of the
+association unbilled, every hour, indefinitely, and the only symptom would be
+dues that never appear. A failure is logged with the membership that caused it
+and the sweep continues, which is safe precisely because it keeps no watermark:
+the next pass tries the row again. This is the difference between a loop that
+converges what it can and one whose worst row sets the pace for everybody.
+
+**Both loops share one lease key** (`ctl:renewal`), and that is load bearing
+rather than tidy. They write the same rows, and the fencing token is monotonic
+per key (spec 032 §3.4), so one key buys two properties at once: the loops never
+run concurrently, and whichever acquires later necessarily holds the higher
+token, so neither can be refused as superseded by the other. Two keys would
+produce interleaved tokens and a steady trickle of `SupersededError`s that mean
+nothing and would train an operator to ignore them. A sweep that loses the lease
+to the change loop has simply not happened, and the next one will.
+
 Convergence after a payment takes three passes and then stops. Pass one extends
 the term (a spec write) and sets status pending to active; pass two observes the
 change it made and computes the same status; pass three has nothing to observe.
@@ -315,13 +403,43 @@ is invisible in code that is working.
 differently, which is spec 001 §4.4's separation reaching the domain for the
 first time.
 
-The operator plane (`/api/members`, `/api/tiers`, `/api/memberships`,
-`/api/dues`) requires the `<app>_operator` role and is the association's staff.
+The operator plane requires the `<app>_operator` role and is the association's
+staff: the association record itself (`GET`/`PUT /api/org`), tiers (list, `PUT`,
+`DELETE`), members (list, get, `PUT`, `DELETE`), memberships (list, `PUT`), and
+dues (list, `POST /api/dues/:name/paid`, `POST /api/dues/:name/void`). Retracting
+a tier or a member is deliberately available and deliberately not a cascade: §3.3
+says a dangling reference is reported rather than prevented, and a delete that
+quietly removed memberships would be the enforcement §3.3 refused, arriving
+through the back door.
+
 The member plane is one endpoint, `GET /api/me/membership`, which requires only
-an authenticated session and answers strictly about the caller: it resolves the
-`member` whose `sub` matches the session's, and returns that member's own
-membership and outstanding dues. It takes no name parameter, so there is no
-version of it that reads somebody else's record.
+an authenticated session and answers strictly about the caller, returning that
+member's own record, membership and outstanding dues. **It takes no name
+parameter**, which is the structural half of its authorization: an endpoint that
+reads "the member named X" and then checks whether X is you is one refactor away
+from forgetting.
+
+**The join from a session to a member record is `sub` first, verified email
+second**, and the fallback is a compromise with a stated expiry rather than a
+design. Spec 001 §5.3 makes rauthy's subject the durable binding, but an
+association enrolls members long before any of them logs in, so requiring `sub`
+would leave every pre-enrolled member unable to see their own dues: the feature
+would be correct and useless. Matching the email closes that gap because member
+emails are normalized by the kind's validator, so both sides compare like with
+like.
+
+**The weakness in that fallback is named here rather than discovered later.**
+Matching on an email is only sound if the session's email is one the identity
+provider verified, and nothing in the application checks that today: no
+`email_verified` claim is threaded through to the session, and the SSO profile
+substitutes `preferred_username` when the `email` claim is absent, which is not
+an email and is not verified under any provider. Against rauthy this is latent
+rather than live, because rauthy's own registration flow proves control of the
+address before a session exists at all. It is latent on a property of the IdP's
+configuration rather than on anything this code enforces, which is the wrong
+place for an authorization rule to rest. Closing it belongs to spec 004's rewrite,
+which is where the session's claims are minted and where enrollment can write
+`sub` at first login; the fallback retires when it does.
 
 ### 3.9 Backdating a payment, and a divergence that was not one
 
@@ -388,8 +506,9 @@ an input to what it bought.
    pass the fence they read, and is refused with 409 when the controller wrote
    in between.
 8. `setStatus` on an unchanged status produces no revision and no outbox row.
-9. The member plane returns only the caller's own record, and returns 404 rather
-   than another member's row when the session carries no matching `sub`.
+9. The member plane returns only the caller's own record: it prefers the durable
+   `sub` binding, falls back to the session's email, and returns 404 rather than
+   another member's row when neither matches (§3.8).
 10. With the schema unapplied, a members endpoint answers 503 naming the
     precondition rather than a SQL error from four frames down.
 11. A service without the state grants is denied admission of a domain kind.
@@ -403,11 +522,27 @@ an input to what it bought.
 14. A payment records today when no day is sent, records the day sent when one
     is, and refuses both a day that does not exist and a day in the future,
     naming the field (§3.9).
+15. Every branch of §3.7's table is reachable and asserted, including the three
+    that report `invalid`: a missing tier, a lifetime tier carrying `endsOn`, and
+    a billed tier missing it. A voided invoice lapses the membership on the day
+    the term ended.
+16. Advancing a period clamps to the end of the target month: a monthly term
+    dated the 31st does not skip February, and a leap-day annual term lands on
+    February 28th in a common year.
+17. The calendar sweep reconciles every membership without being prompted by a
+    write, repeats the full pass rather than consuming a feed, and shares the
+    change loop's lease so the two never run concurrently and neither supersedes
+    the other. One membership that cannot be reconciled is logged and skipped,
+    and the memberships after it in the enumeration still converge (§3.7).
+18. A startup failure that is not a tenant mismatch leaves the application
+    serving and the domain answering 503, rather than taking the process down
+    (§3.6). The association record is created when absent and is not overwritten
+    on a subsequent boot.
 
-All fourteen are asserted in `backend/members/members.test.ts` against a booted
-node, except the pure renewal rule and the payment-date rule, which are asserted
-directly in `backend/members/renewal.test.ts` at every branch of §3.7's table
-and §3.9's.
+All of these are asserted in `backend/members/members.test.ts` against a booted
+node, except the pure renewal rule, the calendar arithmetic, the payment-date
+rule and the identity join, which are asserted directly in
+`backend/members/renewal.test.ts` at every branch of §3.7's table and §3.9's.
 
 ## 5. Out of scope
 
