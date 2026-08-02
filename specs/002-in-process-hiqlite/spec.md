@@ -301,3 +301,72 @@ carrying a legacy lock recovered through the `no-owner-record` path, the next
 restart through `owner-gone`, and three consecutive watch-loop rebuilds each
 logged the reclaim and then `members: runtime started`, where before this
 change the first rebuild of a session ended the domain until a human intervened.
+
+## Amendment (2026-08-02): ownership stops being keyed on the hostname
+
+The 2026-07-30 recovery above had a hole big enough to reproduce the outage it
+was written to prevent, and it was found the way the original was: by using the
+container for a session and then looking. `/readyz` had been answering 500 for
+seven hours with `/healthz` green, and the membership surface had been
+answering 503 for exactly as long.
+
+**In docker the hostname IS the container id.** `docker compose up --build`, a
+`restart`, an image change, and a rescheduled pod all produce a new one, so the
+previous owner's record looked like it came from another machine. The
+`foreign-host` branch then did what it was told, kept the lock, and hiqlite
+panicked. Every container recreate was unrecoverable without a human deleting a
+file inside the container, which is the original defect verbatim.
+
+The hostname was standing in for two different questions, answered badly
+together and now asked separately:
+
+- **"Is this my data directory?"** is now `node`, the node's configured identity
+  (`ENRAHITU_HIQ_NODE_ID`, 1 at N=1, the ordinal at N=3, and spec 030's
+  `HQL_NODE_ID_FROM=k8s` when that lands). It comes from configuration and
+  deliberately not from the volume: an identity minted into the data directory
+  is read by whoever opens it and therefore matches by construction, which is a
+  check with no content. Configured, it catches something nothing caught before,
+  namely node 2 booting against node 1's PVC, which at N=3 is catastrophic and
+  used to look like a normal start. A record from a different node keeps the
+  lock, and no amount of pid reasoning overrides that.
+- **"Can I interpret that pid?"** is now `ns`, the pid namespace, which is the
+  scope a pid is actually issued in.
+
+Two findings from verifying it, both of which change the design rather than
+decorate it:
+
+1. **The namespace inode is not a reliable discriminator.** Linux reuses
+   namespace inode numbers, and a forced recreate was observed reporting the
+   identical `pid:[4026533958]` as the container it replaced. A design resting
+   on the namespace alone would have been correct in the test and wrong in the
+   field.
+2. **A recreated container reuses low pids immediately.** The replacement
+   container came up as pid 94. A stale record naming a low pid would therefore
+   find that pid alive and keep the lock on a coincidence.
+
+So the owner record also carries `start`, the owner's process start time from
+`/proc/<pid>/stat`. A pid whose start time has changed is a different process
+wearing a reused number, and the lock is stale. This is what makes recovery
+reliable rather than lucky, and it subsumes the namespace check for the case
+that matters.
+
+Every fallback is safe in the direction that preserves the guard: where the
+start time cannot be read (no procfs, or a record written before the field
+existed) the pid alone decides, exactly as before. A legacy record is read on
+its old terms, comparing hostnames, so the single boot after an upgrade still
+refuses to clear a lock a live process on this machine is holding, and a legacy
+record from a recreated container recovers instead of stranding.
+
+What this still does not protect against is two live containers mounting one
+data directory. Neither did the previous version, which merely declined to
+decide, and spec 030 §3.4 forbids the topology outright: per-pod PVC, never
+shared. A guard cannot both permit the recreate that happens constantly and
+refuse the sharing that must never happen on evidence this thin, so it is
+stated rather than pretended.
+
+Verified against the running container rather than argued: a forced recreate
+changed the container id, the successor cleared the lock on its own, logged the
+reclaim, and reached `members: runtime started` with `/readyz` 200. The suite
+was also run inside the linux container, which is where the pid-reuse branch is
+reachable at all and which caught a helper silently dropping the field under
+test.
