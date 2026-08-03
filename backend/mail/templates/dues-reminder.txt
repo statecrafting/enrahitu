@@ -1,0 +1,10 @@
+Hello {{memberName}},
+
+Your {{tierLabel}} membership of {{orgName}} is up for renewal, and dues of
+{{amount}} are now outstanding for the term beginning {{periodStart}}.
+
+Please settle them by {{dueOn}}. If payment has already been sent, thank you,
+and please disregard this notice: it was raised before your payment was
+recorded.
+
+{{orgName}}

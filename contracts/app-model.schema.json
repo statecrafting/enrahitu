@@ -424,6 +424,7 @@
         "ledger.append", "ledger.read", "ledger.verify",
         "endpoint.call",
         "http.egress",
+        "smtp.egress",
         "tool.invoke"
       ]
     },

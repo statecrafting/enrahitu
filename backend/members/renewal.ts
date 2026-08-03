@@ -31,11 +31,27 @@ export interface RenewalInput {
   today: string;
 }
 
+/**
+ * A notice this membership's situation calls for (spec 036 §5, spec 037).
+ *
+ * The rule decides WHETHER and WHICH; the controller resolves to whom and with
+ * what data, because the recipient's address and the association's name are two
+ * more resources and reading them here would put the store back inside the
+ * policy. `invoice` is the notice's subject, so its name is derived from the
+ * invoice and raising it on every reconcile raises one notice.
+ */
+export interface NoticeIntent {
+  template: "dues-reminder" | "dues-receipt";
+  invoice: string;
+}
+
 export interface RenewalPlan {
   /** An invoice to admit. Idempotent by name, so raising it twice raises one. */
   invoice?: { name: string; spec: DuesInvoiceSpec };
   /** A new membership term, when a paid invoice has renewed it. */
   renewTo?: MembershipSpec;
+  /** Mail this situation calls for. Idempotent by name, like everything else. */
+  notice?: NoticeIntent;
   /** Always present: every branch concludes in a status. */
   status: MembershipStatus;
 }
@@ -114,6 +130,12 @@ export function evaluate(input: RenewalInput): RenewalPlan {
           dueOn: addDays(endsOn, tier.graceDays),
         },
       },
+      // The moment dues become owed is the moment to say so. Raised here rather
+      // than on every subsequent pending pass because the notice's name is the
+      // invoice's, so a second raise is a no-op anyway; putting it on the branch
+      // that CREATES the invoice makes "one reminder per term" legible instead
+      // of an accident of idempotence.
+      notice: { template: "dues-reminder", invoice: name },
       status: { state: "pending", currentInvoice: name, renewsOn: periodEnd },
     };
   }
@@ -126,6 +148,7 @@ export function evaluate(input: RenewalInput): RenewalPlan {
     // anything.
     return {
       renewTo: { ...membership, startsOn: endsOn, endsOn: invoice.spec.periodEnd },
+      notice: { template: "dues-receipt", invoice: name },
       status: { state: "active", renewsOn: invoice.spec.periodEnd },
     };
   }

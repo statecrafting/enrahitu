@@ -130,6 +130,16 @@ host="${hostport%%:*}"
   BOOTSTRAP_ADMIN_PASSWORD_PLAIN="$(cat "$DATA/rauthy/admin-password")"
   export BOOTSTRAP_ADMIN_PASSWORD_PLAIN
   export_smtp_env
+  # The other half of spec 037 §3.1's two-surfaces rule. The subshell inherits
+  # the whole environment, so without this rauthy would hold the APPLICATION's
+  # relay credentials: not because anything maps them (nothing does, rauthy
+  # reads SMTP_*), but because inheritance is the default and a credential
+  # sitting in a process that has no use for it is still that process's blast
+  # radius. Two surfaces means two holders, which has to be enforced in both
+  # directions or it is one surface with extra prefixes.
+  for name in ${!ENRAHITU_MAIL_*}; do
+    unset "$name"
+  done
   cd /rauthy
   exec ./rauthy serve
 ) &
@@ -209,6 +219,19 @@ export ENRAHITU_HIQ_DATA_DIR="$DATA/hiqlite"
 # rauthy's embedded hiqlite owns 8100/8200 in this network namespace.
 export ENRAHITU_HIQ_ADDR_RAFT=127.0.0.1:8300
 export ENRAHITU_HIQ_ADDR_API=127.0.0.1:8400
+
+# The IdP's mail surface leaves the app process here (spec 037 §3.1).
+#
+# rauthy captured these in its own subshell above, so unsetting them now is
+# free, and it is what makes "ENRAHITU_SMTP_* is absent from the application
+# process" a fact rather than an intention. Spec 026 scrubbed the MAPPED names
+# (SMTP_*) and left the prefixed originals inherited, which was correct for what
+# 026 claimed and is not enough for what 037 claims: ENRAHITU_SMTP_PASSWORD is
+# the IdP's relay credential, and an application that never sends through that
+# relay has no business holding it.
+for name in ${!ENRAHITU_SMTP_*}; do
+  unset "$name"
+done
 
 # The encore build docker image start command (asserted against the base
 # image by scripts/docker-build.sh).

@@ -248,6 +248,66 @@ describe("entrypoint mail passthrough (spec 026)", () => {
     expect(inner).toEqual(["SMTP_URL=smtp.example.com"]);
   });
 
+  it("holds each mail surface in exactly one process (spec 037 §3.1)", () => {
+    // Two surfaces means two holders, and that has to be true in BOTH
+    // directions or it is one surface with extra prefixes. rauthy must not
+    // inherit the application's relay credentials, and the application must not
+    // keep the IdP's once rauthy's subshell has captured them.
+    const script = readFileSync(ENTRYPOINT, "utf8");
+    const harness = join(dir, "surfaces.sh");
+    writeFileSync(
+      harness,
+      [
+        "#!/bin/bash",
+        "set -euo pipefail",
+        bashFunction(script, "export_smtp_env"),
+        // rauthy's subshell, in the order the entrypoint runs it.
+        '( export_smtp_env; for n in ${!ENRAHITU_MAIL_*}; do unset "$n"; done;',
+        '  env | grep -E "^(SMTP_|ENRAHITU_MAIL_)" | sort | sed "s/^/rauthy /" ) || true',
+        // Then the app process, after the IdP's surface is dropped.
+        'for n in ${!ENRAHITU_SMTP_*}; do unset "$n"; done',
+        'env | grep -E "^(ENRAHITU_SMTP_|ENRAHITU_MAIL_)" | sort | sed "s/^/app /" || true',
+        "",
+      ].join("\n"),
+      { mode: 0o755 },
+    );
+    const out = spawnSync("bash", [harness], {
+      env: {
+        ...process.env,
+        ENRAHITU_SMTP_URL: "idp-relay.example.org",
+        ENRAHITU_SMTP_PASSWORD: "idp-secret",
+        ENRAHITU_MAIL_HOST: "app-relay.example.org",
+        ENRAHITU_MAIL_PASSWORD: "app-secret",
+      },
+      encoding: "utf8",
+    });
+    const lines = out.stdout.trim().split("\n").filter(Boolean);
+    const rauthy = lines.filter((l) => l.startsWith("rauthy ")).map((l) => l.slice(7));
+    const app = lines.filter((l) => l.startsWith("app ")).map((l) => l.slice(4));
+
+    // rauthy holds its own relay, mapped, and none of the application's.
+    expect(rauthy).toContain("SMTP_URL=idp-relay.example.org");
+    expect(rauthy).toContain("SMTP_PASSWORD=idp-secret");
+    expect(rauthy.some((l) => l.startsWith("ENRAHITU_MAIL_"))).toBe(false);
+
+    // The application holds its own and none of the IdP's.
+    expect(app).toContain("ENRAHITU_MAIL_HOST=app-relay.example.org");
+    expect(app).toContain("ENRAHITU_MAIL_PASSWORD=app-secret");
+    expect(app.some((l) => l.startsWith("ENRAHITU_SMTP_"))).toBe(false);
+  });
+
+  it("drops each surface at the right point in the script", () => {
+    // Placement is the guarantee. Unsetting ENRAHITU_SMTP_* before the rauthy
+    // subshell would leave the IdP with no relay at all.
+    const script = readFileSync(ENTRYPOINT, "utf8");
+    expect(script.indexOf("  export_smtp_env\n")).toBeLessThan(
+      script.indexOf("for name in ${!ENRAHITU_SMTP_*}"),
+    );
+    expect(script.indexOf("for name in ${!ENRAHITU_MAIL_*}")).toBeLessThan(
+      script.indexOf("for name in ${!ENRAHITU_SMTP_*}"),
+    );
+  });
+
   it("scrubs before the app starts, and maps only inside the rauthy subshell", () => {
     // Placement is the whole guarantee: mapping at top level would hand the app
     // process the IdP's mail credentials.

@@ -1,0 +1,8 @@
+Hello {{memberName}},
+
+We have recorded your payment of {{amount}} towards your {{tierLabel}}
+membership of {{orgName}}, received on {{paidOn}}.
+
+Your membership now runs to {{renewsOn}}. Thank you for your continued support.
+
+{{orgName}}

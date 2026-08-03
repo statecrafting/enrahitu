@@ -49,13 +49,14 @@
       "Amendment (2026-07-29): the hiq service drops to zero capabilities",
       "Amendment (2026-07-29b): the state service joins the manifest (spec 032)",
       "Amendment (2026-07-29c): the control plane joins, and the chain records allows",
-      "Amendment (2026-07-29d): the manifest splits in two (spec 035)"
+      "Amendment (2026-07-29d): the manifest splits in two (spec 035)",
+      "Amendment (2026-08-02): a second transport at the egress seam (spec 037)"
     ],
     "specPath": "specs/021-kernel-native-consumption/spec.md",
     "status": "approved",
     "summary": "Phase A of the enforcement seam (spec 001 section 4.6, item 1 of the section 5 sequencing): the substrate consumes @statecrafting/kernel-native 0.1.0 (statecrafting spec 004) at the existing napi boundary. Three deliverables. Extraction from day one: the toolchain drives the vendored tsparser, lowers encore meta plus the capability manifest (app-manifest.json, the authored ceiling) into app-model.json per spec 020, runs the verify step (observed usage subset-of declared, ban-list, sorted arrays, schema-valid), seals the gate config hash and the integrity hash, and the committed model is a governed derived artifact whose staleness fails the gate. The kernel at the napi boundary: boot is fail-closed on the nine refusals and write-once per process; the operations that already route through Rust (CoreLedger driver calls, hiqlite kv/counters, secret reads, governed egress) are adjudicated against the booted model; a deny surfaces as a typed error naming the capability. The Decision ledger live: the deploy genesis commits to the model hash; denials and human-granted overrides append as hash-linked Decisions; the chain re-verifies via the kernel. The whole TS tier gets attempt-deny-audit semantics with no new runtime machinery. Landing this closes statecrafting spec 004 acceptance item 3 (the first consumer builds green against the published package).\n",
     "title": "Phase A: extraction, kernel-native adjudication, the live Decision ledger"
   },
-  "shardHash": "d0baaaf1c1720449eb708d48bf629741ec93cad5082782182511d21f939aee9b",
+  "shardHash": "7c2413971a3fb1700896f67427265dac59fc1bab5fae815101ceae13b33cbd5d",
   "specVersion": "1.1.0"
 }

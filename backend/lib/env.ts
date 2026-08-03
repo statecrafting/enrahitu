@@ -62,4 +62,23 @@ export const env = {
   ),
   rauthyScopes: strOr("RAUTHY_SCOPES", "openid profile email groups"),
   rauthyDefaultRole: strOr("RAUTHY_DEFAULT_ROLE", "user"),
+
+  // Application mail (spec 037 §3.1). A SEPARATE surface from ENRAHITU_SMTP_*,
+  // which is rauthy's alone and is scoped into the rauthy subshell by the
+  // entrypoint (spec 026 §3.1). Pointing this feature at those variables would
+  // have required un-scoping them, dismantling the invariant spec 026 exists to
+  // establish, and would have done it silently. Two surfaces, two holders, and
+  // the blast radius of a leaked credential stays the size of what leaked.
+  //
+  // `none` is the default and is not a testing convenience: a deployment that
+  // has configured no mail must boot, and must not pretend to send.
+  mailTransport: strOr("ENRAHITU_MAIL_TRANSPORT", "none"),
+  mailFrom: str("ENRAHITU_MAIL_FROM"),
+  mailRelayHost: strOr("ENRAHITU_MAIL_HOST", "localhost"),
+  mailRelayPort: num("ENRAHITU_MAIL_PORT", 25),
+  mailUser: str("ENRAHITU_MAIL_USER"),
+  // Plaintext with no STARTTLS. True only for a catcher on a private network
+  // (the dev topology's Mailpit); anywhere else this sends credentials and
+  // member data in the clear.
+  mailInsecure: bool("ENRAHITU_MAIL_DANGER_INSECURE", false),
 };

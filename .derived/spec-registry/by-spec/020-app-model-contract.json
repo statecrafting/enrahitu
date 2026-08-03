@@ -35,6 +35,6 @@
     "summary": "The build/run-time contract of a governed cell: one language-neutral app-model.json, extracted from source, describing what an app contains and what it is permitted to do. One model, two producers (the vendored tsparser for the TS tier; the Phase B Rust registry), hash-anchored via the family primitives, drift-enforced by the coupling gate, seeding the Decision ledger genesis. This spec owns the contract itself: the JSON Schema (contracts/app-model.schema.json), the worked example, the determinism rules, and the versioning discipline. It absorbs the grand-refactor v0.1 draft verbatim as its starting point, completing the ownership hand-off that draft names. The model is the sibling of template.toml (spec 009), never its replacement: the factory keeps reading template.toml and nothing else; the model is produced inside an app's own build, after stamping, and is consumed by the kernel, the ledger, the coupling gate, and the admin dashboard.\n",
     "title": "The app-model.json extraction contract"
   },
-  "shardHash": "b35276082fb616013a1bdfc050de4bc7d66ff755929ac2c864a5f635821528fe",
+  "shardHash": "e618f46e33c738eaf3ff33f38a11cc29a4990eaad8bba86d7b3583358511c1e0",
   "specVersion": "1.1.0"
 }

@@ -157,7 +157,18 @@ faculties):
 - `ledger.append`, `ledger.read`, `ledger.verify`
 - `endpoint.call` (service-to-service)
 - `http.egress` (governed fetch; `constraints.domains` required)
+- `smtp.egress` (mail submission; `attributes.host` names the relay)
 - `tool.invoke` (agent tools)
+
+`smtp.egress` is the first addition after the original 28 (spec 037 §3.2), and
+what it cost is worth recording here because this list reads like something a
+consumer can extend. It is not. A kind must be added in three places before it
+exists: this enum, the toolchain's usage extractor, and **the kernel's kind
+table, compiled into `@statecrafting/kernel-native`**, which refuses to boot a
+model declaring a kind it cannot classify. The third is an upstream change and a
+published release. That is the closed vocabulary working: a model cannot name
+its own ceiling into existence, and the price is a release on the critical path
+of every new effect family.
 
 `constraints` is a kind-specific object (well-known keys in v0.1:
 `tables`, `keyPrefix`, `domains`, `topics`, `tools`); per-kind

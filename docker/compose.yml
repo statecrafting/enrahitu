@@ -55,6 +55,19 @@ services:
       ENRAHITU_SMTP_PORT: "1025"
       ENRAHITU_SMTP_FROM: enrahitu-dev@localhost
       ENRAHITU_SMTP_DANGER_INSECURE: "true"
+      # The APPLICATION's mail, which is a separate surface from the IdP's above
+      # and is held by this process rather than scoped into the rauthy subshell
+      # (spec 037 §3.1). Same catcher, two senders: that is configuration
+      # duplication, which is cheap, rather than privilege duplication, which is
+      # not. Both point at Mailpit here and would point at different relays, or
+      # at least different credentials, anywhere else.
+      ENRAHITU_MAIL_TRANSPORT: smtp
+      ENRAHITU_MAIL_HOST: mailpit
+      ENRAHITU_MAIL_PORT: "1025"
+      ENRAHITU_MAIL_FROM: hollis-society@localhost
+      # Plaintext, no STARTTLS. Correct here and nowhere else: the relay is a
+      # catcher on the compose network that never forwards anything.
+      ENRAHITU_MAIL_DANGER_INSECURE: "true"
     depends_on:
       # Ordering only. Mailpit accepts connections immediately and rauthy does
       # not send during startup, so a health condition would buy nothing.

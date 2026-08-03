@@ -562,3 +562,39 @@ ceiling: a silently overridden capability is a widened ceiling that reads, in
 the composed file, exactly like a chassis decision. The single exception is
 additive grants to a chassis service, which is visible in the output and is the
 only way an organization's kind can be reconciled by a chassis controller.
+
+## Amendment (2026-08-02): a second transport at the egress seam (spec 037)
+
+§3.5's seam table is HTTP-shaped everywhere it touches the network, and mail is
+the first effect to escape it. `backend/kernel/egress.ts` gains
+`demandSmtpEgress(resource, host)`, adjudicating `smtp.egress` with the relay
+host as an attribute exactly as `domain` rides for HTTP, so a fleet may pin
+which relay a cell is allowed to reach.
+
+One row joins the table:
+
+| Site | Kind and resource | Attributes |
+|---|---|---|
+| `backend/mail/transport.ts`, sole opener of a socket | `smtp.egress` on `mail-relay` | `host` = relay hostname |
+
+**Only the adjudication lives in `egress.ts`; the socket does not.** The facade
+above is the one module permitted a bare `fetch`, and the mail transport becomes
+its counterpart for SMTP rather than an extension of it: a governed fetch and a
+raw TCP conversation have nothing in common but the need to be adjudicated
+first, and merging them would put a protocol implementation inside the module
+whose whole value is being small enough to audit at a glance.
+
+**What this cost is the part worth recording.** The kind is not a string this
+repo can choose. The kernel refuses to boot a model declaring a kind it cannot
+classify (§3.4), and that table is compiled into
+`@statecrafting/kernel-native`, so `smtp.egress` required an upstream change and
+a published release (0.2.0). This is the first time the ceiling has been felt
+from the consumer side, and it behaved exactly as §3.7's enforcement-honesty
+rule promises: the refusal was total and immediate rather than a silent
+downgrade. The alternative on offer was to declare mail as `http.egress` on a
+`mail-relay` resource, which would have booted, passed every check, and recorded
+an SMTP socket as an HTTP request in the Decision ledger. **An ungoverned channel
+is visible; a mislabelled one is not.**
+
+`app-manifest.json` and `app-model.json` grow the capability, the `mail` service
+that holds it, and `cap.secret.mail-password` alongside.

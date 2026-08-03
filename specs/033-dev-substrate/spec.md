@@ -432,3 +432,23 @@ boots when the working tree is mid-edit. The watch loop therefore does not pick
 them up, and a change to either needs `docker compose up -d --build`. This cost
 a confusing round trip while building spec 026 and is recorded so it costs the
 next person none.
+
+## Amendment (2026-08-02): the catcher gains a second sender (spec 037)
+
+The amendment above put Mailpit in the topology for the IdP's mail. Spec 037
+gives the application its own outbound channel, and the dev topology configures
+it at the same catcher: `ENRAHITU_MAIL_TRANSPORT=smtp` pointed at
+`mailpit:1025`, with `ENRAHITU_MAIL_FROM` set to an association address so the
+sender identity is visible in what arrives.
+
+**Both surfaces pointing at one relay is the normal case and not a shortcut.**
+Spec 037 §3.1 keeps them separate because sharing one variable would be
+privilege duplication; pointing two configured surfaces at the same host is
+configuration duplication, which is what most real deployments will also do.
+What the dev loop demonstrates by having both is that the two senders are
+distinguishable in the catcher, which is the property an operator actually
+checks when mail goes missing.
+
+`ENRAHITU_MAIL_DANGER_INSECURE=true` is correct here and nowhere else: the
+transport otherwise refuses a relay that offers no STARTTLS, and the catcher on
+the compose network never forwards anything.

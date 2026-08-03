@@ -152,3 +152,24 @@ controls, which is honest degradation instead of an unenforceable
 per-client limit. `ENRAHITU_TRUSTED_PROXY_HOPS` restores the precise
 tier. `API_LIMIT`, `AUTH_LIMIT`, the fixed-window arithmetic, and the
 fail-open-on-backend-error policy are unchanged.
+
+## Amendment (2026-08-02): a non-auth secret in the auth library (spec 037)
+
+`lib/secrets.ts` gains `mailPasswordValue()`, adjudicating
+`secret.read` of `enrahitu_mail_password` like every other accessor here
+(§5's rule is unchanged and is the reason this belongs here rather than in
+`backend/mail/`).
+
+**It is worth naming that this secret has nothing to do with authentication.**
+The module is not "the auth service's secrets"; it is the one place in the tree
+permitted to bind `encore.dev/config`, which the extraction ban-list enforces. A
+second binding site elsewhere would mean two places where credential material
+enters the process and only one of them adjudicating, so the module's boundary
+is the ban, not the subject matter. This spec owns the file because of where the
+file sits, and a reader looking for the mail relay's password should expect to
+find it here.
+
+It is deliberately NOT rauthy's relay password. Spec 037 §3.1 keeps the
+application's mail credentials and the IdP's on separate surfaces held by
+separate processes; `ENRAHITU_SMTP_PASSWORD` never enters this process at all,
+and the entrypoint now enforces that (spec 007's amendment of the same date).

@@ -27,19 +27,23 @@ import { logInfo, logWarn } from "../lib/logger";
 import { admit, get, list, setStatus, type Change, type ControllerSpec } from "../control";
 import { withLease } from "../state";
 
+import { raiseNotice } from "../mail/notice";
+
 import { today } from "./dates";
 import {
   DUES_INVOICE,
+  MEMBER,
   MEMBERSHIP,
   TENANT,
   TIER,
   type DuesInvoiceSpec,
   type InvoiceStatus,
+  type MemberSpec,
   type MembershipSpec,
   type TenantSpec,
   type TierSpec,
 } from "./kinds";
-import { evaluate, invoiceNameFor } from "./renewal";
+import { evaluate, invoiceNameFor, type NoticeIntent } from "./renewal";
 
 export const RENEWAL_CONTROLLER = "renewal";
 
@@ -103,7 +107,87 @@ export async function reconcileMembership(
     });
   }
 
+  if (plan.notice) {
+    await raiseDuesNotice(tenant, plan.notice, membership.spec, tier!.spec);
+  }
+
   await setStatus(MEMBERSHIP, name, plan.status, { tenant, fence, actor: ACTOR });
+}
+
+function money(cents: number): string {
+  return `${(cents / 100).toFixed(2)}`;
+}
+
+/**
+ * Resolve a notice's recipient and wording data, then raise it (spec 037).
+ *
+ * Raising is idempotent by name, so this runs on every reconcile that plans a
+ * notice and produces one resource. Nothing here awaits a relay: the notice is
+ * admitted and the mail controller delivers it, which is what keeps a reconcile
+ * pass free of the one operation that can block for thirty seconds.
+ *
+ * A failure to raise is swallowed deliberately. Dues are the thing that must
+ * converge; a notice is a courtesy on top of it, and a mail subsystem that is
+ * misconfigured must not stop a membership from lapsing or renewing correctly.
+ */
+async function raiseDuesNotice(
+  tenant: string,
+  intent: NoticeIntent,
+  membership: MembershipSpec,
+  tier: TierSpec,
+): Promise<void> {
+  try {
+    const invoice = await get<DuesInvoiceSpec>(DUES_INVOICE, intent.invoice, { tenant });
+    if (!invoice) return;
+    const member = await get<MemberSpec>(MEMBER, membership.member, { tenant });
+    // No address, no notice. A member record without an email is legitimate
+    // (an association may hold a postal-only member), so this is a skip rather
+    // than an error.
+    if (!member?.spec.email) return;
+
+    const org = await get<TenantSpec>(TENANT, tenant);
+    const orgName = org?.spec.displayName ?? tenant;
+    const status = invoice.status as InvoiceStatus | null;
+
+    const params: Record<string, string> =
+      intent.template === "dues-reminder"
+        ? {
+            memberName: member.spec.displayName,
+            tierLabel: tier.label,
+            orgName,
+            amount: money(invoice.spec.amountCents),
+            periodStart: invoice.spec.periodStart,
+            dueOn: invoice.spec.dueOn,
+          }
+        : {
+            memberName: member.spec.displayName,
+            tierLabel: tier.label,
+            orgName,
+            amount: money(invoice.spec.amountCents),
+            paidOn: status?.paidOn ?? invoice.spec.periodStart,
+            renewsOn: invoice.spec.periodEnd,
+          };
+
+    const subject =
+      intent.template === "dues-reminder"
+        ? `${orgName}: your membership dues are due ${invoice.spec.dueOn}`
+        : `${orgName}: receipt for your membership dues`;
+
+    await raiseNotice(
+      tenant,
+      intent.template,
+      intent.invoice,
+      { to: member.spec.email, template: intent.template, params, subject },
+      { actor: ACTOR },
+    );
+  } catch (err) {
+    logWarn("renewal: could not raise the dues notice", {
+      tenant,
+      invoice: intent.invoice,
+      template: intent.template,
+      error: String(err),
+    });
+  }
 }
 
 /** The membership a change concerns, or null when the change needs no reconcile. */

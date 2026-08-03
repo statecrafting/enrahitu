@@ -71,6 +71,11 @@
       "resource": "state"
     },
     {
+      "id": "cap.egress.mail-provider",
+      "kind": "http.egress",
+      "resource": "mail-provider"
+    },
+    {
       "id": "cap.egress.rauthy-issuer",
       "kind": "http.egress",
       "resource": "rauthy-issuer"
@@ -116,9 +121,19 @@
       "resource": "jwt_refresh_public_key"
     },
     {
+      "id": "cap.secret.mail-password",
+      "kind": "secret.read",
+      "resource": "enrahitu_mail_password"
+    },
+    {
       "id": "cap.secret.rauthy-client",
       "kind": "secret.read",
       "resource": "rauthy_client_secret"
+    },
+    {
+      "id": "cap.smtp.mail-relay",
+      "kind": "smtp.egress",
+      "resource": "mail-relay"
     }
   ],
   "services": {
@@ -179,6 +194,20 @@
       "tier": "ts",
       "role": "library",
       "capabilities": []
+    },
+    "mail": {
+      "tier": "ts",
+      "capabilities": [
+        "cap.db.state.read",
+        "cap.db.state.txn",
+        "cap.db.state.write",
+        "cap.lock.state.acquire",
+        "cap.notify.state.listen",
+        "cap.notify.state.publish",
+        "cap.egress.mail-provider",
+        "cap.secret.mail-password",
+        "cap.smtp.mail-relay"
+      ]
     },
     "members": {
       "tier": "ts",
@@ -249,6 +278,9 @@
       },
       {
         "name": "rauthy_client_secret"
+      },
+      {
+        "name": "enrahitu_mail_password"
       }
     ]
   },
