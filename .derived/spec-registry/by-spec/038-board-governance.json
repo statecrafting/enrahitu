@@ -1,0 +1,47 @@
+{
+  "record": {
+    "created": "2026-08-03",
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "021-kernel-native-consumption",
+      "034-control-plane",
+      "035-chassis-boundary",
+      "036-membership-core",
+      "037-app-mail"
+    ],
+    "establishes": [
+      {
+        "kind": "directory",
+        "path": "backend/governance/"
+      }
+    ],
+    "id": "038-board-governance",
+    "implementation": "pending",
+    "sectionHeadings": [
+      "038: Board governance",
+      "1. Purpose",
+      "2. Territory",
+      "3. Behavior",
+      "3.1 Five kinds, and the two audiences that shape them",
+      "3.2 The meeting freezes its roll and its rule",
+      "3.3 A ballot is named for its voter",
+      "3.4 Eligibility: refused at the edge, decided at the tally",
+      "3.5 What \"carried\" means",
+      "3.6 The lifecycle on the clock",
+      "3.7 Instants and days, and why there is no timezone",
+      "3.8 Minutes, and the only effect a motion is allowed to have",
+      "3.9 Officer terms, and the shape generalizing",
+      "3.10 The two planes, and the first member-plane write",
+      "3.11 What the record does not claim",
+      "3.12 When people are told",
+      "4. Acceptance",
+      "5. Out of scope"
+    ],
+    "specPath": "specs/038-board-governance/spec.md",
+    "status": "approved",
+    "summary": "Phase 5's second slice (spec 001 §5.1). Spec 036 built one domain completely to find the second-order questions; this is the domain that tests whether the shape it found generalizes, and it does, with three additions that only a domain producing a durable public record asks. A meeting freezes both its roll and its quorum rule at the moment it is called, because memberships lapse on a calendar and bylaws are amended, so a quorum recomputed at the tally makes a minute whose answer changes after the fact, and a tally that can change is not a record. A ballot is named `<motion>-<member>`, so one vote per member is structural rather than checked, from the same mechanism that gives spec 036 one invoice per term; it also makes a ballot the first resource in the corpus whose spec an ordinary member writes, which is what turns the Decision chain into a voting record rather than an operations log. And eligibility is refused at the endpoint and decided again at the tally, because the endpoint is the only place the caller's identity exists and the tally is the only place that can be authoritative about everything that did not arrive through it.\n",
+    "title": "Board governance: meetings, motions, ballots, and the frozen roll"
+  },
+  "shardHash": "768c763aff978cc6c4693ef0d97572e0544172edb7cb1749cbeab11d1d1442f6",
+  "specVersion": "1.1.0"
+}
