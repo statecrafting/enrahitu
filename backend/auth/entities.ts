@@ -12,39 +12,18 @@ import { randomUUID } from "node:crypto";
 
 import { Column, Entity } from "../core/ledger";
 
-/** One row per authenticated principal across all SSO drivers. */
-@Entity("user_account")
-export class UserAccount {
-  @Column({ primary: true }) id = randomUUID();
-  @Column({ unique: true }) email = "";
-  @Column() name = "";
-  /** Multi-role set with any-of membership, never a hierarchy. */
-  @Column({ type: "json" }) roles: string[] = ["user"];
-  @Column() ssoProvider = "";
-  @Column({ nullable: true, index: true }) ssoProviderId: string | null = null;
-  @Column({ type: "json" }) attributes: Record<string, unknown> = {};
-  @Column({ type: "boolean" }) isActive = true;
-  @Column({ type: "timestamp", nullable: true }) lastLoginAt: Date | null = null;
-  @Column({ type: "timestamp" }) createdAt = new Date();
-  @Column({ type: "timestamp" }) updatedAt = new Date();
-}
-
 /**
- * Hash-only refresh-token store with rotation and server-side revocation.
- * The raw refresh token is never persisted: only its SHA-256 hash.
+ * `UserAccount` and `RefreshToken` used to live here and retired on 2026-08-03
+ * (spec 004's rewrite, decided in spec 001 §5.3).
+ *
+ * They were the app's second opinion about a question rauthy already answers.
+ * `UserAccount` minted a local id that became the session's subject, which is
+ * why a `member.sub` recorded against rauthy could never match a session;
+ * `RefreshToken` made this app the arbiter of whether a session was still
+ * alive, so revoking a user at the IdP left them logged in here.
+ *
+ * The tables are not dropped: see the note in `store.ts`.
  */
-@Entity("refresh_token")
-export class RefreshToken {
-  @Column({ primary: true }) id = randomUUID();
-  @Column({ index: true }) userId = "";
-  @Column({ unique: true }) tokenHash = "";
-  @Column({ type: "timestamp" }) issuedAt = new Date();
-  @Column({ type: "timestamp" }) expiresAt = new Date();
-  @Column({ type: "timestamp", nullable: true }) revokedAt: Date | null = null;
-  @Column({ nullable: true }) replacedBy: string | null = null;
-  @Column({ nullable: true }) userAgent: string | null = null;
-  @Column({ nullable: true }) ipAddress: string | null = null;
-}
 
 /**
  * Durable, queryable audit trail. Writes are best-effort and never block the

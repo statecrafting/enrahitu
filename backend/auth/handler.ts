@@ -44,6 +44,7 @@ export const auth = authHandler<AuthParams, AuthData>(async (params) =>
       return {
         userID: claims.userID,
         email: claims.email,
+        emailVerified: claims.emailVerified,
         name: claims.name,
         roles: claims.roles,
         ssoProvider: claims.ssoProvider,

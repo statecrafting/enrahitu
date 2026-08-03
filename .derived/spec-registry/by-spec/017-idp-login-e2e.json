@@ -24,13 +24,14 @@
       "3. Behavior",
       "4. Acceptance",
       "5. Out of scope",
-      "Amendment (2026-07-29): one frontend install in the e2e workflow"
+      "Amendment (2026-07-29): one frontend install in the e2e workflow",
+      "Amendment (2026-08-03): the test had been failing since the SPA moved (spec 004)"
     ],
     "specPath": "specs/017-idp-login-e2e/spec.md",
     "status": "approved",
     "summary": "The rauthy driver's full browser round-trip (SPA -> same-origin /auth proxy -> rauthy login UI -> OIDC callback -> app session cookie) has been exercised by hand but never by an automated end-to-end test; this was the standing owed item from the enrahi phase close-out. This spec adds a Playwright-driven e2e that boots the app plus the dev rauthy (docker compose, spec 005), completes a real password login in a real browser engine, and asserts the session, profile, and logout behavior. Kept out of the default verify verb; runs as its own npm script and an optional scheduled CI job.\n",
     "title": "End-to-end rauthy login validation (browser-real)"
   },
-  "shardHash": "e5edcee9df68e60192e57becfc5f81205b3ed7bc4dcbd140e4fa3fa548add972",
+  "shardHash": "b16c2005939ba5839f138784056175974c799de1c45675c5caacd24daf58ccae",
   "specVersion": "1.1.0"
 }

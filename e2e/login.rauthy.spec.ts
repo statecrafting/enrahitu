@@ -56,10 +56,22 @@ test("rauthy password login round-trip stays on the app origin", async ({
     if (u.origin !== appOrigin) offOrigin.push(req.url());
   });
 
-  // 1. Land on the SPA and start the rauthy login. The link renders only once
-  //    GET /api/v1/auth/status reports the rauthy driver, so auto-waiting on
-  //    visibility also proves the app is configured for rauthy.
+  // 1. Land on the SPA and start the rauthy login.
+  //
+  //    The driver list lives on /login, not on the landing page: spec 015's
+  //    React convergence (2026-07-29) split "are you signed in" from "pick a
+  //    driver", and this test kept walking straight to the driver link. It had
+  //    been failing since, unnoticed, because this workflow is nightly and
+  //    dispatch-only rather than part of the PR gate. Going through the landing
+  //    page rather than straight to /login is deliberate: the route a person
+  //    actually takes is the one worth proving.
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: /welcome/i })).toBeVisible();
+  await page.getByRole("link", { name: /^sign in$/i }).click();
+
+  //    The driver link renders only once GET /api/v1/auth/status reports the
+  //    rauthy driver, so auto-waiting on visibility also proves the app is
+  //    configured for rauthy.
   const signIn = page.getByRole("link", { name: /sign in with rauthy/i });
   await expect(signIn).toBeVisible();
   await signIn.click();
@@ -101,6 +113,43 @@ test("rauthy password login round-trip stays on the app origin", async ({
   expect((await me.json()).email).toBe(RAUTHY_USER);
   // The SPA has left the signed-out state.
   await expect(signIn).toHaveCount(0);
+
+  // 4b. Renewal is a round-trip to the authority (spec 004 §3.4). This is the
+  //     half of the rewrite unit tests cannot reach: the app forwards rauthy's
+  //     own refresh token to rauthy's token endpoint and re-mints from the
+  //     claims that come back, so a green assertion here is rauthy agreeing
+  //     that the session is still alive rather than this app deciding it is.
+  //     Timing matters here and is the reason the dev client's
+  //     `access_token_lifetime` is 60 seconds: rauthy stamps a refresh token
+  //     with `nbf = issued + access_token_lifetime - 60`, so it cannot be used
+  //     until sixty seconds before its access token expires. At 60 the window
+  //     opens immediately; at rauthy's old 1800 this assertion could only have
+  //     run after idling for 29 minutes. See docker/rauthy/README.md.
+  const renewed = await page.request.post("/api/v1/auth/refresh");
+  expect(renewed.ok(), `refresh said ${renewed.status()}: ${await renewed.text()}`).toBeTruthy();
+
+  const afterRenewal = (await context.cookies()).find((c) => c.name === "access_token")?.value;
+  expect(afterRenewal).toBeTruthy();
+
+  //     Deliberately NOT asserting the token changed: RS256 is deterministic,
+  //     so a renewal in the same second as the login produces byte-identical
+  //     claims and therefore an identical token. What matters is what it says.
+  const claims = JSON.parse(
+    Buffer.from(afterRenewal!.split(".")[1]!, "base64url").toString("utf8"),
+  ) as { sub: string; iat: number; exp: number; emailVerified: boolean };
+
+  //     The app's session expires when rauthy's does. If it expired sooner,
+  //     every renewal would arrive before `nbf` and the user would be logged
+  //     out permanently at the app's TTL (spec 004 §3.4).
+  expect(claims.exp - claims.iat).toBe(60);
+  //     The subject is the IdP's, which is what spec 036 §3.8 binds a member to.
+  expect(claims.sub).toBe((await me.json()).id);
+  expect(claims.emailVerified).toBe(true);
+
+  // The renewed session is the same principal, still usable.
+  const meAgain = await page.request.get("/api/v1/auth/me");
+  expect(meAgain.status()).toBe(200);
+  expect((await meAgain.json()).id).toBe((await me.json()).id);
 
   // 5. Logout requires the CSRF header (double-submit): fetch the token, then
   //    POST it. A headerless logout is a 400 by design (spec 004), so this also

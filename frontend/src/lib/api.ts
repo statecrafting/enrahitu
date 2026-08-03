@@ -14,15 +14,21 @@ export interface AuthStatus {
   drivers: string[];
 }
 
+/**
+ * The current principal, as the IdP most recently described them.
+ *
+ * `isActive`, `lastLoginAt` and `createdAt` retired with the local account
+ * table (spec 004's rewrite): they described a row this app kept, and the app
+ * no longer keeps one. Whether an account is active is the IdP's to decide, and
+ * it enforces it by declining to renew the session.
+ */
 export interface Me {
   id: string;
   email: string;
+  emailVerified: boolean;
   name: string;
   roles: string[];
   ssoProvider: string;
-  isActive: boolean;
-  lastLoginAt: string | null;
-  createdAt: string;
 }
 
 async function get<T>(path: string): Promise<T> {

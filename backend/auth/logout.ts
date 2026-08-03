@@ -1,17 +1,23 @@
 /**
- * POST /api/v1/auth/logout: revoke the active refresh token, clear cookies,
- * and return a redirect target. auth:true and CSRF-checked.
+ * POST /api/v1/auth/logout: drop the session and send the browser to the
+ * authority to end it there too. auth:true and CSRF-checked.
+ *
+ * There is no local revocation step any more, because there is nothing local to
+ * revoke: clearing the cookies discards the only copy of the IdP's refresh
+ * token this app ever held. **The RP-initiated redirect below is therefore no
+ * longer a courtesy but the actual logout** (spec 005), since it is what ends
+ * the session at the authority; without it the browser would still hold a live
+ * rauthy session and the next login would silently succeed with no prompt.
  */
 import { api } from "encore.dev/api";
 import { getAuthData } from "~encore/auth";
 
 import { writeAudit } from "../lib/audit";
-import { OIDC_ID_HINT_COOKIE, REFRESH_COOKIE } from "../lib/cookie-config";
+import { OIDC_ID_HINT_COOKIE } from "../lib/cookie-config";
 import { clearAuthCookies, parseCookies } from "../lib/cookies";
 
 import { clientIp, userAgent, writeJson } from "./http";
 import { isRauthyConfigured, rauthyEndSessionUrl } from "./rauthy";
-import { findActiveRefreshToken, revokeRefreshToken } from "./refresh-token-model";
 import { frontendUrl } from "./service";
 
 export const logout = api.raw(
@@ -19,11 +25,6 @@ export const logout = api.raw(
   async (req, res) => {
     const auth = getAuthData();
     const cookies = parseCookies(req.headers.cookie);
-    const presented = cookies[REFRESH_COOKIE];
-    if (presented) {
-      const active = await findActiveRefreshToken(presented);
-      if (active) await revokeRefreshToken(active.id);
-    }
     if (auth) {
       await writeAudit({
         action: "auth.logout",

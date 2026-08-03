@@ -60,6 +60,9 @@ export const env = {
     "RAUTHY_REDIRECT_URI",
     "http://localhost:4000/api/v1/auth/rauthy/callback",
   ),
+  // Deliberately NOT `offline_access`: rauthy issues a refresh token from the
+  // client's `flows_enabled`, and asking for that scope makes it reject the
+  // authorize request outright (the login form never renders).
   rauthyScopes: strOr("RAUTHY_SCOPES", "openid profile email groups"),
   rauthyDefaultRole: strOr("RAUTHY_DEFAULT_ROLE", "user"),
 

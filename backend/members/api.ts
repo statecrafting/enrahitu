@@ -581,7 +581,11 @@ export const myMembership = api(
     const tenant = tenantId();
     return guarded(async () => {
       const members = await list<MemberSpec>(MEMBER, { tenant });
-      const mine = findLinkedMember(members, { userID: auth.userID, email: auth.email });
+      const mine = findLinkedMember(members, {
+        userID: auth.userID,
+        email: auth.email,
+        emailVerified: auth.emailVerified,
+      });
       if (!mine) {
         throw APIError.notFound(
           "no membership record is linked to this account; the association's staff can link one",

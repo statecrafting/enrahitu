@@ -1,6 +1,6 @@
 ---
 id: "004-auth-core"
-title: "Auth service on CoreLedger + hiqlite rate limiting"
+title: "The session adapter: rauthy is the principal authority"
 status: approved
 created: "2026-07-14"
 implementation: complete
@@ -14,68 +14,227 @@ establishes:
   - { kind: directory, path: "backend/lib/" }
   - "scripts/generate-keys.ts"
 summary: >
-  The authentication core, re-based from template-encore apps/api onto
-  enrahitu's own substrate: stateless RS256 JWT access tokens in httpOnly
-  cookies, rotated DB-backed refresh tokens, CSRF double-submit, roles, and
-  audit records on CoreLedger; login rate limiting on hiqlite counters.
-  Drivers are pluggable: mock (dev) here, rauthy OIDC in spec 005 (which
-  owns backend/auth/rauthy.ts inside this spec's directory claim).
+  Rewritten 2026-08-03 for the pivot (spec 001 §5.3): a thin adapter, not a
+  second auth system. rauthy owns authentication AND principal identity; this
+  service keeps only the same-origin httpOnly cookie shell, the CSRF
+  double-submit, and rate limiting. `UserAccount` and `RefreshToken` retire,
+  because each was a second opinion about a question the IdP already answers,
+  and each was wrong in a way nothing could see from outside: the local account
+  id became the session's subject, so a principal binding recorded against
+  rauthy could never match a session, and the local refresh table made this app
+  the arbiter of whether a session was still alive, so revoking a user at the
+  IdP left them logged in here. The session now carries the IdP's `sub` and the
+  IdP's own refresh token; `email_verified` is threaded because the member
+  plane treats a verified address as proof of control. AuditLog survives: what
+  happened is application data and outlives whichever authority was asked.
 ---
 
-# 004: Auth core
+# 004: The session adapter
 
 ## 1. Purpose
 
-A complete, self-contained auth model with no managed dependencies: token
-issuance and verification are stateless (RS256 keypairs), session revocation
-is DB-backed (rotated refresh tokens on CoreLedger), and abuse is throttled
-in-process (hiqlite counters). The reference implementation is
-template-encore `apps/api`, ported off Encore `SQLDatabase`/Postgres.
+Spec 001 §5.3 decided this: **a thin adapter.** rauthy owns authentication and
+principal identity; this service owns the shell around it.
+
+The version this replaces was a complete, self-contained auth system, ported
+from template-encore before rauthy was in the picture. It minted its own RS256
+pair, kept its own `user_account` rows, and rotated its own DB-backed refresh
+tokens. Once rauthy became the IdP, all of that became a **second opinion about
+questions the IdP already answers**, and a second opinion in an auth system is
+not redundancy: it is a place for the two answers to differ.
+
+They did differ, in two ways that were invisible from outside and are the reason
+this rewrite is a fix rather than a tidy-up:
+
+- **The session's subject was the wrong identifier.** `upsertUserFromProfile`
+  minted a `UserAccount` with a fresh UUID and signed the access token with
+  *that* as `sub`, filing rauthy's own `sub` away as `ssoProviderId`. So the
+  principal binding spec 001 §5.3 describes, and which spec 036 §3.8 relies on
+  to answer "which member record is yours", **could never match a session**. The
+  branch that reads it was dead code, and every member-plane lookup silently
+  fell through to matching on an email address instead.
+- **The app decided whether a session was alive.** The refresh table meant an
+  administrator revoking a user at rauthy left that user logged in here until
+  their own token expired, with nothing to notice the difference.
 
 ## 2. Territory
 
-- `backend/auth/`: the Encore service: driver discovery (`drivers.ts`,
-  `GET /api/v1/auth/drivers|status|login`), the mock driver (`mock.ts`),
-  refresh rotation (`refresh.ts`, `refresh-token-model.ts`), session
-  surface (`me.ts`, `logout.ts`, `csrf-token.ts`), the auth handler
-  (`handler.ts`), user persistence (`user-model.ts`, `entities.ts`,
-  `store.ts`). `backend/auth/rauthy.ts` is the one file owned by spec 005.
-- `backend/lib/`: the shared security library: `jwt.ts` (RS256 sign/verify),
-  `cookies.ts` + `cookie-config.ts` (httpOnly cookie plumbing), `csrf.ts`
-  (double-submit), `rate-limit.ts` + `rate-limit-window.ts` (hiqlite-backed
-  windows), `roles.ts`, `audit.ts`, `security-headers.ts`, `env.ts`,
-  `secrets.ts`, `logger.ts`.
-- `scripts/generate-keys.ts`: dev keypair generation (`npm run
-  generate-keys`) writing `keys/*.pem` (gitignored). In the container,
-  first boot generates the same material (spec 007).
+- `backend/auth/`: driver discovery (`drivers.ts`), the mock driver (`mock.ts`),
+  session renewal (`refresh.ts`), the session surface (`me.ts`, `logout.ts`,
+  `csrf-token.ts`), the auth handler (`handler.ts`), login finalization
+  (`service.ts`), and the one surviving entity (`entities.ts`, `store.ts`).
+  `backend/auth/rauthy.ts` is owned by spec 005.
+- `backend/lib/`: `jwt.ts` (issuance + the session envelope), `jwt-verify.ts`,
+  `cookies.ts` + `cookie-config.ts`, `csrf.ts`, `rate-limit*.ts`, `roles.ts`,
+  `audit.ts`, `security-headers.ts`, `env.ts`, `secrets.ts`, `logger.ts`.
+- `scripts/generate-keys.ts`: dev keypair generation. In the container, first
+  boot generates the same material (spec 007).
+
+**Retired here**: `user-model.ts`, `refresh-token-model.ts`, and the
+`UserAccount` and `RefreshToken` entities.
 
 ## 3. Behavior
 
-- **Access tokens**: RS256 JWTs in httpOnly cookies; verification is
-  stateless against the public key. `GET /api/v1/auth/status` reports
-  cookie validity without ever returning 401.
-- **Cookie security follows the public origin's scheme, not NODE_ENV**:
-  cookies are `Secure` iff `FRONTEND_URL` is https. A production-mode
-  container served over plain http (a local trial of the packaged image)
-  must not mint Secure cookies: Safari drops them on http even for
-  localhost, silently breaking login. Spec 007 applies the same rule to
-  rauthy's session cookie via COOKIE_MODE.
-- **Refresh tokens**: DB-backed on CoreLedger, rotated on every
-  `POST /api/v1/auth/refresh`; reuse of a rotated token invalidates the
-  family.
-- **CSRF**: double-submit token via `GET /api/v1/auth/csrf-token`, enforced
-  on mutating endpoints.
-- **Rate limiting**: hiqlite counter windows around login and refresh.
-- **Drivers**: a driver is listed only when its configuration is present
-  (mock via env flag; rauthy when spec 005's config is set).
-  `GET /api/v1/auth/login` redirects to the default driver.
-- **Audit**: auth events append audit records on CoreLedger.
+### 3.1 What the app still does, and why it is not nothing
 
-## 4. Out of scope
+Handing sessions wholesale to rauthy would mean the SPA holding an IdP token and
+sending it as a bearer header, which gives up the properties spec 001 §4.4 and
+spec 005 were built for: an httpOnly cookie the page's JavaScript cannot read, a
+single origin, and no token in browser-accessible storage.
 
-- The rauthy OIDC driver and everything same-origin-IdP: spec 005.
-- MFA, WebAuthn, and account self-service: delegated to rauthy's own UI.
-- Multi-tenancy and organization modeling.
+So the app keeps the shell and gives up the authority:
+
+| Kept | Given to rauthy |
+|---|---|
+| same-origin httpOnly cookies | who the principal is (`sub`) |
+| CSRF double-submit | whether the session is still valid |
+| rate limiting on login and renewal | rotation and revocation |
+| a short-lived access assertion | the credential that renews it |
+| the audit trail | account lifecycle, MFA, self-service |
+
+### 3.2 The principal is the IdP's subject
+
+The access token's `sub` is rauthy's `sub`, verbatim. That single change is what
+makes `member.sub` (spec 036 §3.1) a binding that can actually match, and it is
+why the domain needs no translation table between "the person logged in" and
+"the person on this record".
+
+`email_verified` rides alongside, and is carried because it is an
+**authorization input rather than decoration**: spec 036 §3.8 falls back to
+matching a session to a member record by email address for members enrolled
+before they ever log in, and matching on an address nobody proved control of
+would let an account read another member's dues. Absent claim means false. An
+IdP that does not say is an IdP that did not verify.
+
+**`preferred_username` no longer stands in for a missing email.** It used to,
+and that was the hole underneath the fallback: a display handle that no provider
+verifies, and several let the user choose, was being written into the field the
+member plane matches on. An absent email claim now yields an absent email, which
+links nothing.
+
+### 3.3 No local account row
+
+Nothing is written at login. A principal exists because rauthy says so.
+
+The fields that retired with the table were all answers this app was in no
+position to give. `isActive` is rauthy's to decide, and it enforces it by
+declining to renew the session, which is stronger than a boolean this app would
+have had to keep in step. `lastLoginAt` and `createdAt` described a row rather
+than a person.
+
+`GET /api/v1/auth/me` therefore reads from the session, and what it reports is
+what the IdP said at most one access-token lifetime ago.
+
+### 3.4 Renewal is a round-trip to the authority
+
+The session cookie carries a **signed envelope**, and the distinction between an
+envelope and a credential is the point: it carries no identity, grants nothing
+on presentation, and is worthless without what the authority put inside it. The
+signature is integrity only, so a browser cannot hand back an envelope naming a
+different driver.
+
+- **rauthy**: the envelope holds the IdP's own refresh token. `POST
+  /api/v1/auth/refresh` forwards it to rauthy's token endpoint and re-mints from
+  the claims that come back. A refresh grant returns no id token, so the claims
+  come from userinfo, asked about the subject the envelope pinned at login;
+  pinning it also means a renewal cannot quietly change who the session belongs
+  to. Roles and `email_verified` are **re-read on every renewal** rather than
+  carried forward, so a role removed at the IdP takes effect within one
+  access-token lifetime. A refused grant is the ordinary shape of "this session
+  is over" and answers 401.
+
+  **The session's lifetime is the authority's, and this is load bearing rather
+  than tidy.** rauthy stamps every refresh token with
+
+  ```
+  nbf = issued + access_token_lifetime - 60      # token_set.rs
+  ```
+
+  so a refresh token **cannot be used until sixty seconds before the access
+  token it came with expires**. The intent is that a client renews when its
+  token is nearly spent rather than hoarding fresh refresh tokens.
+
+  The consequence is not obvious and is severe. If this app expired its own
+  session earlier than rauthy expires its access token, every renewal would
+  arrive before `nbf`, be refused with `Token is not valid yet`, and **every user
+  would be logged out at the app's TTL with no way to recover**. With the app's
+  original fixed 15 minutes against rauthy's default 30, that is exactly what
+  would have shipped: a session that dies at fifteen minutes, permanently, in
+  production only.
+
+  So the app mints its access token with the lifetime rauthy reports in
+  `expires_in` rather than one of its own. Following the authority's clock is
+  the same decision as following its `sub`: if rauthy owns the session, it owns
+  when the session ends.
+
+  This was found by an end-to-end test rather than by reading, and could not
+  have been found any other way: every unit test passed, and the failure needs a
+  real IdP issuing a real refresh token to appear at all.
+- **mock**: the envelope names a profile index. It is the development driver and
+  has no authority to ask, so renewal is refused outright when the mock driver
+  is disabled, which it is in production. A session that renews itself with no
+  authority behind it is a permanent credential.
+
+Logout clears the cookies, which discards the only copy of the refresh token the
+app ever held, and then sends the browser through rauthy's end-session endpoint.
+**That redirect is no longer a courtesy but the actual logout** (spec 005): it is
+what ends the session at the authority, and without it the browser still holds a
+live rauthy session and the next login succeeds with no prompt.
+
+### 3.5 What is deliberately lost
+
+Rotation and revocation semantics become rauthy's to define. This is the cost
+spec 001 §5.3 accepted in exchange for having exactly one session authority, and
+it is worth stating as a loss rather than filed as a detail:
+
+- The app can no longer revoke one session without revoking at rauthy.
+- Reuse detection of a rotated refresh token is rauthy's if it does it at all.
+- The window between a revocation at the IdP and its effect here is one
+  access-token lifetime (15 minutes), where the old design could in principle
+  have been immediate. It never was, because nothing consulted the IdP.
+
+### 3.6 Migration, and the discontinuity in the audit trail
+
+`user_account` and `refresh_token` are **not dropped**. A deployment upgrading
+through this change has rows in them, and they are the only record of who logged
+in before the cutover; dropping them at boot to reclaim two unused tables would
+destroy that. They are left in place, unread, for an operator to remove.
+
+Every session in flight at the cutover is invalidated, because the envelope
+shape changed and the old refresh tokens no longer verify. Users log in again
+once. That is the honest cost of the change and there is no version of it that
+preserves a session whose subject is about to become a different identifier.
+
+**`AuditLog` records written before and after refer to the same person by two
+different identifiers**: the old local account id, and the IdP subject. That
+discontinuity is permanent and is recorded here rather than discovered later, in
+the same spirit as spec 036 §3.2's reasoning about tenants entering primary
+keys. The cutover date is the translation rule.
+
+## 4. Acceptance
+
+1. The access token's subject is the IdP's `sub`, so a `member.sub` recorded
+   against rauthy matches the session (§3.2).
+2. `email_verified` is carried into the session, defaults to false when the
+   claim is absent, and is never true when there is no address to qualify.
+3. `preferred_username` never becomes the session's email; an absent email
+   claim yields an absent email.
+4. The member plane links by `sub`, falls back only to a VERIFIED address, and
+   links nothing for a session carrying no subject (spec 036 §3.8).
+5. The session envelope round-trips, and a shape this app does not issue is
+   refused even when correctly signed.
+6. Renewal forwards the IdP's refresh token and re-mints from the returned
+   claims; a refused grant answers 401 and clears the cookies.
+7. Renewal on a mock envelope is refused when the mock driver is disabled.
+8. Logout clears the cookies and, with a hint and a configured driver, redirects
+   through rauthy's end-session endpoint.
+9. No `user_account` or `refresh_token` row is read or written by any code path.
+10. The app's access token expires no earlier than the authority's, so a renewal
+    never arrives before the refresh token's `nbf` (§3.4). Asserted in the login
+    e2e by decoding the renewed token: `exp - iat` equals rauthy's configured
+    `access_token_lifetime`.
+11. The whole flow is exercised browser-real (spec 017): login, `/me`, renewal,
+    CSRF logout, RP-initiated logout, and 401 afterwards, all on one origin.
 
 ## 5. Phase A seam (amended by spec 021, 2026-07-20)
 

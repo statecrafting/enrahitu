@@ -19,8 +19,8 @@ export default function Profile() {
         <dd>{me.roles.join(", ")}</dd>
         <dt>provider</dt>
         <dd>{me.ssoProvider}</dd>
-        <dt>last login</dt>
-        <dd>{me.lastLoginAt ?? "n/a"}</dd>
+        <dt>email verified</dt>
+        <dd>{me.emailVerified ? "yes" : "no"}</dd>
       </dl>
       <Form method="post" action="/logout">
         <button className="button" type="submit">
