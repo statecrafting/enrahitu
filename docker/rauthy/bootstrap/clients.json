@@ -13,7 +13,7 @@
     "access_token_alg": "RS256",
     "id_token_alg": "RS256",
     "auth_code_lifetime": 60,
-    "access_token_lifetime": 1800,
+    "access_token_lifetime": 60,
     "scopes": ["openid", "email", "profile", "groups"],
     "default_scopes": ["openid"],
     "challenges": ["S256"],

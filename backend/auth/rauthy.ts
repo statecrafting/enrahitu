@@ -44,7 +44,8 @@ export function rauthyEndSessionUrl(idTokenHint: string): string {
   return url.href;
 }
 
-function getConfig(): Promise<client.Configuration> {
+/** The discovered issuer config, shared with the refresh grant (spec 004 §3.4). */
+export function rauthyConfig(): Promise<client.Configuration> {
   const issuer = new URL(env.rauthyIssuer!);
   // Governed egress (spec 021 §3.5): the discovery round-trip leaves the
   // process, adjudicated as http.egress on 'rauthy-issuer'. The issuer
@@ -58,17 +59,29 @@ function getConfig(): Promise<client.Configuration> {
   });
 }
 
-function profileFromClaims(claims: Record<string, unknown>): SSOProfile {
+export function profileFromClaims(claims: Record<string, unknown>): SSOProfile {
   const rolesClaim = claims["roles"] ?? claims["groups"];
   const roles = Array.isArray(rolesClaim)
     ? (rolesClaim as unknown[]).map(String)
     : [env.rauthyDefaultRole];
-  const email = (claims["email"] as string) ?? (claims["preferred_username"] as string) ?? "";
-  const name = (claims["name"] as string) ?? email;
+
+  // `preferred_username` deliberately does NOT stand in for a missing email.
+  // It used to, and that was a real hole: the member plane matches a session to
+  // a member record by address (spec 036 §3.8), and `preferred_username` is a
+  // display handle that no provider verifies and several let the user choose.
+  // An absent email claim now yields an absent email, which links nothing.
+  const email = typeof claims["email"] === "string" ? claims["email"] : "";
+  const name =
+    (typeof claims["name"] === "string" ? claims["name"] : "") ||
+    (typeof claims["preferred_username"] === "string" ? claims["preferred_username"] : "") ||
+    email;
+
   return {
     ssoProvider: "rauthy",
-    ssoProviderId: (claims["sub"] as string) ?? "",
+    subject: (claims["sub"] as string) ?? "",
     email,
+    // Strictly the claim, and only when there is an address it can qualify.
+    emailVerified: email !== "" && claims["email_verified"] === true,
     name,
     roles: roles.length ? roles : [env.rauthyDefaultRole],
   };
@@ -88,7 +101,7 @@ export const rauthyLogin = api.raw(
       res.end("rate limit exceeded");
       return;
     }
-    const config = await getConfig();
+    const config = await rauthyConfig();
     const verifier = client.randomPKCECodeVerifier();
     const challenge = await client.calculatePKCECodeChallenge(verifier);
     const state = client.randomState();
@@ -135,7 +148,7 @@ export const rauthyCallback = api.raw(
       Buffer.from(txRaw, "base64url").toString("utf8"),
     ) as { state: string; verifier: string; nonce: string };
 
-    const config = await getConfig();
+    const config = await rauthyConfig();
     const currentUrl = new URL(env.rauthyRedirectUri);
     currentUrl.search = requestUrl(req).search;
 
@@ -161,7 +174,21 @@ export const rauthyCallback = api.raw(
     // (spec 005 amendment 2026-07-23): never persisted server-side.
     if (tokens.id_token) setIdHintCookie(res, tokens.id_token);
     const profile = profileFromClaims(claims as unknown as Record<string, unknown>);
-    await finalizeLogin(res, profile, { ipAddress: clientIp(req), userAgent: userAgent(req) });
+    // The session carries rauthy's OWN refresh token, so revoking the session
+    // at rauthy revokes it here on the next refresh with nothing to keep in
+    // step. A deployment whose IdP has no refresh token to give gets an
+    // access-token-only session that simply expires (spec 004 §3.4).
+    await finalizeLogin(
+      res,
+      profile,
+      { driver: "rauthy", refreshToken: tokens.refresh_token ?? "", subject: profile.subject },
+      {
+        ipAddress: clientIp(req),
+        userAgent: userAgent(req),
+        // rauthy's clock, not ours: see signAccessToken's note on `nbf`.
+        ...(tokens.expires_in === undefined ? {} : { accessTtlSeconds: tokens.expires_in }),
+      },
+    );
     redirect(res, frontendUrl("/"));
   },
 );

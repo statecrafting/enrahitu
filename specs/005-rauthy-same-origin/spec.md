@@ -154,3 +154,25 @@ vouches for, followed by this hop. Client-supplied entries the declared
 topology does not cover are dropped rather than forwarded. The
 same-origin invariant, the hop-by-hop stripping, the manual redirect
 policy, and the body-streaming shape are unchanged.
+
+## Amendment (2026-08-03): the dev client's token lifetime (spec 004)
+
+`docker/rauthy/bootstrap/clients.json` drops `access_token_lifetime` from 1800
+to 60, and the reason is a property of rauthy worth stating here because it
+constrains every consumer.
+
+rauthy stamps a refresh token with `nbf = issued + access_token_lifetime - 60`,
+so it cannot be used until sixty seconds before its access token expires. At
+1800 the login e2e could only have exercised a renewal after idling for
+29 minutes, which means renewal was in practice untested; at 60 the window opens
+immediately and the dev loop renews every minute, which is where a renewal bug
+should surface rather than in somebody's production.
+
+This is a development value. A deployment sets whatever lifetime it wants on its
+own client, and the app follows it (spec 004 §3.4): the session's lifetime is the
+authority's, for the same reason its subject is.
+
+RP-initiated logout gains weight in the same change. With no local session
+record left to revoke, clearing the cookies discards the only copy of the refresh
+token the app held, and this spec's end-session redirect is what actually ends
+the session at rauthy. It is no longer a courtesy.

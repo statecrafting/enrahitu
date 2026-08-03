@@ -622,7 +622,7 @@ territory, per the coupling gate.
 |---|---|
 | 002 in-process hiqlite | **Rewritten, phase 0**: the single-node and clustering-out-of-scope invariants deleted. **Amended, phase 1c**: the HTTP demo surface retired and the service's grants dropped to zero. Rewritten again in phase 2 when the addon surface exists. |
 | 003 CoreLedger | **Rewrite pending, phase 2**: libSQL stops being the primary store; a `HiqliteDriver` joins the driver seam. |
-| 004 auth-core | **Rewrite pending, phase 2**: rauthy becomes the principal authority (§5.3). |
+| 004 auth-core | **Rewritten 2026-08-03.** rauthy is the principal authority: the session carries the IdP's `sub` and its refresh token; `UserAccount` and `RefreshToken` retired (§5.3). |
 | 005 rauthy same-origin | **Survives.** The proxy design is verified e2e (spec 017) and unchanged; only its upstream target moves with the topology. |
 | 006 webapp SPA | **Partial retirement, DONE (phase 1c)**: the Vue source retired; `backend/web/` (the serving contract) stays here. |
 | 007 packaging | **Survives, amended in phase 1b**: first-boot gains the single-shot restore marker; the entrypoint aligns with the N=1 topology. |

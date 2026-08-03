@@ -428,20 +428,23 @@ would be correct and useless. Matching the email closes that gap because member
 emails are normalized by the kind's validator, so both sides compare like with
 like.
 
-**The weakness in that fallback is named here rather than discovered later.**
-Matching on an email is only sound if the session's email is one the identity
-provider verified, and nothing in the application checks that today: no
-`email_verified` claim is threaded through to the session, and the SSO profile
-substitutes `preferred_username` when the `email` claim is absent, which is not
-an email and is not verified under any provider. Against rauthy this is latent
-rather than live, because rauthy's own registration flow proves control of the
-address before a session exists at all. It is latent on a property of the IdP's
-configuration rather than on anything this code enforces, which is the wrong
-place for an authorization rule to rest. Closing it belongs to spec 004's rewrite,
-which is where the session's claims are minted and where enrollment can write
-`sub` at first login; the fallback retires when it does.
+**That fallback rested on nothing until spec 004's rewrite, and the shape of the
+hole is worth keeping.** Matching on an address is only sound if the identity
+provider verified it, and nothing checked: no `email_verified` reached the
+session, and the SSO profile substituted `preferred_username`, a display handle,
+when the email claim was absent. Worse, the `sub` branch above could not match
+either, because the session's subject was a locally minted account id rather
+than rauthy's `sub`; so the unchecked fallback was doing **all** of the work,
+not some of it. The safety argument was written in a comment and implemented
+nowhere.
 
-### 3.9 Backdating a payment, and a divergence that was not one
+Spec 004's rewrite (2026-08-03) closed both halves: the session's subject is now
+the IdP's `sub`, so the durable binding matches, and the fallback requires the
+IdP to have said it verified the address. The fallback still exists and still
+retires: once enrollment writes `sub` at first login, matching on an address at
+all becomes unnecessary.
+
+## 3.9 Backdating a payment, and a divergence that was not one
 
 A treasurer records a cheque that arrived last week. `POST /api/dues/:name/paid`
 therefore takes an optional `paidOn`, and where that field rides is forced by
@@ -544,8 +547,9 @@ may write to a member who has not paid. It is named in §5 and not built.
    in between.
 8. `setStatus` on an unchanged status produces no revision and no outbox row.
 9. The member plane returns only the caller's own record: it prefers the durable
-   `sub` binding, falls back to the session's email, and returns 404 rather than
-   another member's row when neither matches (§3.8).
+   `sub` binding, falls back only to an address the IdP verified, refuses an
+   unverified one, hands nothing to a session carrying no subject, and returns
+   404 rather than another member's row when nothing matches (§3.8).
 10. With the schema unapplied, a members endpoint answers 503 naming the
     precondition rather than a SQL error from four frames down.
 11. A service without the state grants is denied admission of a domain kind.

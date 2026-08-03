@@ -239,18 +239,53 @@ describe("the member-plane join (spec 036 §3.8)", () => {
   ];
 
   it("prefers the durable subject binding over the email", () => {
-    const found = findLinkedMember(roster, { userID: "rauthy-sub-1", email: "grace@example.org" });
+    // This branch matched NOTHING until spec 004's rewrite: the session's
+    // userID was a locally minted account id, never the IdP's sub.
+    const found = findLinkedMember(roster, {
+      userID: "rauthy-sub-1",
+      email: "grace@example.org",
+      emailVerified: true,
+    });
     expect(found?.name).toBe("ada");
   });
 
-  it("falls back to the verified email, so a pre-enrolled member can see their dues", () => {
-    expect(findLinkedMember(roster, { userID: "unknown", email: "GRACE@example.org" })?.name).toBe(
-      "grace",
-    );
+  it("falls back to a VERIFIED email, so a pre-enrolled member can see their dues", () => {
+    expect(
+      findLinkedMember(roster, {
+        userID: "unknown",
+        email: "GRACE@example.org",
+        emailVerified: true,
+      })?.name,
+    ).toBe("grace");
+  });
+
+  it("refuses an unverified address, which is the whole point of the fallback's guard", () => {
+    // Registering an account with somebody else's address is the attack. Before
+    // spec 004's rewrite nothing checked this and the comment claiming it did
+    // was the only protection.
+    expect(
+      findLinkedMember(roster, {
+        userID: "unknown",
+        email: "grace@example.org",
+        emailVerified: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("never hands an unbound member to a session carrying no subject", () => {
+    // `undefined === undefined` would have matched grace, who has no sub.
+    expect(
+      findLinkedMember(roster, { userID: "", email: "", emailVerified: true }),
+    ).toBeNull();
   });
 
   it("links nothing rather than guessing", () => {
-    expect(findLinkedMember(roster, { userID: "unknown", email: "nobody@example.org" })).toBeNull();
-    expect(findLinkedMember(roster, { userID: "", email: "" })).toBeNull();
+    expect(
+      findLinkedMember(roster, {
+        userID: "unknown",
+        email: "nobody@example.org",
+        emailVerified: true,
+      }),
+    ).toBeNull();
   });
 });

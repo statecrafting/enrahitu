@@ -17,35 +17,47 @@ export function isMockEnabled(): boolean {
   return !env.isProduction;
 }
 
-const MOCK_USERS: SSOProfile[] = [
+/**
+ * Synthetic principals for `npm run dev` and the test harness.
+ *
+ * `emailVerified` is true because these addresses are fixtures rather than
+ * claims about a person: there is no registration flow behind them that could
+ * have left one unproven. The driver itself is refused in production
+ * (`isMockEnabled`), which is what keeps that shortcut inside development.
+ */
+export const MOCK_USERS: SSOProfile[] = [
   {
     ssoProvider: "mock",
-    ssoProviderId: "mock-user",
+    subject: "mock-user",
     email: "user@example.com",
+    emailVerified: true,
     name: "Casey User",
     roles: ["user"],
     attributes: { department: "General" },
   },
   {
     ssoProvider: "mock",
-    ssoProviderId: "mock-admin",
+    subject: "mock-admin",
     email: "admin@example.com",
+    emailVerified: true,
     name: "Avery Admin",
     roles: ["user", "admin"],
     attributes: { department: "Administration" },
   },
   {
     ssoProvider: "mock",
-    ssoProviderId: "mock-developer",
+    subject: "mock-developer",
     email: "dev@example.com",
+    emailVerified: true,
     name: "Devon Developer",
     roles: ["user", "developer"],
     attributes: { department: "Engineering" },
   },
   {
     ssoProvider: "mock",
-    ssoProviderId: "mock-operator",
+    subject: "mock-operator",
     email: "operator@example.com",
+    emailVerified: true,
     name: "Ollie Operator",
     // The model's own operator role (spec 023): enrahitu_operator here,
     // <app>_operator in a stamped cell.
@@ -71,7 +83,14 @@ export const mockLogin = api.raw(
     const raw = requestUrl(req).searchParams.get("user");
     const index = raw !== null && Number.isInteger(Number(raw)) ? Number(raw) : 0;
     const profile = MOCK_USERS[index] ?? MOCK_USERS[0]!;
-    await finalizeLogin(res, profile, { ipAddress: clientIp(req), userAgent: userAgent(req) });
+    // The envelope names the profile rather than embedding it, so a browser
+    // cannot hand back a session claiming roles no mock user has.
+    await finalizeLogin(
+      res,
+      profile,
+      { driver: "mock", profileIndex: MOCK_USERS.indexOf(profile) },
+      { ipAddress: clientIp(req), userAgent: userAgent(req) },
+    );
     redirect(res, frontendUrl("/"));
   },
 );

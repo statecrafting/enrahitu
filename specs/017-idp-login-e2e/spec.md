@@ -117,3 +117,25 @@ trailing-slash `RAUTHY_ISSUER`, the `networkidle` wait before submitting,
 and a fresh rauthy volume seeding the client. Those failed only on CI
 before, and the docker-only dev loop (spec 001 §5.1 phase 1b) is what
 removes that asymmetry.
+
+## Amendment (2026-08-03): the test had been failing since the SPA moved (spec 004)
+
+Two changes, and the first is the uncomfortable one.
+
+**This test had been failing on `main` since 2026-07-29.** Spec 015's React
+convergence split "are you signed in" from "pick a driver", moving the driver
+list from `/` to `/login`, and this spec kept walking straight to the driver
+link. Nothing caught it because `e2e.yml` is nightly and dispatch-only rather
+than part of the PR gate, which is the same shape as the image workflow's known
+gap: **a check that does not gate a merge will eventually be red without anybody
+knowing.** The test now goes through the landing page, which is the route a
+person actually takes.
+
+**It also covers renewal**, which is new territory this spec should own. Spec
+004's rewrite makes renewal a round-trip to rauthy, and the failure mode it
+guards against is invisible to every unit test: rauthy refuses a refresh token
+before its `nbf`, so an app that expires its session earlier than the IdP does
+logs every user out permanently at its own TTL. The test decodes the renewed
+token and asserts `exp - iat` equals the IdP's configured lifetime. That
+assertion exists because the bug it catches shipped past a full green unit
+suite.

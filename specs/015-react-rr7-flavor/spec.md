@@ -231,3 +231,19 @@ of the rare one.
 The refusal still renders as a sentence through the same path as the rest of this
 surface: an invalid date is a 400 the action returns rather than throws, so the
 treasurer sees which field is wrong without losing the page.
+
+## Amendment (2026-08-03): the profile follows the session (spec 004)
+
+`Me` loses `isActive`, `lastLoginAt` and `createdAt`, and gains `emailVerified`.
+
+The three that went described a `user_account` row this app kept, and spec 004's
+rewrite retired that table: a principal exists because rauthy says so, not
+because this app wrote a row about them. Whether an account is active is the
+IdP's to decide, and it enforces it by declining to renew the session, which is
+stronger than a boolean the SPA was reading from a copy.
+
+`emailVerified` arrives because it is the difference between "the IdP checked
+this address" and "somebody typed it", and the member plane treats a verified
+address as proof of control (spec 036 §3.8). The profile screen shows it for the
+same reason it shows the provider: a member who cannot see their own dues should
+be able to see why.

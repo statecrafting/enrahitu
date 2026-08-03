@@ -39,6 +39,6 @@
     "summary": "Phase 5 of the pivot (spec 001 §5.1), first slice. The association domain stops being a promise the machinery is built for and becomes ordinary application code: five kinds registered at runtime, a renewal controller that raises dues and lapses memberships, and a service with its own grants and its own endpoints. It is deliberately one domain built completely rather than eleven built shallowly, because the remaining domains are the same shape and the shape is what has to be right. Three decisions are load bearing and none of them was visible before the domain existed: the tenant is an operator-chosen slug required at provisioning and guarded by a boot assertion that refuses to start against rows written under a different one, because the identity that seeds every primary key must not be re-mintable by losing a volume; referential integrity is observed as status rather than enforced at admission, because the store has no foreign keys and a refusal would hide the dangling reference instead of showing it; and the fencing token doubles as optimistic concurrency for human edits, which is what lets a person edit a row a controller has written.\n",
     "title": "The membership core: members, tiers, memberships, dues"
   },
-  "shardHash": "407ec618b34d50c0d000e33439cfde6e020bc67c1a29f673d1b4f683aff6b795",
+  "shardHash": "f34f8da20b3ee1df9e8def731cefb2e19707edb9f885a6efd966eec8802db418",
   "specVersion": "1.1.0"
 }
