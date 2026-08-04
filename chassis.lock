@@ -250,7 +250,7 @@
     "specs/024-decision-chain-integrity/spec.md": "ea4782bc8791a317b5a553340c6d9ca722fb7575c82afde2ba8e175979474869",
     "specs/025-substrate-hardening/spec.md": "a413793cd40ee870839c1260e2115adad4d6d7ead81dcd8576ffe37d1d31f0fc",
     "specs/026-idp-mail-delivery/spec.md": "4d2a382ed1401771d232329b4f1dc740c2ef26af913587719fc3cd0d65d16003",
-    "specs/027-operational-verbs/spec.md": "c7a9baf20fd3f451835381fd70a27986c772172821174a8f68057e0478b524f6",
+    "specs/027-operational-verbs/spec.md": "99fc29ad4ffff0448a37417397c0ddcd6b7bd7875449e94fbc9033f380ac3b50",
     "specs/028-operator-documentation/spec.md": "5ea56b9e7f9d2ca6db7d8cacc2759ad0196d21dcb8272fd5118100af67784aae",
     "specs/029-supply-chain-provenance/spec.md": "1f27d1f1581a353f34b6616bcf0a3c8d8a4c4868ef7cbd9c7cbf64863941771f",
     "specs/030-infra-topology/spec.md": "3efa5790ad1738e8e4386e676166b307c2b6e82bf570d722b3e8e210c82203f2",
