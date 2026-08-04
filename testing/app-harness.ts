@@ -255,7 +255,15 @@ export async function startApp(opts: StartOptions = {}): Promise<AppInstance> {
       throw new Error(`app did not become ready in time:\n${log.slice(-3000)}`);
     }
     try {
-      const res = await fetch(`${baseUrl}/healthz`);
+      // `/readyz` and NOT `/healthz`. Spec 025 separated the probes so that
+      // liveness touches no dependency, which is exactly what makes `/healthz`
+      // the wrong question here: it answers 200 as soon as the listener is up,
+      // while the raft election this section already calls the dominant cost of
+      // boot is still running. Gating on it hands back an instance whose FIRST
+      // request pays the remainder of the boot, inside whatever test happens to
+      // make it. Readiness checks the ledger and hiqlite, which is the question
+      // `startApp` is actually asking.
+      const res = await fetch(`${baseUrl}/readyz`);
       if (res.ok) break;
     } catch {
       // connection refused until the listener is up
