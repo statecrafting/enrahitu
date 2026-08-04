@@ -596,6 +596,11 @@ rule and the identity join, which are asserted directly in
   governance, announcements, discussion. They are the same shape (kinds, a
   controller where something converges, a service with its own grants) and land
   in follow-up specs. This one establishes the shape; it does not gate them.
+  **Board governance is now spec 038**, which reports that the shape held: five
+  more kinds, one more two-loop controller, and no new machinery in
+  `backend/control/`. It amends §3.1 above, adding the association's bylaws
+  constants to the `tenant` kind, and it needs one thing this domain already
+  provides for it, the `votingRights` flag on a tier.
 - **Payment processing.** Recording that dues were paid is a treasurer's entry.
   Taking money is a payment provider integration, an egress seam, and a
   reconciliation problem of its own.

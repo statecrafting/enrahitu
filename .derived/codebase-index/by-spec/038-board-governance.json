@@ -1,0 +1,38 @@
+{
+  "diagnostics": {
+    "errors": [],
+    "warnings": [
+      {
+        "code": "W-001",
+        "message": "spec '038-board-governance' directory unit 'backend/governance/' is not a directory",
+        "path": "backend/governance/"
+      }
+    ]
+  },
+  "mapping": {
+    "dependsOn": [
+      "001-enrahitu-architecture",
+      "021-kernel-native-consumption",
+      "034-control-plane",
+      "035-chassis-boundary",
+      "036-membership-core",
+      "037-app-mail"
+    ],
+    "implementingPaths": [],
+    "resolvedUnits": [
+      {
+        "locations": [],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "directory",
+          "path": "backend/governance/"
+        }
+      }
+    ],
+    "specId": "038-board-governance",
+    "specStatus": "approved"
+  },
+  "schemaVersion": "1.1.0",
+  "shardHash": "2b48785cab22eb3c48031d19c4f5c8e9078957c67febc4d463a30bb7fe07480e"
+}
