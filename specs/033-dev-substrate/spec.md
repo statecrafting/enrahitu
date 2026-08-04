@@ -133,6 +133,30 @@ of it the hiqlite raft election, so one instance per test file in
 `isAppBuilt()` reports that and suites skip rather than fail, because CI
 always builds first (`verify.yml`) and a developer may not have.
 
+**`startApp` waits on `/readyz`, never on `/healthz` (2026-08-04).** The
+first version polled liveness, and spec 025's probe separation is precisely
+why that was wrong: `/healthz` touches no dependency by design, so it answers
+200 the moment the listener opens, while the raft election named in the
+paragraph above is still running. The harness therefore returned an instance
+that was serving and not ready, and the remainder of the boot was paid by
+whichever request came first, inside whatever test happened to make it and
+against vitest's five-second default rather than the ninety-second budget
+`beforeAll` was given.
+
+It passed for six weeks because the gap was under five seconds, and the gap is
+not a constant: it grows with every domain that registers kinds and starts
+controllers at boot. Specs 036, 037 and 004 each widened it, and it crossed on
+a change that touched no code at all, surfacing as a timeout on an unrelated
+assertion about the mock auth driver. That is the shape of the defect worth
+recording: **a readiness check that is merely usually fast is a deadline nobody
+declared**, and it fails first in CI, on whichever test is unlucky, naming
+something that has nothing to do with it.
+
+The fix is to ask the question the harness means. `/readyz` checks the ledger
+and hiqlite, so `startApp` now returns when the app can serve rather than when
+it can listen, and the wait is inside the boot budget where it was always
+supposed to be.
+
 ### 3.2 What the harness found immediately
 
 A harness earns its place by finding things, and this one did so before it
