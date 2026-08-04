@@ -40,5 +40,6 @@ export { LibsqlDriver, type LibsqlConfig } from "./libsql";
 export { PostgresDriver, type PostgresConfig, translatePlaceholders } from "./postgres";
 export { createTableSql, ensureSchema, sqlType, quoteIdent, type Dialect } from "./schema";
 export { appliedVersions, migrate, addColumnSql, type Migration } from "./migrations";
+export { CORE_LEDGER_MIGRATIONS } from "./migration-list";
 export { Repository, type FindOptions } from "./repository";
 export { Ledger, ledger } from "./ledger";

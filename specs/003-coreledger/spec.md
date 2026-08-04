@@ -79,3 +79,25 @@ counters and spans cover adjudication plus the operation and a kernel
 deny surfaces as an errored child span. The Decision store keeps the
 raw, uninstrumented driver: the enforcement plane's audit trail is not
 traffic.
+
+## Amendment (2026-08-04): the migration list gains a home (spec 027)
+
+`backend/core/ledger/migration-list.ts` exports `CORE_LEDGER_MIGRATIONS`, the
+list spec 011's runner runs and spec 027 §3.4's `migrate` verb applies. §4 keeps
+migrations beyond `ensureSchema()` out of this spec's design and that is
+unchanged: what lands here is the declared location, exported from the barrel
+beside `migrate` itself, because a runner whose input has no home is a mechanism
+with nothing to run. The list is empty today.
+
+Its module-level imports stay type-only, and that constraint is load bearing
+rather than stylistic. `scripts/ops/preflight.mjs` reports the pending count
+before the app is a process, so it loads this file under Node's own type
+stripping, where an `import type` is erased and a value import to an
+extensionless specifier does not resolve. The constraint binds this file alone:
+an `up()` body runs inside the app and receives the dialect precisely so a
+migration can branch on it without reaching for a helper.
+
+This is chassis schema, not application schema. An extension registers a kind
+through the control plane and needs no migration at all (spec 034), which is why
+the home sits under `backend/`, where an upgrade replaces it wholesale, rather
+than under `app/`, where an upgrade never touches it (spec 035).

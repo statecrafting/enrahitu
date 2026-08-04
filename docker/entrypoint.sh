@@ -8,21 +8,22 @@ DATA="${ENRAHITU_DATA_DIR:-/data}"
 PUBLIC_URL="${ENRAHITU_PUBLIC_URL:-http://localhost:8080}"
 PUBLIC_URL="${PUBLIC_URL%/}"
 
-# Fleet-declared pre-flight (spec 007, amendment 2026-07-23): every name in
-# ENRAHITU_REQUIRED_ENV (comma- or space-separated) must be set and non-empty
-# before anything starts; all missing names report together, one failure.
-if [ -n "${ENRAHITU_REQUIRED_ENV:-}" ]; then
-  missing=""
-  for name in ${ENRAHITU_REQUIRED_ENV//,/ }; do
-    if [ -z "${!name:-}" ]; then
-      missing="$missing $name"
-    fi
-  done
-  if [ -n "$missing" ]; then
-    echo "[entrypoint] required env not set or empty:$missing" >&2
-    exit 1
-  fi
-fi
+# Pre-flight (spec 027 §3.5): every condition whose absence would otherwise
+# surface later and confusingly, stated before anything starts. Under `set -e` a
+# nonzero verdict stops the boot here, which is the point: an occupied port, a
+# root-owned volume, or a ledger URL with no scheme each currently fails several
+# screens later, after rauthy is up, as something that does not name its cause.
+#
+# The fleet-declared required-env check (spec 007, amendment 2026-07-23) moved
+# INTO the verb rather than being duplicated beside it. Two implementations of a
+# contract a fleet configures are two implementations that drift, and the copy
+# that lived here was the one nothing could test.
+#
+# /workspace is the app tree in both topologies: the packaged image copies the
+# worktree there, the dev container bind-mounts it. It holds no dependency of
+# its own for exactly this reason, since the dev container reaches this line
+# before its first `npm ci`.
+node /workspace/scripts/ops/preflight.mjs
 
 node /enrahitu/first-boot.mjs
 

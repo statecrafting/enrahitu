@@ -11,7 +11,7 @@
  * someone edits the function, not if someone edits a copy of it.
  */
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -317,5 +317,79 @@ describe("entrypoint mail passthrough (spec 026)", () => {
     expect(script.indexOf("\nscrub_smtp_env\n")).toBeLessThan(
       script.indexOf("  export_smtp_env\n"),
     );
+  });
+});
+
+/**
+ * The pre-flight call (spec 027 §3.5, and the second half of its §4 item 8).
+ *
+ * "The entrypoint calls it and fails closed" is a claim about this script, so it
+ * is executed here rather than described: the real prologue, up to and including
+ * the verb call, runs against a stub `node` that exits with a chosen status. The
+ * verb's own conditions are covered one at a time in
+ * `scripts/ops/preflight.test.ts`; what is proven here is that a nonzero verdict
+ * stops the boot instead of being logged and stepped over.
+ */
+const PREFLIGHT_CALL = "node /workspace/scripts/ops/preflight.mjs";
+
+function prologue(script: string): string {
+  const idx = script.indexOf(PREFLIGHT_CALL);
+  if (idx === -1) throw new Error("entrypoint.sh no longer calls the pre-flight verb");
+  return script.slice(0, idx + PREFLIGHT_CALL.length);
+}
+
+function runPrologue(verdict: number): { code: number; stdout: string; invoked: string[] } {
+  const script = readFileSync(ENTRYPOINT, "utf8");
+  const bin = join(dir, "bin");
+  mkdirSync(bin, { recursive: true });
+  const args = join(dir, "args");
+  writeFileSync(
+    join(bin, "node"),
+    ["#!/bin/sh", `echo "$@" >> "${args}"`, `exit ${verdict}`, ""].join("\n"),
+    { mode: 0o755 },
+  );
+  const harness = join(dir, "prologue.sh");
+  writeFileSync(harness, [prologue(script), "echo continued", ""].join("\n"), { mode: 0o755 });
+  const out = spawnSync("bash", [harness], {
+    env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ""}` },
+    encoding: "utf8",
+  });
+  return {
+    code: out.status ?? -1,
+    stdout: out.stdout ?? "",
+    invoked: existsSync(args) ? readFileSync(args, "utf8").trim().split("\n").filter(Boolean) : [],
+  };
+}
+
+describe("entrypoint pre-flight (spec 027)", () => {
+  it("refuses to continue when the verb refuses", () => {
+    const { code, stdout, invoked } = runPrologue(1);
+    expect(invoked).toEqual(["/workspace/scripts/ops/preflight.mjs"]);
+    expect(stdout).not.toContain("continued");
+    expect(code).toBe(1);
+  });
+
+  it("continues when the verb is satisfied", () => {
+    const { code, stdout } = runPrologue(0);
+    expect(stdout).toContain("continued");
+    expect(code).toBe(0);
+  });
+
+  it("runs before first-boot and before either supervised process", () => {
+    // Ordering is the guarantee. A pre-flight that ran after first-boot would
+    // validate a volume that had already been written to, and one that ran after
+    // rauthy would report the ports it had itself just taken.
+    const script = readFileSync(ENTRYPOINT, "utf8");
+    const at = (needle: string) => script.indexOf(needle);
+    expect(at(PREFLIGHT_CALL)).toBeGreaterThan(-1);
+    expect(at(PREFLIGHT_CALL)).toBeLessThan(at("node /enrahitu/first-boot.mjs"));
+    expect(at(PREFLIGHT_CALL)).toBeLessThan(at("exec ./rauthy serve"));
+  });
+
+  it("keeps one implementation of the required-env contract, not two", () => {
+    // The bash loop this replaced (spec 007) was a second implementation of a
+    // fleet-facing check, and the untestable one of the pair.
+    const script = readFileSync(ENTRYPOINT, "utf8");
+    expect(script).not.toContain("ENRAHITU_REQUIRED_ENV");
   });
 });

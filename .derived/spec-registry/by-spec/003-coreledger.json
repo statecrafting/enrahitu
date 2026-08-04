@@ -21,13 +21,14 @@
       "2. Territory",
       "3. Behavior",
       "4. Out of scope",
-      "5. Phase A seam (amended by spec 021, 2026-07-20)"
+      "5. Phase A seam (amended by spec 021, 2026-07-20)",
+      "Amendment (2026-08-04): the migration list gains a home (spec 027)"
     ],
     "specPath": "specs/003-coreledger/spec.md",
     "status": "approved",
     "summary": "The durable data layer: stage-3 @Entity/@Column decorators over a LedgerDriver interface, with a libSQL driver speaking a local SQLite file by default and Turso embedded-replica sync (syncUrl + authToken) when configured. ensureSchema() creates tables from decorator metadata; typed repositories give find/save ergonomics. Replaces Encore SQLDatabase so no managed database is required to develop, build, or ship.\n",
     "title": "CoreLedger: decorator data layer on libSQL/Turso"
   },
-  "shardHash": "9f7c22f682a716c53fddcbfc2743a0be4289f2efeddae6c6f5f8c31b257c0591",
+  "shardHash": "9343bb92a6c9c84bc2cb380587df197eef4579993af6fbcde870e92b50db1828",
   "specVersion": "1.1.0"
 }

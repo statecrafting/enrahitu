@@ -3,7 +3,7 @@ id: "027-operational-verbs"
 title: "Operational verbs: preflight, migrate, backup, restore"
 status: approved
 created: "2026-07-25"
-implementation: pending
+implementation: in-progress
 depends_on:
   - "003-coreledger"
   - "007-single-container-packaging"
@@ -321,8 +321,12 @@ currently produces a confusing failure later:
   turns the legacy root-owned-volume failure (spec 007) from a runtime
   crash into a stated precondition.
 - The ledger URL parses and its scheme maps to a driver.
-- The ports the entrypoint will bind are free: 8080, 8081, and the
-  hiqlite pairs 8100/8200 and 8300/8400.
+- The ports the entrypoint will bind are free: rauthy's 8081 and its
+  hiqlite pair 8100/8200, the app's hiqlite pair 8300/8400, and the app's
+  own listener, which is not a constant. The Encore runtime takes
+  `ENCORE_LISTEN_ADDR`, then `PORT`, then 8080, so the packaged image
+  binds 8080 and the dev topology (spec 033) binds 4000; the verb derives
+  it rather than naming it (§3.7).
 - Pending migrations exist or do not, reported rather than judged.
 
 The entrypoint calls it and fails closed. Exit code is the verdict,
@@ -348,16 +352,11 @@ unstated RPO is always assumed to be zero:
   lock state): no objective. Derived by design, and the reason nothing
   durable may be written there.
 
-### 3.7 Status (2026-08-04): amended ahead of implementation
+### 3.7 Status (2026-08-04): `preflight` built, on the amended design
 
-The amendment below and in §§3.1-3.3, §3.6 and §4 landed on its own, before
-any verb was built, and `implementation` stays `pending` deliberately: no
-code in this spec's territory exists yet, and `scripts/ops/` is still an
-established path with nothing in it.
-
-The amendment was worth separating because it changed what gets built
-rather than how, and it found two defects that the design as written would
-have shipped:
+The amendment in §§3.1-3.3, §3.6 and §4 landed on its own, ahead of any verb,
+and was worth separating because it changed what gets built rather than how.
+It found two defects that the design as written would have shipped:
 
 1. **The backup would have omitted the association's data and the restore
    would have deleted it** (§3.1, §3.3), because the premise that the app's
@@ -367,12 +366,42 @@ have shipped:
    is latent only because the app's store has held nothing worth restoring,
    which is the same premise defect wearing a different hat.
 
-What remains, in the order the acceptance items want it: `preflight`
-(§3.5, self-contained and independently testable), the CoreLedger half of
-`migrate` (§3.4) with the declared migration home, the admin-plane backup
-endpoint the hot path needs (§3.2), `backup` and `restore` themselves, the
-entrypoint's per-store restore scoping (§3.3), and the four `[verbs]`
-entries with the contract bump to 0.8.0 (§4 item 1). Items 2, 3 and 5 need
+**`preflight` (§3.5) is the first verb built against that design**, with the
+declared migration home §3.4 asks for (`backend/core/ledger/migration-list.ts`),
+which the pre-flight reads and the `migrate` verb will execute. The entrypoint
+calls it and fails closed, and its inline copy of spec 007's required-env check
+is gone: a contract a fleet configures now has one implementation rather than
+two, and the one it lost was the one nothing could test.
+
+Building it corrected one of §3.5's own premises and turned an assumption into
+a stated fork:
+
+- **"The ports the entrypoint will bind are free: 8080, ..."** named a port the
+  entrypoint does not always bind. The app's listener is
+  `ENCORE_LISTEN_ADDR`, then `PORT`, then 8080, so the packaged image takes 8080
+  and the dev topology takes 4000. A verb checking the constant would have
+  passed over the port the dev container was about to bind and reported on one
+  nothing wanted, which is a pre-flight that reads green for the wrong reason.
+  §3.5 now says what the verb does. rauthy's three stay constants because they
+  are constants: its HTTP port is set by the entrypoint and its hiqlite pair by
+  `docker/rauthy/config.prod.toml`.
+- **A node script cannot run CoreLedger's migration runner.** Pre-flight needs
+  only the declared versions and gets them by loading the home under Node's own
+  type stripping, which is why that file's module-level imports must stay
+  type-only: an erased import costs nothing outside the app, and a value import
+  to an extensionless specifier is unresolvable there. Applying a migration is a
+  longer reach: `migrate()` and both drivers are TS whose value imports the
+  bundler resolves and plain node does not. So CoreLedger's half of §3.4 lands
+  either on the admin plane, as the state layer's half already did and as the
+  2026-07-30 amendment's closing paragraph anticipates, or as a second runner in
+  JS. That is decided when it is built, and it is now a fork with its constraint
+  known rather than an assumption.
+
+What remains, in the order the acceptance items want it: the CoreLedger half of
+`migrate` (§3.4), the admin-plane backup endpoint the hot path needs (§3.2),
+`backup` and `restore` themselves, the entrypoint's per-store restore scoping
+(§3.3), and the four `[verbs]` entries with the contract bump to 0.8.0 (§4 item
+1), which lands once all four exist rather than four times. Items 2, 3 and 5 need
 a compose-level fixture rather than the app harness, because a cold backup
 is defined by the container being stopped.
 
