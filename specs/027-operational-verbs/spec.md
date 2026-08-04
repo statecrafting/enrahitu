@@ -18,14 +18,18 @@ summary: >
   migration runner spec 011 landed has no caller outside its own tests,
   so a stamped app upgrading from v1 to v2 has no defined moment when
   schema changes apply. This spec adds four verbs to template.toml
-  (contract v0.7.0) and their implementations. The backup design is
+  (contract v0.8.0) and their implementations. The backup design is
   shaped by what each of the four state classes on the volume actually
   is: CoreLedger snapshots online through VACUUM INTO, rauthy's identity
   store is captured through rauthy's own integrity-checked backup
   mechanism rather than by copying raft directories, the app's hiqlite is
-  deliberately excluded as derived state, and key material is bound into
-  the same archive because a rauthy backup without its matching ENC_KEYS
-  is unrecoverable.
+  captured through the addon's own `backup()` for exactly the same reason,
+  and key material is bound into the same archive because either encrypted
+  store restored without its matching keys is unrecoverable. Amended
+  2026-08-04, before implementation: the first revision excluded the app's
+  hiqlite as derived cache state and the pivot made that false, so §3.8
+  records what the unamended spec would have shipped and why it read as
+  correct on the day it was written.
 ---
 
 # 027: Operational verbs
@@ -102,15 +106,39 @@ belongs to that provider. The verb detects the URL scheme, states this,
 and backs up only what it owns. It does not pretend to have captured a
 remote database.
 
-**The app's hiqlite is deliberately not backed up.** Its entire contents
-are the cache with TTLs and rate-limit counters (spec 002), both derived
-and both correct to lose: a restored cell rebuilds the cache on demand
-and starts every rate-limit window fresh. This is also the only
-available answer, because the addon exposes no snapshot primitive. Its
-API surface is `counterAdd`, `counterDel`, `counterGet`, `counterSet`,
-`health`, `init`, `kvDel`, `kvGet`, and `kvPut`, and nothing else.
-Restore therefore recreates this directory empty rather than
-reconstituting it, and that is a stated property, not an omission.
+**The app's hiqlite is the primary store and is captured through the
+addon, not around it** (amended 2026-08-04; §3.8 records the supersession).
+`/data/hiqlite` holds the `resource` table, which is every member, tier,
+membership, dues invoice and mail notice, and every meeting, motion and
+ballot once spec 038 is built. It is the association's data. A backup that
+omits it is not a backup of anything a buyer would recognise.
+
+`backup()` is the primitive, and it is the same argument rauthy's is:
+hiqlite issues `VACUUM main INTO` on its writer thread, so the snapshot is
+serialized against writes rather than racing them (spec 032 §3.8). Copying
+`/data/hiqlite` would capture a raft log mid-write, exactly as copying
+`/data/rauthy/db` would. Two stores, one reason, one shape.
+
+Three properties of that primitive shape the verbs and are not incidental:
+
+- **It is leader-only.** At N=1 the single voter is the leader and the
+  question does not arise; at N>=3 the verb runs against the leader or it
+  does not run, and saying so is cheaper than discovering it.
+- **It covers the SQLite group only.** The cache group (KV with TTLs,
+  rate-limit counters, lock state) is excluded and is genuinely derived:
+  a restored cell rebuilds the cache on demand and starts every window
+  fresh. That sentence is the true remainder of the paragraph this one
+  replaces, and it is the reason nothing durable may be put there.
+- **It has a sixty-second duplicate-request guard**, so a verb that
+  retries a backup within the window gets the first one rather than a
+  second, and a hot backup taken twice in a minute is one snapshot.
+
+**And it is encrypted, which extends the key-binding argument to a second
+store.** The addon's `backup` feature pulls hiqlite's `s3` feature, which
+makes `enc_keys` mandatory: the node refuses to start without
+`ENRAHITU_HIQ_ENC_KEYS`. So the app's snapshot is as unrecoverable without
+its keys as rauthy's is without `ENC_KEYS`, and the paragraph below stops
+being a fact about rauthy and becomes the invariant of the whole archive.
 
 **rauthy's store is captured through rauthy, not around it.** rauthy
 embeds its own backup mechanism: a cron task (`HQL_BACKUP_CRON`,
@@ -123,11 +151,14 @@ substrate did not have to invent. Copying `/data/rauthy/db` directly
 would capture a raft log mid-write, and this spec does not do that.
 
 **Key material binds the archive together.** rauthy encrypts data at
-rest with `ENC_KEYS` from `/data/rauthy/secrets.env`. A rauthy backup
-restored without its matching keys is undecryptable. Keys and the
-identity store are therefore never separable: they go into one archive
-or the archive is worthless. This single fact is why the verb produces
-one artifact rather than letting an operator assemble parts.
+rest with `ENC_KEYS` from `/data/rauthy/secrets.env`, and the app's
+hiqlite encrypts its snapshots with `ENRAHITU_HIQ_ENC_KEYS` from the same
+file. Either store restored without its matching keys is undecryptable.
+Keys and the two encrypted stores are therefore never separable: they go
+into one archive or the archive is worthless. This single fact is why the
+verb produces one artifact rather than letting an operator assemble parts,
+and it is now true twice over, which is what makes it an invariant rather
+than a property of one dependency.
 
 Because the archive contains every secret the cell holds, it is a
 secret in its entirety. The verb says so, sets mode 0600, and refuses
@@ -139,25 +170,75 @@ Two modes, because the honest default and the zero-downtime path are
 different tools.
 
 **Cold (default).** The container is stopped. Every class is at rest, so
-the verb copies the CoreLedger file, the rauthy data directory, and the
-key material, writes a manifest, and checksums the result. No API, no
-credentials, no coordination. This is always correct and is what the
-documentation recommends for scheduled backups of a single cell.
+the verb copies the CoreLedger file, the app's hiqlite directory, the
+rauthy data directory, and the key material, writes a manifest, and
+checksums the result. No API, no credentials, no coordination. This is
+always correct and is what the documentation recommends for scheduled
+backups of a single cell.
 
-**Hot (`--online`).** The container is running. CoreLedger is captured
-with `VACUUM INTO`. rauthy is asked for a fresh backup over
-`POST /auth/v1/backup` and the named file is collected from
-`/data/rauthy/db`, so the identity snapshot is current as of the verb's
-invocation rather than as of rauthy's overnight cron. This path needs a
-rauthy admin API key, supplied as `ENRAHITU_RAUTHY_API_KEY`; without
-it, the verb reports that it can only reach the most recent cron-made
-backup and names its age rather than silently shipping a stale one.
+Copying `/data/hiqlite` is safe **only** in this mode, and the reason is
+worth stating rather than assuming: a stopped node's raft directory is
+exactly the state the node would recover from on its next boot, including
+after an unclean stop. A cold copy therefore captures what recovery would
+produce, which is the only useful definition of "at rest". The same copy
+taken while the node is running captures a raft log mid-write, which is
+why §3.1 refuses it in the hot path.
+
+**Hot (`--online`).** The container is running, and every class is
+captured by the process that owns it.
+
+- CoreLedger with `VACUUM INTO`.
+- The app's hiqlite through **the admin data plane**, not through a file
+  copy and not through a second process. At N=1 the embedded node holds
+  the volume open, so nothing outside the app can reach the store; this is
+  the same constraint that put the schema verb on the admin plane in this
+  spec's 2026-07-30 amendment, and the answer generalizes rather than
+  being re-derived. The verb calls an operator-gated endpoint that invokes
+  `backup()` and returns the resulting file's name, then collects it.
+- rauthy over `POST /auth/v1/backup`, the named file collected from
+  `/data/rauthy/db`, so the identity snapshot is current as of the verb's
+  invocation rather than as of rauthy's overnight cron.
+
+The hot path therefore needs two credentials, not one: a rauthy admin API
+key as `ENRAHITU_RAUTHY_API_KEY`, and an operator session for the app.
+Missing either, the verb says which store it could not refresh and names
+the age of what it is shipping instead, rather than silently including a
+stale member. Two credentials for two stores is the same shape spec 037
+§3.1 argued for two mail surfaces: sharing one would be privilege
+duplication.
+
+**The hot path has no cross-store consistency point, and the order is the
+answer.** Three stores are snapshotted at three instants and nothing can
+make them one, because they are three processes with three write paths and
+no shared transaction. The skew is small and it is not symmetric, because
+the Decision chain lives in CoreLedger and the resources those Decisions
+admit live in hiqlite:
+
+- **Chain snapshotted after the resource store**: the chain may hold a
+  Decision admitting a write the resource member does not contain. The
+  chain still verifies, because `verifyChain` reads `kernel_decisions`
+  only (spec 036 §3.2), and the absence is visible as a Decision naming a
+  resource that is not there.
+- **Chain snapshotted before the resource store**: the resource member may
+  hold a row whose admitting Decision is absent from the chain. That is an
+  **unaudited row**, which is the single thing the kernel plane exists to
+  prevent, and unlike the other direction it is invisible: nothing about
+  the row says a record should have existed.
+
+So the hot verb snapshots **the resource store first and the chain last**,
+which puts the skew permanently in the direction that is detectable rather
+than the direction that is silent. This costs nothing and is the whole of
+the design's answer to consistency: not a guarantee, an ordering, with the
+residue named. An operator who needs zero skew takes a cold backup, and
+the documentation says so in those words.
 
 Both modes emit one `.tar.gz` containing a `manifest.json` that records:
 the template and contract versions, the app model hash and gate config
 hash from the kernel boot receipt (spec 021), the ledger URL scheme, the
-mode used, a per-member SHA-256, and the timestamp. The manifest is what
-makes the archive verifiable rather than merely present.
+mode used, a per-member SHA-256, **a per-member captured-at instant**, and
+the timestamp. The manifest is what makes the archive verifiable rather
+than merely present, and the per-member instants are what make the
+paragraph above auditable after the fact instead of merely promised.
 
 ### 3.3 `restore`
 
@@ -165,14 +246,38 @@ Refuses to run against a live container. Verifies every checksum in the
 manifest before touching the volume, and refuses on any mismatch.
 
 CoreLedger is placed as the database file. Key material is written back
-at 0600. rauthy is restored through its own documented path rather than
-by file placement: `HQL_BACKUP_RESTORE=file:<path>` on the next start,
-which rauthy validates against the `_metadata` table, followed by
-removal of that variable. The entrypoint learns to pass the variable
-through for exactly one boot and to clear it afterwards, so an operator
-cannot leave a restore loop armed.
+at 0600. Both hiqlite stores are restored through hiqlite's own documented
+path rather than by file placement: `HQL_BACKUP_RESTORE=file:<path>` on
+the next start, validated against the `_metadata` table, followed by
+removal of that variable. Spec 033 §3.5 already built the single-shot
+half: `docker/first-boot.mjs` records which backup it honoured in a marker
+on the volume and writes an `unset` into `restore.env` on every subsequent
+boot, so an operator may set the variable once and leave it set without
+arming a restore loop. This verb consumes that machinery rather than
+inventing a second one.
 
-`/data/hiqlite` is recreated empty, per section 3.1.
+**One variable, two nodes: the restore path is ambiguous today and this
+verb is what forces it to be resolved.** `restore.env` is sourced by the
+entrypoint before either supervised process starts, and its own comment
+states the reason plainly: "both hiqlite instances would otherwise inherit
+it." `HQL_BACKUP_RESTORE` is hiqlite's variable, not rauthy's, and the app
+runs an embedded hiqlite too, so a single value naming a single file is
+read by two independent nodes with two unrelated state machines. Whichever
+one it was not meant for either refuses the file or, worse, accepts it.
+
+That was harmless while the app's hiqlite held nothing worth restoring,
+which is precisely the assumption §3.1 no longer makes. The fix is the
+pattern spec 037 §3.1 already argued for mail credentials, applied to the
+same file for the same reason: **the entrypoint scopes each restore
+variable into exactly the subshell that should act on it**, so rauthy's
+node is offered rauthy's snapshot and the app's node is offered the app's,
+and neither can see the other's. `first-boot.mjs` accordingly records a
+restore decision per store rather than one decision, and `restore.env`
+carries two scoped exports rather than one ambient one.
+
+`/data/hiqlite` is therefore restored and never recreated empty. The
+sentence this replaces was correct for a cache and would be data loss for
+a store holding the association's members.
 
 The verb warns when the archive's model hash differs from the image's:
 restoring a v1 backup into a v2 image is legitimate and common, but it
@@ -228,31 +333,109 @@ consistent with every other verb under spec 009 section 3.2.
 The documentation states an RPO rather than implying one, because an
 unstated RPO is always assumed to be zero:
 
-- Cold backup: RPO is the interval between scheduled runs.
-- Hot backup with an API key: same, and the identity store is current as
-  of each run.
-- Hot backup without an API key: identity is as of rauthy's last cron
-  run, up to 24 hours by default. The verb reports this age, so an
+- Cold backup: RPO is the interval between scheduled runs, and it is the
+  only mode with no cross-store skew at all.
+- Hot backup with both credentials: same interval, every store current as
+  of its own capture, with the residual skew bounded by the duration of
+  one run and always in §3.2's detectable direction.
+- Hot backup missing the rauthy API key: identity is as of rauthy's last
+  cron run, up to 24 hours by default. The verb reports this age, so an
   operator who has not configured a key is told what they actually have.
-- The app's hiqlite: no objective. Derived state, by design.
+- Hot backup missing an operator session: the app's resource store falls
+  back to the most recent snapshot the addon already wrote, and its age is
+  reported the same way. It is never omitted and never silently stale.
+- The app's hiqlite **cache group** (KV with TTLs, rate-limit counters,
+  lock state): no objective. Derived by design, and the reason nothing
+  durable may be written there.
 
-## 4. Acceptance
+### 3.7 Status (2026-08-04): amended ahead of implementation
+
+The amendment below and in §§3.1-3.3, §3.6 and §4 landed on its own, before
+any verb was built, and `implementation` stays `pending` deliberately: no
+code in this spec's territory exists yet, and `scripts/ops/` is still an
+established path with nothing in it.
+
+The amendment was worth separating because it changed what gets built
+rather than how, and it found two defects that the design as written would
+have shipped:
+
+1. **The backup would have omitted the association's data and the restore
+   would have deleted it** (§3.1, §3.3), because the premise that the app's
+   hiqlite is derived cache state stopped being true three phases ago.
+2. **`HQL_BACKUP_RESTORE` is one variable read by two hiqlite nodes**
+   (§3.3). This one is live in the tree today rather than hypothetical: it
+   is latent only because the app's store has held nothing worth restoring,
+   which is the same premise defect wearing a different hat.
+
+What remains, in the order the acceptance items want it: `preflight`
+(§3.5, self-contained and independently testable), the CoreLedger half of
+`migrate` (§3.4) with the declared migration home, the admin-plane backup
+endpoint the hot path needs (§3.2), `backup` and `restore` themselves, the
+entrypoint's per-store restore scoping (§3.3), and the four `[verbs]`
+entries with the contract bump to 0.8.0 (§4 item 1). Items 2, 3 and 5 need
+a compose-level fixture rather than the app harness, because a cold backup
+is defined by the container being stopped.
+
+### 3.8 What the unamended spec would have shipped (2026-08-04)
+
+This spec was written on 2026-07-25 and implemented on 2026-08-04, and in
+the nine days between, the thing it was written about changed underneath
+it. Recording that is the point of this section, because the spec read as
+correct at every intermediate moment and the gap only becomes visible when
+somebody tries to build it.
+
+The superseded claim was that the app's hiqlite holds "the cache with TTLs
+and rate-limit counters (spec 002), both derived and both correct to
+lose", and the superseded consequence was that restore "recreates this
+directory empty". Both were true when written. Spec 002's hiqlite was a
+cache; the addon's whole surface was nine functions with no snapshot
+primitive, which the spec enumerated to show the exclusion was forced
+rather than chosen.
+
+Then phase 2 took the addon from nine functions to twenty-one and added
+`backup()`, phase 3 put the control plane's `resource` table behind it,
+and phase 5 filled that table with the association. The spec's sentence
+did not change and its meaning inverted: **"deliberately not backed up"
+went from describing a cache to describing the primary store.**
+
+What that would have shipped, had it been built as written: a `backup`
+verb producing an archive with no members, tiers, memberships or dues in
+it, and a `restore` verb whose documented behavior is to delete them. Both
+would have passed their own acceptance tests, because those tests were
+written from the same sentence. The archive would have restored, the
+container would have started, and the damage would have surfaced later,
+which is the failure mode §1 opens by warning about, reached by a route §1
+did not anticipate: not a wrong mechanism, a stale premise.
+
+The general form, and the reason this is a section rather than a footnote:
+**a spec ahead of its code decays in a way a spec behind its code does
+not.** Spec 001 §5.2's disposition table exists to catch exactly this and
+carries the right instruction for a spec that lags ("rewrite pending, do
+not rewrite ahead of the code"). It has no column for a spec that leads,
+and 027 led by nine days across three phases. The cheap guard is the one
+applied here: **re-read a pending spec's premises, not just its design,
+at the moment somebody picks it up.** The design was fine. The facts under
+it were not, and no gate can see that.
 
 1. `template.toml` carries `preflight`, `migrate`, `backup`, and
-   `restore` under `[verbs]`, `[contract].version` is `0.7.0`, and spec
+   `restore` under `[verbs]`, `[contract].version` is `0.8.0`, and spec
    009's worked-minors list records the bump.
 2. A cold backup of a populated cell, restored into a fresh volume,
    yields a container that starts, authenticates the pre-existing admin,
-   serves the pre-existing CoreLedger rows, and passes spec 024's chain
-   verification on the restored `kernel_decisions` table.
+   serves the pre-existing CoreLedger rows, **serves the pre-existing
+   members, tiers, memberships and dues invoices from the restored
+   resource store**, and passes spec 024's chain verification on the
+   restored `kernel_decisions` table.
 3. A hot backup taken while traffic runs produces an archive whose
-   CoreLedger member opens cleanly and whose chain verifies. Restoring
-   it yields the same outcomes as item 2.
+   CoreLedger member opens cleanly, whose resource member opens cleanly,
+   and whose chain verifies. Restoring it yields the same outcomes as
+   item 2.
 4. A tampered archive (one byte changed in any member) is refused by
    `restore` before the volume is modified.
-5. An archive whose keys are omitted fails to produce a working rauthy,
-   demonstrated once as a regression test for the section 3.1 binding,
-   so the coupling is proven rather than asserted.
+5. An archive whose keys are omitted fails to produce a working rauthy
+   **and fails to open the restored resource store**, demonstrated once
+   for each as a regression test for §3.1's binding, so the coupling is
+   proven rather than asserted in both directions it now holds.
 6. `restore` refuses a live container; `backup` without `--online`
    refuses a live container; `backup --online` without an API key
    reports the age of the identity snapshot it is shipping.
@@ -261,7 +444,16 @@ unstated RPO is always assumed to be zero:
    already-applied outcome rather than a constraint violation.
 8. `preflight` fails with a named cause for each condition in section
    3.5, verified one at a time, and the entrypoint refuses to continue.
-9. `npm run typecheck && npm test` green, coupling gate green.
+9. A restore offers each hiqlite node its own snapshot and never the
+   other's: rauthy's node sees rauthy's file, the app's node sees the
+   app's, and neither variable is visible in the other's environment.
+   Asserted on the entrypoint's environment, because the failure this
+   guards is inheritance rather than logic (§3.3).
+10. A hot backup's manifest records a captured-at instant per member, and
+    the resource store's instant precedes the chain's. The ordering is
+    asserted rather than described, because it is the whole of §3.2's
+    consistency answer and nothing else in the archive reveals it.
+11. `npm run typecheck && npm test` green, coupling gate green.
 
 ## 5. Out of scope
 
@@ -304,3 +496,10 @@ untouched, and `ENRAHITU_MIGRATE_ON_BOOT` still applies only to CoreLedger. When
 this spec is implemented in full, the two halves want one verb over both stores,
 and the admin pair becomes its transport for the state layer rather than a second
 mechanism.
+
+**Settled 2026-08-04.** The reasoning above generalized further than it claimed:
+"at N=1 the app holds the volume open, so the operation must be performed by the
+running app under an authenticated operator" is a property of the volume, not of
+migration, so it governs the hot backup path identically (§3.2). The admin plane
+is now the transport for both, and the pattern is stated once here rather than
+re-derived per verb.
