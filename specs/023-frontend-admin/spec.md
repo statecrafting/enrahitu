@@ -240,3 +240,22 @@ service imports is part of what it claims.
 No new UI ships with this. The dashboard's existing API caller (§3.3 amendment)
 calls both endpoints under the operator's own session, which is what makes the
 verb usable the day it lands rather than the day a panel is designed for it.
+
+## Amendment (2026-08-04): the ledger's schema pair joins the plane (spec 027)
+
+`GET /api/admin/ledger/schema` and `POST /api/admin/ledger/schema/apply` join the
+state layer's pair from the 2026-07-30 amendment, gated identically through
+`requireOperator()`: the kill switch answers 404 and a non-operator gets
+permissionDenied. Spec 027 §3.7 records why CoreLedger's half of `migrate`
+belongs on this plane rather than in a script, and the short form is that a
+script would have to carry a second copy of the runner.
+
+`pendingMigrations()` now takes the `{ version, name }` summary that both stores'
+migration types already satisfy, rather than either store's own type. One
+function serves both because both runners refuse the same two things, duplicate
+versions and versions that do not ascend, which is what makes "everything above
+the high-water mark" exact rather than approximate. Taking the summary is what
+stops one store's list being planned against the other store's version.
+
+The dashboard itself is unchanged: this is data plane only, and no screen reads
+it yet.

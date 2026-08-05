@@ -53,6 +53,8 @@
     "admin": {
       "tier": "ts",
       "capabilities": [
+        "cap.db.app.migrate",
+        "cap.db.app.read",
         "cap.db.state.migrate",
         "cap.db.state.read",
         "cap.secret.jwt-public"

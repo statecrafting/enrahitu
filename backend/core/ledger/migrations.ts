@@ -30,7 +30,13 @@ export interface Migration {
   up: (tx: LedgerTx, dialect: Dialect) => Promise<void>;
 }
 
-const MIGRATIONS_TABLE = "_coreledger_migrations";
+/**
+ * The table recording what has been applied. Exported because the facade's
+ * migration seam and the pre-flight verb both name it, and a table name spelled
+ * in three places is a table name that can be misspelled in one of them. The
+ * runner's behavior is unchanged (spec 027 §2).
+ */
+export const MIGRATIONS_TABLE = "_coreledger_migrations";
 
 async function ensureMigrationsTable(driver: LedgerDriver): Promise<void> {
   const versionType = sqlType("integer", driver.dialect);

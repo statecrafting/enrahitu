@@ -41,13 +41,14 @@
       "7. Admin gate seams (amended by spec 023, 2026-07-22)",
       "8. RP-initiated logout seam (amended by spec 005, 2026-07-23)",
       "Amendment (2026-07-25): forge-proof client identity (spec 025)",
-      "Amendment (2026-08-02): a non-auth secret in the auth library (spec 037)"
+      "Amendment (2026-08-02): a non-auth secret in the auth library (spec 037)",
+      "Amendment (2026-08-04): CoreLedger's boot seam gains an opt-in migrate (spec 027)"
     ],
     "specPath": "specs/004-auth-core/spec.md",
     "status": "approved",
     "summary": "Rewritten 2026-08-03 for the pivot (spec 001 §5.3): a thin adapter, not a second auth system. rauthy owns authentication AND principal identity; this service keeps only the same-origin httpOnly cookie shell, the CSRF double-submit, and rate limiting. `UserAccount` and `RefreshToken` retire, because each was a second opinion about a question the IdP already answers, and each was wrong in a way nothing could see from outside: the local account id became the session's subject, so a principal binding recorded against rauthy could never match a session, and the local refresh table made this app the arbiter of whether a session was still alive, so revoking a user at the IdP left them logged in here. The session now carries the IdP's `sub` and the IdP's own refresh token; `email_verified` is threaded because the member plane treats a verified address as proof of control. AuditLog survives: what happened is application data and outlives whichever authority was asked.\n",
     "title": "The session adapter: rauthy is the principal authority"
   },
-  "shardHash": "d204d70cb8711529150e900e1813c99cba3ac2ffffc4933bbfa8bc0087f232a1",
+  "shardHash": "eaaced6d19cfbbe0a877663b78d41f20fc7e255863e54b06d884f1752f9a9906",
   "specVersion": "1.1.0"
 }

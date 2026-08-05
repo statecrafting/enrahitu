@@ -332,3 +332,20 @@ It is deliberately NOT rauthy's relay password. Spec 037 §3.1 keeps the
 application's mail credentials and the IdP's on separate surfaces held by
 separate processes; `ENRAHITU_SMTP_PASSWORD` never enters this process at all,
 and the entrypoint now enforces that (spec 007's amendment of the same date).
+
+## Amendment (2026-08-04): CoreLedger's boot seam gains an opt-in migrate (spec 027)
+
+`ENRAHITU_MIGRATE_ON_BOOT`, default false, applies pending CoreLedger migrations
+inside `dbReady` under the `auth` service's existing attribution.
+
+The placement wants stating, because it looks arbitrary otherwise: this file is
+the only place anything opens the ledger at boot, so it is the only boot seam
+CoreLedger has. An app whose migrations must run before its first request has
+nowhere earlier to put them.
+
+It is off by default and stays off by default. Boot-time migration ties schema
+change to process restart, so a crash loop becomes a migration loop, and once a
+topology runs more than one app container against one ledger it races (spec 027
+§3.4). The supported path is the operator plane's apply endpoint. This exists for
+the single-container case where the simplicity is worth it, and being opt-in is
+what keeps the deployments it is wrong for from ever meeting it.
