@@ -77,8 +77,11 @@ commands to contract verbs, not the commands themselves.
   the scaffold verb keeps or prunes (spec 014/015). Each added flavor is a
   minor contract bump.
 - `[verbs]`: commands the factory runs inside a stamped repo, exit code as
-  verdict. Live verbs: `verify`, `package`, and (contract v0.4, spec 014)
-  `scaffold`.
+  verdict. Live verbs: `verify`, `package`, (contract v0.4, spec 014)
+  `scaffold`, and (contract v0.8, spec 027) the four run-time verbs
+  `preflight`, `migrate`, `backup`, and `restore`. The v0.8 group is the
+  first entry here that acts on a running cell rather than on a repo, and
+  the distinction is the reason it is four keys and one bump.
 
 ### 3.2 Verb semantics
 
@@ -155,3 +158,32 @@ error rather than "unknown argument".
 The `admin` slot (v0.6, spec 023) is untouched and remains a real choice:
 an operator dashboard is genuinely optional for a stamped app in a way a
 view framework is not.
+
+## Amendment (2026-08-05): contract v0.8 adds the four run-time verbs
+
+`[verbs]` gains `preflight`, `migrate`, `backup`, and `restore` (spec 027).
+Additive keys, so a minor bump under §3.1, and the worked example this list
+needed for a group rather than a single key.
+
+**One bump and not four.** Each verb landed separately in the tree, and the
+contract could have followed each. It should not: the four are one vocabulary,
+and a factory that adopted them one at a time would pass through three versions
+in which it could operate a stamped app halfway, with a `backup` and no
+`restore` being the version that matters. A contract exists so a consumer can
+know what it has by reading one number, and three of those numbers would have
+described a capability nobody should pin to.
+
+**What a factory gets, and what it must supply.** `preflight` and `restore`
+need nothing but the container's own environment. `migrate` and
+`backup --online` need `ENRAHITU_OPERATOR_COOKIE`, an authenticated operator
+session, because at N=1 the app's embedded hiqlite node holds the volume open:
+the operation is performed BY the running app or not at all, and performing it
+under a principal is what puts a name on the Decision it produces.
+`backup --online` additionally takes `ENRAHITU_RAUTHY_API_KEY` to refresh the
+identity snapshot, and degrades to rauthy's own cron snapshot with the age
+reported rather than failing, which is spec 027 §3.6's stated recovery
+objective rather than an implicit one.
+
+These are the first verbs whose exit code is a verdict about a deployment
+rather than about a repo. The semantics rule in §3.2 is unchanged and now
+covers both kinds: exit zero is the verdict, and the verb says what it found.

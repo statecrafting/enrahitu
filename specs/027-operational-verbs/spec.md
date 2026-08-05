@@ -644,3 +644,123 @@ running app under an authenticated operator" is a property of the volume, not of
 migration, so it governs the hot backup path identically (§3.2). The admin plane
 is now the transport for both, and the pattern is stated once here rather than
 re-derived per verb.
+
+## Amendment (2026-08-05): the three verbs, and two shapes §3.3 had one name for
+
+`backup`, `restore` and `migrate` land under `scripts/ops/`, and `template.toml`
+carries all four verbs at contract v0.8.0 (§4 item 1). Spec 009's amendment of
+the same date records why that is one bump rather than four.
+
+**`migrate` owns no migration logic**, which is the whole of what §3.4's
+2026-08-04 settlement implies once written down: the runner and both drivers are
+TypeScript the bundler resolves, the verbs run in the packaged image with no
+transpiler, and a script-shaped half would be a second runner for a property
+whose entire value is that there is one. So the verb is the transport, over both
+stores' admin pairs, and "one verb over both stores" is one verb over one plane.
+
+**The archive is organised by §3.1's four classes, which `/data` is not.**
+`/data/rauthy` holds two of them: the identity store under `db/`, and key
+material in `secrets.env` and `admin-password`. A directory copy would put the
+key material inside the rauthy member, where it would be restored with the store
+rather than with the keys, and the binding argument that made this one artifact
+would be satisfied only by accident. Key material is therefore gathered from both
+directories into one member and placed back into both.
+
+**Two shapes of hiqlite member, and §3.3 has one name for them.** §3.3 says both
+hiqlite stores are restored "through hiqlite's own documented path rather than by
+file placement", which is exactly right for a hot archive, whose members are
+snapshot files `backup()` produced. A cold archive's members are not snapshot
+files: they are the raft directories, and §3.2's cold-mode argument is precisely
+that a stopped node's directory IS the state it would recover from. There is no
+backup file to give `HQL_BACKUP_RESTORE`, and manufacturing one would discard the
+property that makes a cold copy correct. So the verb forks on the member's shape:
+a directory is placed, a snapshot is staged and the variable that arms it is
+named. The sentence in §3.3 was written when the app's hiqlite was to be
+"recreated empty" and the 2026-08-04 amendment that made it a restored member did
+not revisit it.
+
+**A restored volume has no previous owner.** A cold copy always contains
+`state_machine/lock` and `enrahitu-owner.json`, because the addon exposes no
+`shutdown()` and never releases the lock (spec 002, amendment 2026-07-30).
+Restored verbatim into a new cell they describe a process that does not exist, so
+the verb drops both. This is also why the volume cannot answer whether a cell is
+running: the lock is present on every stopped cell, so a verb that read it as a
+liveness signal would refuse every cold backup it was asked for. Liveness is
+asked of the app's listening port instead, derived by importing the pre-flight
+verb's own derivation rather than repeating it.
+
+**The manifest's hashes come out of the chain, not off the image.** The kernel
+writes a genesis Decision into `kernel_decisions` carrying the model and gate
+config hashes, so the archive records what produced the data it contains. Reading
+them from the running image instead would make §3.3's upgrade warning compare a
+value with itself.
+
+### Status: run against the compose topology, 2026-08-05
+
+Verified by test: the cold round trip over a real volume and a real libSQL
+ledger, the tamper refusal with the volume untouched, both liveness refusals, the
+0600 archive and the world-readable destination refusal, the remote-ledger
+detection, the hot path's capture ORDER (§3.2's whole consistency answer), both
+degraded credentials reporting the age of what they ship (§3.6), and the migrate
+verb over both stores including the three admin-plane refusals told apart.
+
+**Items 2, 3, 9 and 10 were then run against the real N=1 topology**, which is
+the fixture §3.7 said they needed. A populated cell (four members, four tiers,
+59 chained Decisions) was backed up cold with the container stopped and hot with
+it serving; each archive was restored into a fresh volume and a cell booted on
+it. Both restored cells came up, verified the chain to the same head
+(`decision-000059`), and served the same members and tiers, including a tier
+created minutes before the backup. rauthy came up on the restored store and
+served OIDC discovery through the app's own origin. The hot restore was applied
+through the two scoped variables, and the entrypoint log shows each node offered
+exactly its own file, which is §4 item 9 asserted against a running container
+rather than a harness.
+
+Three defects the fixture found, none of which a unit test could have:
+
+1. **A session is not enough for an unsafe method.** §3.2 asks for "an operator
+   session", which reads as one credential. The admin plane double-submits CSRF
+   and signing in does not issue the csrf cookie: `GET /api/v1/auth/csrf-token`
+   does. A verb presenting only a session is refused on every POST. The verbs
+   now perform the same two-step the SPA performs, which is one credential and
+   two requests rather than an operator assembling a header by hand.
+2. **The model's identity is its canonical hash, not a digest of its bytes.**
+   §3.3's upgrade warning compares the archive's model hash against the image's.
+   Computing the image's by hashing `app-model.json` produces a different number
+   of the same shape, so the warning fired on every restore including one into
+   the identical image. The hash is read from the model's own `integrity.hash`
+   (`sha256-canonical-keysort-v1`, spec 020).
+3. **§3.1's key binding is true once, not twice.** See below.
+
+### §4 item 5 is disproven, not merely unmet (2026-08-05)
+
+§3.1 says the app's hiqlite "encrypts its snapshots with
+`ENRAHITU_HIQ_ENC_KEYS` from the same file", and concludes that the
+key-binding invariant "is now true twice over, which is what makes it an
+invariant rather than a property of one dependency". **Nothing provisions that
+variable.** `docker/first-boot.mjs` writes `RAUTHY_ENC_KEYS`,
+`RAUTHY_ENC_KEY_ACTIVE`, the two rauthy hiqlite secrets and the two app hiqlite
+secrets, and no encryption key for the app's node. The addon falls back to its
+publicly-known development key and says so on every boot.
+
+Run: a cold archive was restored into a fresh volume, all key material was
+deleted, and a cell was booted. It served every member. The resource store
+opened without the keys the archive carried, because the key that would have
+stopped it is not one this substrate ever generated.
+
+Two consequences, and the second is larger than this spec:
+
+- Item 5's second half cannot hold, and would not hold if it were written as a
+  test tomorrow. Item 5's first half also did not hold as stated: rauthy starts
+  cleanly against a store encrypted under a key it no longer has, because its
+  at-rest encryption covers particular columns and surfaces at first decrypt
+  rather than at boot.
+- **Every cell stores the association's data, and writes its backup snapshots,
+  under a key that is public.** That is not a backup defect; the verbs merely
+  made it visible, which is what §3.8 says a spec ahead of its code is for.
+
+This is left for a decision rather than fixed here. Provisioning the key is one
+line in a file spec 007 owns, but doing it to a volume that already holds data
+written under the development key is a key-rotation question with a data-loss
+edge, and `secrets.env` is written once and never rewritten. `implementation`
+stays `in-progress` on item 5 alone; every other acceptance item now holds.
