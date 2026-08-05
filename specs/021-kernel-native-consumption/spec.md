@@ -630,3 +630,26 @@ One consequence, stated rather than left to be discovered: operations inside a
 migration run carry no spans (spec 022), because instrumentation wraps outside
 governance and bypassing one bypasses both. The state layer's half has the same
 property for the same reason.
+
+## Amendment (2026-08-05): the admin service takes a backup (spec 027)
+
+`admin` gains `cap.backup.state.write` and `cap.backup.state.list`. Both were
+declared when spec 032 built the durability facade and were deliberately held by
+no service, on the ground that an ungranted capability is not a latent hole:
+deny-by-default means a caller reaching for one gets a typed denial and a
+Decision record. Spec 027 §3.2's hot backup path is the consumer that justifies
+them, and it is the first.
+
+The grant is `bucket.write` rather than a backup-shaped kind because the
+capability vocabulary is a fixed 28 kinds and boot refuses a model naming one it
+does not know. That is not a workaround: a backup genuinely is an object-store
+write of the database, `bucket.write` names that effect honestly, and it is
+classified non-read, so it fails closed at `read-only` trust exactly as it
+should.
+
+Ceilings grow by import, so the `admin` service holds these because
+`backend/admin/state-backup.ts` reaches the state layer's durability surface
+under its own attribution rather than borrowing the `state` service's identity
+through `runAsService`. The alternative would leave the manifest describing a
+service that cannot take a backup while a backup is taken in its name, which is
+the ceiling-that-lies this spec exists to prevent.

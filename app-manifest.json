@@ -140,6 +140,8 @@
     "admin": {
       "tier": "ts",
       "capabilities": [
+        "cap.backup.state.list",
+        "cap.backup.state.write",
         "cap.db.app.migrate",
         "cap.db.app.read",
         "cap.db.state.migrate",

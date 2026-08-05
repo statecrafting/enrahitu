@@ -32,16 +32,42 @@ node /enrahitu/first-boot.mjs
 # shellcheck disable=SC1091
 . "$DATA/rauthy/secrets.env"
 
-# restore.env carries first-boot's single-shot restore decision (spec 033 §3.5).
-# hiqlite applies HQL_BACKUP_RESTORE at boot before the raft node starts, and
-# left set in a container with a restart policy it re-applies on EVERY restart,
-# discarding everything written since: a crash loop becomes silent, repeated
-# data loss. first-boot.mjs records which backup it honoured and writes either
-# an export or an unset here, so the operator may set the variable once and
-# leave it set. Sourced before either supervised process starts, because both
-# hiqlite instances would otherwise inherit it.
+# restore.env carries first-boot's single-shot restore decisions (spec 033 §3.5,
+# spec 027 §3.3). hiqlite applies HQL_BACKUP_RESTORE at boot before the raft node
+# starts, and left set in a container with a restart policy it re-applies on
+# EVERY restart, discarding everything written since: a crash loop becomes
+# silent, repeated data loss. first-boot.mjs records which backup it honoured and
+# writes either an export or an unset here, so the operator may set the variable
+# once and leave it set.
+#
+# There are TWO decisions, one per store, and they stay prefixed until the
+# moment they enter the process that should act on them. This container runs two
+# independent hiqlite nodes, and HQL_BACKUP_RESTORE is hiqlite's own name, so a
+# single ambient value naming a single file is read by both: whichever node it
+# was not meant for either refuses the file or, worse, accepts it.
 # shellcheck disable=SC1091
 . "$DATA/restore.env"
+
+# An inherited HQL_BACKUP_RESTORE reaches neither node (spec 027 §3.3). Scrubbed
+# rather than mapped, for the same reason SMTP_* is scrubbed below: an
+# orchestrator exporting hiqlite's variable for some other workload must not
+# silently arm a restore here. first-boot.mjs has already run and named it in the
+# log, so this is loud rather than quiet.
+unset HQL_BACKUP_RESTORE
+
+# Map one store's prefixed decision onto hiqlite's own variable, and drop BOTH
+# prefixed names, so a child process can see its own file and never the other's.
+# Called from inside each supervised process's subshell, which is what makes
+# "neither variable is visible in the other's environment" a fact about the
+# environment rather than an intention (spec 027 §4 item 9).
+export_restore_env() {
+  local src="$1"
+  if [ -n "${!src:-}" ]; then
+    export HQL_BACKUP_RESTORE="${!src}"
+    echo "[entrypoint] restoring $src into ${2}" >&2
+  fi
+  unset ENRAHITU_RESTORE_RAUTHY ENRAHITU_RESTORE_APP
+}
 
 # Ambient mail configuration is removed before anything starts (spec 026 §3.1).
 #
@@ -130,6 +156,7 @@ host="${hostport%%:*}"
   export BOOTSTRAP_ADMIN_EMAIL="${ENRAHITU_ADMIN_EMAIL:-admin@example.com}"
   BOOTSTRAP_ADMIN_PASSWORD_PLAIN="$(cat "$DATA/rauthy/admin-password")"
   export BOOTSTRAP_ADMIN_PASSWORD_PLAIN
+  export_restore_env ENRAHITU_RESTORE_RAUTHY "rauthy's identity store"
   export_smtp_env
   # The other half of spec 037 §3.1's two-surfaces rule. The subshell inherits
   # the whole environment, so without this rauthy would hold the APPLICATION's
@@ -243,22 +270,29 @@ cd /workspace
 # above this line (first-boot, rauthy on loopback, the readiness wait, the
 # signal traps, die-together) is shared, which is the point. The signal
 # handling in particular was hard won and must not exist in two copies.
-if [ "${ENRAHITU_DEV:-0}" = "1" ]; then
-  # node_modules is a named volume, not the host's: the addon and the napi
-  # runtime are per-platform binaries, and a macOS host's tree cannot be used
-  # by a linux container. The volume starts empty, so the first boot populates
-  # it and later boots skip. Keyed on the toolchain rather than on the
-  # directory, because an interrupted install leaves the directory present and
-  # useless.
-  if [ ! -d /workspace/node_modules/@statecrafting/toolchain ]; then
-    echo "[entrypoint] installing dependencies into the container's node_modules (first run)"
-    npm --prefix /workspace ci
+# The app runs in its own subshell for the same reason rauthy does (spec 027
+# §3.3): it is the second hiqlite node, so its restore decision has to enter
+# this process and no other. `exec` makes the subshell become the app, so
+# $APP_PID is still the process the traps signal and `wait -n` observes.
+(
+  export_restore_env ENRAHITU_RESTORE_APP "the app's resource store"
+  if [ "${ENRAHITU_DEV:-0}" = "1" ]; then
+    # node_modules is a named volume, not the host's: the addon and the napi
+    # runtime are per-platform binaries, and a macOS host's tree cannot be used
+    # by a linux container. The volume starts empty, so the first boot populates
+    # it and later boots skip. Keyed on the toolchain rather than on the
+    # directory, because an interrupted install leaves the directory present and
+    # useless.
+    if [ ! -d /workspace/node_modules/@statecrafting/toolchain ]; then
+      echo "[entrypoint] installing dependencies into the container's node_modules (first run)"
+      npm --prefix /workspace ci
+    fi
+    echo "[entrypoint] development mode: watching sources"
+    exec node /workspace/scripts/dev-watch.mjs
+  else
+    exec node --enable-source-maps /workspace/.encore/build/combined/combined/main.mjs
   fi
-  echo "[entrypoint] development mode: watching sources"
-  node /workspace/scripts/dev-watch.mjs &
-else
-  node --enable-source-maps /workspace/.encore/build/combined/combined/main.mjs &
-fi
+) &
 APP_PID=$!
 
 # Die together: first exit takes the container down; restart policy recovers.

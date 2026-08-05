@@ -163,7 +163,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:8d07a4dd9921844c5c512ff5e63e0748349ede3f0e59d72d91a76bc3a61449c3"
+    "hash": "sha256:29a235bc093eea09ae42d8c1c560eb82cf7a01c6774d53f61d845ad87cee100a"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -227,6 +227,8 @@
   "services": [
     {
       "capabilities": [
+        "cap.backup.state.list",
+        "cap.backup.state.write",
         "cap.db.app.migrate",
         "cap.db.app.read",
         "cap.db.state.migrate",
@@ -279,10 +281,26 @@
         {
           "access": "auth",
           "methods": [
+            "POST"
+          ],
+          "name": "createStateBackup",
+          "path": "/api/admin/state/backups"
+        },
+        {
+          "access": "auth",
+          "methods": [
             "GET"
           ],
           "name": "ledgerSchema",
           "path": "/api/admin/ledger/schema"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "listStateBackups",
+          "path": "/api/admin/state/backups"
         },
         {
           "access": "auth",
@@ -730,7 +748,7 @@
     }
   ],
   "source": {
-    "revision": "58d97d39b59927f8a16638b1f19b736984b73c8a",
+    "revision": "07fdcfefa8369d01699cb63cb3e4783ffd5f0126",
     "uncommittedChanges": true
   },
   "trust": {

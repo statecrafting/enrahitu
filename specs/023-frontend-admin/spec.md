@@ -259,3 +259,30 @@ stops one store's list being planned against the other store's version.
 
 The dashboard itself is unchanged: this is data plane only, and no screen reads
 it yet.
+
+## Amendment (2026-08-05): the state layer's backup pair (spec 027)
+
+`POST /api/admin/state/backups` and `GET /api/admin/state/backups` join the two
+schema pairs on this plane, gated identically through `requireOperator()`.
+
+They are here for the reason the schema verb is here, which spec 027 §3.4's
+2026-08-04 settlement generalized: at N=1 the app's embedded hiqlite node holds
+the volume open, so an operation on that store is performed BY the running app,
+under an authenticated operator, or it is not performed at all. A hot backup is
+such an operation, so the `backup` verb calls this pair rather than copying
+`/data/hiqlite` around a live raft log. A cold backup needs neither endpoint,
+because a stopped node's directory is already the state it would recover from.
+
+The `admin` service's ceiling grows by `cap.backup.state.write` and
+`cap.backup.state.list`, which spec 032 declared and no service held.
+
+The create endpoint reads the backup listing **before as well as after** taking
+the snapshot, which is the one thing here that is not a gate plus a call. The
+addon's sixty-second duplicate-request guard is silent, so a second request
+inside the window returns the first snapshot with nothing to say so; without the
+before-reading, the verb could not distinguish a fresh snapshot from a suppressed
+one and spec 027 §3.6's promise to report the age of what it ships would be
+unanswerable. The response carries `fresh` for exactly that.
+
+The dashboard itself is unchanged: this is data plane only, and no screen reads
+it yet.

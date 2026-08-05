@@ -94,70 +94,143 @@ describe("first-boot: restore is single-shot", () => {
   const marker = () => JSON.parse(readFileSync(join(data, "restore-applied.json"), "utf8"));
 
   it("honours the request on the boot that asks for it", () => {
-    const out = runFirstBoot({ HQL_BACKUP_RESTORE: "s3:backup-2026-07-01" });
+    const out = runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "s3:backup-2026-07-01" });
     expect(out).toContain("restore requested");
-    expect(restoreEnv()).toContain("export HQL_BACKUP_RESTORE=");
+    expect(restoreEnv()).toContain("export ENRAHITU_RESTORE_RAUTHY=");
     expect(restoreEnv()).toContain("s3:backup-2026-07-01");
-    expect(marker().backup).toBe("s3:backup-2026-07-01");
+    expect(marker().rauthy.backup).toBe("s3:backup-2026-07-01");
   });
 
   // The whole point: the operator may leave the variable set forever.
   it("refuses to re-apply the same backup on later boots", () => {
-    runFirstBoot({ HQL_BACKUP_RESTORE: "s3:backup-2026-07-01" });
-    const applied = marker().appliedAt;
+    runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "s3:backup-2026-07-01" });
+    const applied = marker().rauthy.appliedAt;
 
     for (const _ of [1, 2, 3]) {
-      const out = runFirstBoot({ HQL_BACKUP_RESTORE: "s3:backup-2026-07-01" });
+      const out = runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "s3:backup-2026-07-01" });
       expect(out).toContain("already applied");
-      expect(restoreEnv()).toBe("unset HQL_BACKUP_RESTORE\n");
+      expect(restoreEnv()).toContain("unset ENRAHITU_RESTORE_RAUTHY");
     }
     // The original decision is untouched, so the audit trail survives restarts.
-    expect(marker().appliedAt).toBe(applied);
+    expect(marker().rauthy.appliedAt).toBe(applied);
   });
 
   // A different identifier is a NEW restore, not a repeat of the old one.
   it("honours a request for a different backup", () => {
-    runFirstBoot({ HQL_BACKUP_RESTORE: "s3:backup-2026-07-01" });
-    const out = runFirstBoot({ HQL_BACKUP_RESTORE: "s3:backup-2026-07-02" });
+    runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "s3:backup-2026-07-01" });
+    const out = runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "s3:backup-2026-07-02" });
     expect(out).toContain("restore requested");
     expect(restoreEnv()).toContain("s3:backup-2026-07-02");
-    expect(marker().backup).toBe("s3:backup-2026-07-02");
+    expect(marker().rauthy.backup).toBe("s3:backup-2026-07-02");
     // The superseded decision is retained rather than overwritten blindly.
-    expect(marker().previous.backup).toBe("s3:backup-2026-07-01");
+    expect(marker().rauthy.previous.backup).toBe("s3:backup-2026-07-01");
   });
 
-  it("writes an unset when no restore is requested", () => {
+  it("writes an unset for every store when no restore is requested", () => {
     runFirstBoot();
-    expect(restoreEnv()).toBe("unset HQL_BACKUP_RESTORE\n");
+    expect(restoreEnv()).toBe("unset ENRAHITU_RESTORE_RAUTHY\nunset ENRAHITU_RESTORE_APP\n");
   });
 
   // A stale decision from a previous boot must not leak into a boot that did
   // not ask for one, which is what makes the file safe to source unconditionally.
   it("clears a previous boot's decision when the variable is removed", () => {
-    runFirstBoot({ HQL_BACKUP_RESTORE: "s3:backup-2026-07-01" });
-    expect(restoreEnv()).toContain("export HQL_BACKUP_RESTORE=");
+    runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "s3:backup-2026-07-01" });
+    expect(restoreEnv()).toContain("export ENRAHITU_RESTORE_RAUTHY=");
     runFirstBoot();
-    expect(restoreEnv()).toBe("unset HQL_BACKUP_RESTORE\n");
+    expect(restoreEnv()).toContain("unset ENRAHITU_RESTORE_RAUTHY");
+    expect(restoreEnv()).not.toContain("export ");
   });
 
   // Operator-supplied text is sourced by bash, so it is quoted rather than
   // interpolated. A single quote in the identifier must not end the string.
   it("quotes an identifier containing a single quote", () => {
-    runFirstBoot({ HQL_BACKUP_RESTORE: "file:/tmp/o'brien.sqlite" });
-    const line = restoreEnv().trim();
-    expect(line.startsWith("export HQL_BACKUP_RESTORE=")).toBe(true);
-    const value = execFileSync("bash", ["-c", `${line}; printf %s "$HQL_BACKUP_RESTORE"`], {
+    runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "file:/tmp/o'brien.sqlite" });
+    const line = restoreEnv()
+      .split("\n")
+      .find((l) => l.startsWith("export "))!;
+    expect(line.startsWith("export ENRAHITU_RESTORE_RAUTHY=")).toBe(true);
+    const value = execFileSync("bash", ["-c", `${line}; printf %s "$ENRAHITU_RESTORE_RAUTHY"`], {
       encoding: "utf8",
     });
     expect(value).toBe("file:/tmp/o'brien.sqlite");
   });
 
   it("re-applies when the marker is unreadable rather than refusing to boot", () => {
-    runFirstBoot({ HQL_BACKUP_RESTORE: "s3:backup-2026-07-01" });
+    runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "s3:backup-2026-07-01" });
     writeFileSync(join(data, "restore-applied.json"), "{ not json");
-    const out = runFirstBoot({ HQL_BACKUP_RESTORE: "s3:backup-2026-07-01" });
+    const out = runFirstBoot({ ENRAHITU_RESTORE_RAUTHY: "s3:backup-2026-07-01" });
     expect(out).toContain("restore requested");
-    expect(marker().backup).toBe("s3:backup-2026-07-01");
+    expect(marker().rauthy.backup).toBe("s3:backup-2026-07-01");
+  });
+});
+
+/**
+ * One decision per store (spec 027 §3.3).
+ *
+ * The single-shot guard above was built for one ambient variable, which is the
+ * defect §3.3 names: two independent hiqlite nodes read `HQL_BACKUP_RESTORE`,
+ * and whichever one it was not meant for either refuses the file or accepts it.
+ * These assertions are the bookkeeping half; the environment half is asserted in
+ * `entrypoint.test.ts`, because the failure guarded there is inheritance.
+ */
+describe("first-boot: restore is per-store", () => {
+  const restoreEnv = () => readFileSync(join(data, "restore.env"), "utf8");
+  const marker = () => JSON.parse(readFileSync(join(data, "restore-applied.json"), "utf8"));
+
+  it("records a decision per store and keeps them independent", () => {
+    runFirstBoot({
+      ENRAHITU_RESTORE_RAUTHY: "file:/data/restore/rauthy.sqlite",
+      ENRAHITU_RESTORE_APP: "file:/data/restore/app.sqlite",
+    });
+    expect(marker().rauthy.backup).toBe("file:/data/restore/rauthy.sqlite");
+    expect(marker().app.backup).toBe("file:/data/restore/app.sqlite");
+    expect(restoreEnv()).toContain("export ENRAHITU_RESTORE_RAUTHY='file:/data/restore/rauthy.sqlite'");
+    expect(restoreEnv()).toContain("export ENRAHITU_RESTORE_APP='file:/data/restore/app.sqlite'");
+  });
+
+  it("re-arms one store without re-applying the other", () => {
+    // Restoring the identity store alone is an ordinary operation, and it must
+    // not drag the resource store's already-applied snapshot back through.
+    runFirstBoot({
+      ENRAHITU_RESTORE_RAUTHY: "file:/data/restore/rauthy.sqlite",
+      ENRAHITU_RESTORE_APP: "file:/data/restore/app.sqlite",
+    });
+    const appApplied = marker().app.appliedAt;
+    const out = runFirstBoot({
+      ENRAHITU_RESTORE_RAUTHY: "file:/data/restore/rauthy-2.sqlite",
+      ENRAHITU_RESTORE_APP: "file:/data/restore/app.sqlite",
+    });
+    expect(out).toContain("restore requested for rauthy's identity store");
+    expect(out).toContain("already applied");
+    expect(restoreEnv()).toContain("export ENRAHITU_RESTORE_RAUTHY='file:/data/restore/rauthy-2.sqlite'");
+    expect(restoreEnv()).toContain("unset ENRAHITU_RESTORE_APP");
+    expect(marker().app.appliedAt).toBe(appApplied);
+  });
+
+  it("names an ambient HQL_BACKUP_RESTORE instead of guessing which node meant it", () => {
+    // Honouring it would require choosing a store, and choosing wrong offers
+    // rauthy's snapshot to the app's node. Refusing to boot is worse still: the
+    // name is hiqlite's own, so an unrelated workload's variable would take this
+    // container down. So it is reported, and the entrypoint scrubs it.
+    const out = runFirstBoot({ HQL_BACKUP_RESTORE: "file:/data/restore/ambiguous.sqlite" });
+    expect(out).toContain("HQL_BACKUP_RESTORE is set and is being ignored");
+    expect(out).toContain("ENRAHITU_RESTORE_RAUTHY");
+    expect(out).toContain("ENRAHITU_RESTORE_APP");
+    expect(restoreEnv()).not.toContain("export ");
+  });
+
+  it("carries a pre-split marker forward rather than interpreting it", () => {
+    // A marker written before the split recorded one decision for one ambient
+    // variable and cannot say which store it meant. Guessing is the ambiguity
+    // this change exists to end, so it is preserved and stepped over.
+    writeFileSync(
+      join(data, "restore-applied.json"),
+      JSON.stringify({ backup: "s3:backup-2026-07-01", appliedAt: "2026-07-01T00:00:00.000Z" }),
+    );
+    runFirstBoot({ ENRAHITU_RESTORE_APP: "file:/data/restore/app.sqlite" });
+    expect(marker().legacy.backup).toBe("s3:backup-2026-07-01");
+    expect(marker().app.backup).toBe("file:/data/restore/app.sqlite");
+    expect(marker().backup).toBeUndefined();
   });
 });
 

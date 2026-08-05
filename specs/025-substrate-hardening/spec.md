@@ -15,7 +15,6 @@ depends_on:
 establishes:
   - "backend/lib/client-identity.ts"
   - "backend/lib/client-identity.test.ts"
-  - "docker/first-boot.test.ts"
 summary: >
   Four defects that only exist once the cell is actually exposed on a
   network, found by an external review of the packaged image and
@@ -103,13 +102,16 @@ nobody implemented.
 
 ## 2. Territory
 
-This spec owns `backend/lib/client-identity.ts` and its test (the single
-resolver for "who is calling", used by every tier that needs a client
-key), and `docker/first-boot.test.ts`, which covers the write-once
-property of provisioning now that a scraper credential depends on it.
-`docker/` is not directory-owned, so the new test needed an explicit
-home; `backend/obs/metrics-auth.ts` and its test do not, since spec 022
-owns that directory.
+This spec owns `backend/lib/client-identity.ts` and its test: the single
+resolver for "who is calling", used by every tier that needs a client key.
+
+It also established `docker/first-boot.test.ts`, to cover the write-once
+property of provisioning once a scraper credential depended on it, because
+`docker/` is not directory-owned and the new test needed an explicit home.
+**That path moved to spec 007 on 2026-08-05** (amendment below): the file
+became the test file for the whole of `first-boot.mjs`, which spec 007 owns.
+The token assertions remain this spec's acceptance. `backend/obs/metrics-auth.ts`
+and its test never needed an explicit home, since spec 022 owns that directory.
 
 It amends, without taking ownership of, the behavior of:
 
@@ -459,3 +461,21 @@ Recorded for the same reason as the 2026-07-29 amendment above, and with the
 same boundary. The provisioning properties this spec cares about are unchanged
 and still covered. The mail notice is spec 026's behavior; it lives in this file
 because the file is the first-boot suite, not because it is this spec's concern.
+
+## Amendment (2026-08-05): `docker/first-boot.test.ts` moves to spec 007
+
+This spec established that file for §3.4's `/metrics` bearer-token assertions,
+which were the first tests `first-boot.mjs` had. It has since become the test
+file for the whole script: the write-once provisioning property spec 007 owns,
+the single-shot restore marker spec 033 designed, and spec 027 §3.3's per-store
+scoping. Ownership had followed whichever spec first needed a test file rather
+than the unit under test, so every later change to a spec-007 script arrived as
+drift against a spec-025 path, and the coupling gate asked this spec to
+authorize restore semantics it has no view on.
+
+The path therefore moves to spec 007, which owns `docker/first-boot.mjs` itself.
+Nothing about the token assertions changes: they are this spec's acceptance and
+remain so, tested in a file another spec now owns, exactly as `backend/hiq/`'s
+endpoint removals are this spec's and live under spec 002's paths. Authority
+over a path and authorship of a test are different claims, and conflating them
+is what produced the misalignment.

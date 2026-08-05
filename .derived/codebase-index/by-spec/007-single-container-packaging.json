@@ -27,6 +27,10 @@
         "source": "spec-edge"
       },
       {
+        "path": "docker/first-boot.test.ts",
+        "source": "spec-edge"
+      },
+      {
         "path": "infra.config.json",
         "source": "spec-edge"
       },
@@ -104,6 +108,19 @@
       {
         "locations": [
           {
+            "file": "docker/first-boot.test.ts"
+          }
+        ],
+        "ownership": true,
+        "sourceField": "establishes",
+        "unit": {
+          "kind": "file",
+          "path": "docker/first-boot.test.ts"
+        }
+      },
+      {
+        "locations": [
+          {
             "file": "infra.config.json"
           }
         ],
@@ -132,5 +149,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "3a71ef57ec230d394a83445d1bbfd34517b43681e66c785473db370e65eb90dd"
+  "shardHash": "fbd73f3198b103f4c85e19e4a1ddeb6cf37329fc7ff174bf6667b4104aced0b6"
 }

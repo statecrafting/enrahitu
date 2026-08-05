@@ -135,7 +135,7 @@ writeFileSync(join(bootstrapDir, "clients.json"), JSON.stringify(clients, null, 
   mode: 0o600,
 });
 
-// --- restore, made single-shot (spec 033 §3.5, spec 032 §3.9) ---------------
+// --- restore, made single-shot and per-store (spec 033 §3.5, spec 027 §3.3) --
 //
 // hiqlite restores a backup at boot when HQL_BACKUP_RESTORE is set, BEFORE the
 // raft node starts, and its own documentation says to remove the value after
@@ -158,52 +158,111 @@ writeFileSync(join(bootstrapDir, "clients.json"), JSON.stringify(clients, null, 
 // the handshake already used for secrets.env. Keeping the decision in one
 // place (here) and the application in one place (the entrypoint) is what
 // stops the two from drifting into disagreement.
-const restoreRequest = (process.env.HQL_BACKUP_RESTORE ?? "").trim();
+//
+// **One variable, two nodes** (spec 027 §3.3). `HQL_BACKUP_RESTORE` is
+// hiqlite's name, not rauthy's, and this container runs two independent hiqlite
+// nodes with two unrelated state machines: rauthy's identity store and the
+// app's resource store. A single ambient value naming a single file is read by
+// both, and whichever node it was not meant for either refuses the file or,
+// worse, accepts it. That was harmless only while the app's store held nothing
+// worth restoring, which stopped being true three phases ago.
+//
+// The fix is the shape spec 037 §3.1 already used for mail credentials: each
+// store gets its own operator-facing variable, and the entrypoint scopes each
+// into exactly the subshell that should act on it. rauthy's node is offered
+// rauthy's snapshot, the app's node is offered the app's, and neither can see
+// the other's.
 const restoreMarkerPath = join(DATA, "restore-applied.json");
 const restoreEnvPath = join(DATA, "restore.env");
 
-if (restoreRequest) {
-  let applied = null;
-  if (existsSync(restoreMarkerPath)) {
-    try {
-      applied = JSON.parse(readFileSync(restoreMarkerPath, "utf8"));
-    } catch {
-      // An unreadable marker is treated as absent. The alternative is refusing
-      // to boot over a corrupt bookkeeping file, which is a worse failure than
-      // re-applying a restore the operator explicitly asked for.
-      applied = null;
-    }
-  }
+/**
+ * The two stores, each with the variable an operator sets for it.
+ *
+ * `scoped` is the name written into restore.env. The entrypoint maps it onto
+ * hiqlite's own HQL_BACKUP_RESTORE inside the owning process's subshell, which
+ * is what keeps one node from ever seeing the other's file.
+ */
+const RESTORE_STORES = [
+  { key: "rauthy", env: "ENRAHITU_RESTORE_RAUTHY", scoped: "ENRAHITU_RESTORE_RAUTHY", label: "rauthy's identity store" },
+  { key: "app", env: "ENRAHITU_RESTORE_APP", scoped: "ENRAHITU_RESTORE_APP", label: "the app's resource store" },
+];
 
-  if (applied?.backup === restoreRequest) {
-    writeFileSync(restoreEnvPath, "unset HQL_BACKUP_RESTORE\n", { mode: 0o600 });
+let restoreMarker = {};
+if (existsSync(restoreMarkerPath)) {
+  try {
+    restoreMarker = JSON.parse(readFileSync(restoreMarkerPath, "utf8"));
+  } catch {
+    // An unreadable marker is treated as absent. The alternative is refusing
+    // to boot over a corrupt bookkeeping file, which is a worse failure than
+    // re-applying a restore the operator explicitly asked for.
+    restoreMarker = {};
+  }
+}
+
+// A marker written before the split recorded one decision for one ambient
+// variable, so it cannot say which store was restored. It is carried forward
+// untouched rather than interpreted: guessing which node it meant is the exact
+// ambiguity this change exists to end.
+if (typeof restoreMarker.backup === "string") {
+  restoreMarker = { legacy: restoreMarker };
+}
+
+const restoreLines = [];
+let restoreMarkerChanged = false;
+
+for (const store of RESTORE_STORES) {
+  const request = (process.env[store.env] ?? "").trim();
+  if (!request) {
+    // No request this boot: make sure a stale decision from a previous boot
+    // cannot leak into this one.
+    restoreLines.push(`unset ${store.scoped}`);
+    continue;
+  }
+  const applied = restoreMarker[store.key] ?? null;
+  if (applied?.backup === request) {
+    restoreLines.push(`unset ${store.scoped}`);
     console.log(
-      `[first-boot] HQL_BACKUP_RESTORE is still set to "${restoreRequest}", already applied at ` +
+      `[first-boot] ${store.env} is still set to "${request}", already applied at ` +
         `${applied.appliedAt}; ignoring it. Delete ${restoreMarkerPath} to force a re-restore.`,
     );
-  } else {
-    writeFileSync(
-      restoreMarkerPath,
-      JSON.stringify(
-        { backup: restoreRequest, appliedAt: new Date().toISOString(), previous: applied },
-        null,
-        2,
-      ),
-      { mode: 0o600 },
-    );
-    // Single-quoted and escaped: a backup identifier is operator-supplied and
-    // this file is sourced by bash.
-    const quoted = `'${restoreRequest.replace(/'/g, `'\\''`)}'`;
-    writeFileSync(restoreEnvPath, `export HQL_BACKUP_RESTORE=${quoted}\n`, { mode: 0o600 });
-    console.log(
-      `[first-boot] restore requested from "${restoreRequest}"; recorded at ${restoreMarkerPath}. ` +
-        `It will not be applied again on the next restart.`,
-    );
+    continue;
   }
-} else {
-  // No request this boot: make sure a stale decision from a previous boot
-  // cannot leak into this one.
-  writeFileSync(restoreEnvPath, "unset HQL_BACKUP_RESTORE\n", { mode: 0o600 });
+  restoreMarker[store.key] = {
+    backup: request,
+    appliedAt: new Date().toISOString(),
+    previous: applied,
+  };
+  restoreMarkerChanged = true;
+  // Single-quoted and escaped: a backup identifier is operator-supplied and
+  // this file is sourced by bash.
+  const quoted = `'${request.replace(/'/g, `'\\''`)}'`;
+  restoreLines.push(`export ${store.scoped}=${quoted}`);
+  console.log(
+    `[first-boot] restore requested for ${store.label} from "${request}"; recorded at ` +
+      `${restoreMarkerPath}. It will not be applied again on the next restart.`,
+  );
+}
+
+if (restoreMarkerChanged) {
+  writeFileSync(restoreMarkerPath, JSON.stringify(restoreMarker, null, 2), { mode: 0o600 });
+}
+writeFileSync(restoreEnvPath, restoreLines.join("\n") + "\n", { mode: 0o600 });
+
+// An ambient HQL_BACKUP_RESTORE is named and ignored, never guessed at.
+//
+// It is not honoured for either store, because honouring it would require
+// choosing one, and choosing wrong offers rauthy's snapshot to the app's node.
+// It is not a boot failure either: the variable is hiqlite's own name, so an
+// orchestrator exporting it for some other workload would otherwise take this
+// container down. The entrypoint scrubs it so neither node inherits it; this
+// line is what stops that scrub from being silent.
+if ((process.env.HQL_BACKUP_RESTORE ?? "").trim()) {
+  console.log(
+    "[first-boot] HQL_BACKUP_RESTORE is set and is being ignored: this container runs two\n" +
+      "             hiqlite nodes and the variable names only one file. Set\n" +
+      "             ENRAHITU_RESTORE_RAUTHY for the identity store or ENRAHITU_RESTORE_APP\n" +
+      "             for the app's resource store.",
+  );
 }
 
 // --- mail, stated rather than silent (spec 026 §3.2) ------------------------

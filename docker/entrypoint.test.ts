@@ -321,6 +321,112 @@ describe("entrypoint mail passthrough (spec 026)", () => {
 });
 
 /**
+ * Per-store restore scoping (spec 027 §3.3, its §4 item 9).
+ *
+ * `HQL_BACKUP_RESTORE` is hiqlite's own variable and this container runs two
+ * independent hiqlite nodes, so one ambient value naming one file is read by
+ * both: rauthy's identity store and the app's resource store. Whichever node it
+ * was not meant for either refuses the file or, worse, accepts it. That was
+ * latent only while the app's store held nothing worth restoring.
+ *
+ * The failure this guards is INHERITANCE rather than logic, which is why these
+ * assertions are made against the environment two subshells actually see rather
+ * than against the script's text. A mapping that reads correctly and leaks is
+ * exactly the bug.
+ */
+function runRestore(env: Record<string, string>): { rauthy: string[]; app: string[] } {
+  const script = readFileSync(ENTRYPOINT, "utf8");
+  const harness = join(dir, "restore.sh");
+  const report = (label: string) =>
+    `env | grep -E "^(HQL_BACKUP_RESTORE|ENRAHITU_RESTORE_)" | sort | sed "s/^/${label} /"`;
+  writeFileSync(
+    harness,
+    [
+      "#!/bin/bash",
+      "set -euo pipefail",
+      bashFunction(script, "export_restore_env"),
+      // The scrub the entrypoint performs after sourcing restore.env, so an
+      // inherited value cannot reach either node.
+      "unset HQL_BACKUP_RESTORE",
+      // Both supervised processes, each in its own subshell, in script order.
+      `( export_restore_env ENRAHITU_RESTORE_RAUTHY "rauthy"; ${report("rauthy")} ) || true`,
+      `( export_restore_env ENRAHITU_RESTORE_APP "app"; ${report("app")} ) || true`,
+      "",
+    ].join("\n"),
+    { mode: 0o755 },
+  );
+  const out = spawnSync("bash", [harness], { env: { ...process.env, ...env }, encoding: "utf8" });
+  const lines = out.stdout.trim().split("\n").filter(Boolean);
+  return {
+    rauthy: lines.filter((l) => l.startsWith("rauthy ")).map((l) => l.slice(7)),
+    app: lines.filter((l) => l.startsWith("app ")).map((l) => l.slice(4)),
+  };
+}
+
+describe("entrypoint restore scoping (spec 027 §3.3)", () => {
+  it("offers each hiqlite node its own snapshot and never the other's", () => {
+    const { rauthy, app } = runRestore({
+      ENRAHITU_RESTORE_RAUTHY: "file:/data/restore/rauthy.sqlite",
+      ENRAHITU_RESTORE_APP: "file:/data/restore/app.sqlite",
+    });
+    expect(rauthy).toEqual(["HQL_BACKUP_RESTORE=file:/data/restore/rauthy.sqlite"]);
+    expect(app).toEqual(["HQL_BACKUP_RESTORE=file:/data/restore/app.sqlite"]);
+  });
+
+  it("leaves neither prefixed variable visible in either process", () => {
+    // The mapping is only half of it. A node that can SEE the other store's
+    // request is one config change away from acting on it.
+    const { rauthy, app } = runRestore({
+      ENRAHITU_RESTORE_RAUTHY: "file:/data/restore/rauthy.sqlite",
+      ENRAHITU_RESTORE_APP: "file:/data/restore/app.sqlite",
+    });
+    expect(rauthy.some((l) => l.startsWith("ENRAHITU_RESTORE_"))).toBe(false);
+    expect(app.some((l) => l.startsWith("ENRAHITU_RESTORE_"))).toBe(false);
+  });
+
+  it("restores one store without arming the other", () => {
+    const { rauthy, app } = runRestore({
+      ENRAHITU_RESTORE_APP: "file:/data/restore/app.sqlite",
+    });
+    expect(rauthy).toEqual([]);
+    expect(app).toEqual(["HQL_BACKUP_RESTORE=file:/data/restore/app.sqlite"]);
+  });
+
+  it("lets an inherited HQL_BACKUP_RESTORE reach neither node", () => {
+    // The variable is hiqlite's own name, so an orchestrator exporting it for
+    // some other workload would otherwise arm a restore nobody asked for, on a
+    // node nobody chose.
+    const { rauthy, app } = runRestore({ HQL_BACKUP_RESTORE: "file:/somebody/elses.sqlite" });
+    expect(rauthy).toEqual([]);
+    expect(app).toEqual([]);
+  });
+
+  it("scrubs the ambient value before either subshell maps its own", () => {
+    // Placement is the guarantee: scrubbing after the subshells would scrub
+    // nothing, and scrubbing before first-boot would cost the log line that
+    // tells the operator their variable was ignored.
+    const script = readFileSync(ENTRYPOINT, "utf8");
+    expect(script.match(/^unset HQL_BACKUP_RESTORE$/gm) ?? []).toHaveLength(1);
+    expect(script.indexOf("node /enrahitu/first-boot.mjs")).toBeLessThan(
+      script.indexOf("\nunset HQL_BACKUP_RESTORE\n"),
+    );
+    expect(script.indexOf("\nunset HQL_BACKUP_RESTORE\n")).toBeLessThan(
+      script.indexOf("  export_restore_env ENRAHITU_RESTORE_RAUTHY"),
+    );
+  });
+
+  it("runs the app in a subshell so its decision cannot reach rauthy's", () => {
+    // The app used to start at top level, which is why this is asserted: a
+    // top-level export would be visible to everything started afterwards.
+    const script = readFileSync(ENTRYPOINT, "utf8");
+    expect(script).toContain("  export_restore_env ENRAHITU_RESTORE_APP");
+    // `exec` is what keeps $APP_PID the process the traps signal.
+    expect(script).toContain("exec node --enable-source-maps");
+    expect(script).toContain("exec node /workspace/scripts/dev-watch.mjs");
+  });
+});
+
+/**
  * The pre-flight call (spec 027 §3.5, and the second half of its §4 item 8).
  *
  * "The entrypoint calls it and fails closed" is a claim about this script, so it
