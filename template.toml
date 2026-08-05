@@ -22,7 +22,13 @@ license = "Apache-2.0"
 # calls a removal a "major" bump; the literal 1.0.0 is reserved for declaring
 # the contract stable, which this is not, so the break lands where a caret pin
 # actually sees it.
-version = "0.7.0"
+#
+# v0.8 adds the four run-time verbs (spec 027): preflight, migrate, backup, and
+# restore. Additive keys, so a minor bump under §3.1, and one bump rather than
+# four: they are a single vocabulary, and a factory that learned them one at a
+# time would have three intermediate versions where the fleet could operate a
+# stamped app halfway.
+version = "0.8.0"
 
 [requires]
 node = ">=24"
@@ -63,6 +69,31 @@ package = "scripts/docker-build.sh"
 #   placement, derived-truth regeneration, and a README lineage marker. Required
 #   flags: --app-name, --org; optional: --frontend, --cert, --stamped-from.
 scaffold = "node scripts/stamp.mjs"
+# The run-time verbs (contract v0.8, spec 027). Everything above this line is a
+# build-time verb: it acts on a repo. These act on a RUNNING cell, which is the
+# vocabulary a fleet operating stamped apps on customer hardware needs and the
+# template did not have.
+#
+# preflight: the conditions that must hold before anything starts (§3.5). The
+#   entrypoint calls it and fails closed; it is a verb as well so a fleet can ask
+#   the question without booting the answer.
+# migrate: applies pending schema changes to BOTH stores over the admin plane
+#   (§3.4). A deploy step, not a boot step: boot-time migration ties schema
+#   change to process restart, so a crash loop becomes a migration loop.
+# backup: one archive holding every class of state on the volume (§3.2). Cold by
+#   default (the container is stopped, which is the only mode with no
+#   cross-store skew); --online captures each store through the process that
+#   owns it.
+# restore: puts an archive back, verifying every checksum before touching the
+#   volume (§3.3), and refuses a live container.
+#
+# migrate and backup --online need an operator session (ENRAHITU_OPERATOR_COOKIE)
+# because at N=1 the app holds the volume open, so the act is performed by the
+# running app under an authenticated principal and lands on the Decision chain.
+preflight = "node scripts/ops/preflight.mjs"
+migrate = "node scripts/ops/migrate.mjs"
+backup = "node scripts/ops/backup.mjs"
+restore = "node scripts/ops/restore.mjs"
 # deploy: owned by the Statecraft fleet service, never by the template.
 
 [provenance]
