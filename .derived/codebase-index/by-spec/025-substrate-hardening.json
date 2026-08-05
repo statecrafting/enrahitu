@@ -17,10 +17,6 @@
       {
         "path": "backend/lib/client-identity.ts",
         "source": "spec-edge"
-      },
-      {
-        "path": "docker/first-boot.test.ts",
-        "source": "spec-edge"
       }
     ],
     "resolvedUnits": [
@@ -49,24 +45,11 @@
           "kind": "file",
           "path": "backend/lib/client-identity.ts"
         }
-      },
-      {
-        "locations": [
-          {
-            "file": "docker/first-boot.test.ts"
-          }
-        ],
-        "ownership": true,
-        "sourceField": "establishes",
-        "unit": {
-          "kind": "file",
-          "path": "docker/first-boot.test.ts"
-        }
       }
     ],
     "specId": "025-substrate-hardening",
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "9eb8f9c865e5ffa71e2df978df5bd05b1b3acd97db317a6838d11464bcc78480"
+  "shardHash": "cb6a01a820f7847219acc2f7d6ce98fad16a662611576cb3689282e92331197f"
 }

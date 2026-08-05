@@ -273,7 +273,10 @@ variable into exactly the subshell that should act on it**, so rauthy's
 node is offered rauthy's snapshot and the app's node is offered the app's,
 and neither can see the other's. `first-boot.mjs` accordingly records a
 restore decision per store rather than one decision, and `restore.env`
-carries two scoped exports rather than one ambient one.
+carries two scoped exports rather than one ambient one. The operator-facing
+names are `ENRAHITU_RESTORE_RAUTHY` and `ENRAHITU_RESTORE_APP`;
+`HQL_BACKUP_RESTORE` survives only inside the process that owns the store it
+names, and an ambient one reaches neither node (§3.9).
 
 `/data/hiqlite` is therefore restored and never recreated empty. The
 sentence this replaces was correct for a cache and would be data loss for
@@ -500,6 +503,60 @@ and 027 led by nine days across three phases. The cheap guard is the one
 applied here: **re-read a pending spec's premises, not just its design,
 at the moment somebody picks it up.** The design was fine. The facts under
 it were not, and no gate can see that.
+
+### 3.9 Status (2026-08-05): the two things a verb cannot supply itself
+
+`backup --online` and `restore` both reach past the volume into a running
+process, and neither could be written until that reach existed. Both halves
+landed here, ahead of the scripts, because a verb written against a seam that
+does not exist is a verb written against a guess.
+
+**The admin plane's backup pair** (`backend/admin/state-backup.ts`) is §3.2's
+"operator-gated endpoint that invokes `backup()` and returns the resulting
+file's name". `POST /api/admin/state/backups` creates and names; `GET` lists,
+which is what §3.6's missing-session fallback reads. The `admin` service holds
+`cap.backup.state.write` and `cap.backup.state.list`, declared by spec 032 and
+held by no service until now.
+
+One thing the build had to add that §3.2 did not ask for. `backup()` returns
+void, so the name is read back from the listing rather than reported by the
+call, and the listing is read **before as well as after**. The sixty-second
+duplicate guard (§3.1) is silent, so without the before-reading the endpoint
+cannot tell a new snapshot from a suppressed one, and §3.6's promise to report
+the age of what it ships would be unanswerable at exactly the moment it
+matters. The response carries `fresh` for that reason.
+
+**Per-store restore scoping** (§3.3) resolves the live ambiguity rather than
+describing it. The two variables are `ENRAHITU_RESTORE_RAUTHY` and
+`ENRAHITU_RESTORE_APP`; `first-boot.mjs` records a decision per store under
+those keys and writes two scoped lines into `restore.env`, and the entrypoint
+maps each onto hiqlite's own `HQL_BACKUP_RESTORE` inside the owning process's
+subshell and drops both prefixed names there. The app moved into a subshell of
+its own to receive one, which it never needed before: it started at top level,
+where an export is visible to everything started after it.
+
+Two decisions the design left open, settled by building it:
+
+- **An ambient `HQL_BACKUP_RESTORE` is named and ignored, not honoured and not
+  fatal.** Honouring it means choosing a store, and choosing wrong offers
+  rauthy's snapshot to the app's node, which is the failure this section
+  exists to prevent. Refusing to boot over it is worse than it sounds: the name
+  is hiqlite's own, so an orchestrator exporting it for an unrelated workload
+  would take this container down. So first-boot names it in the log and the
+  entrypoint scrubs it, which is the shape spec 026 §3.1 already used for an
+  inherited `SMTP_*`.
+- **A pre-split marker is carried forward, not interpreted.** A
+  `restore-applied.json` written before this change recorded one decision for
+  one ambient variable and cannot say which store it meant. It is preserved
+  under `legacy` and stepped over.
+
+What remains: `backup`, `restore`, and `migrate` as scripts under
+`scripts/ops/`, and the four `[verbs]` entries with the contract bump to 0.8.0
+(§4 item 1). Items 2, 3 and 5 still need a compose-level fixture rather than
+the app harness, because a cold backup is defined by the container being
+stopped.
+
+## 4. Acceptance
 
 1. `template.toml` carries `preflight`, `migrate`, `backup`, and
    `restore` under `[verbs]`, `[contract].version` is `0.8.0`, and spec

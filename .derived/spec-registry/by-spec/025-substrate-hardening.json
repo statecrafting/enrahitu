@@ -18,10 +18,6 @@
       {
         "kind": "file",
         "path": "backend/lib/client-identity.test.ts"
-      },
-      {
-        "kind": "file",
-        "path": "docker/first-boot.test.ts"
       }
     ],
     "id": "025-substrate-hardening",
@@ -40,13 +36,14 @@
       "6. Out of scope",
       "Closure (2026-07-29): the remaining items, two proved and two superseded",
       "Amendment (2026-07-29): first-boot's test harness widens",
-      "Amendment (2026-08-01): first-boot's test harness widens again (spec 026)"
+      "Amendment (2026-08-01): first-boot's test harness widens again (spec 026)",
+      "Amendment (2026-08-05): `docker/first-boot.test.ts` moves to spec 007"
     ],
     "specPath": "specs/025-substrate-hardening/spec.md",
     "status": "approved",
     "summary": "Four defects that only exist once the cell is actually exposed on a network, found by an external review of the packaged image and verified against the code. The hiq demo endpoints are public and unauthenticated while holding an unconstrained counter capability, which lets any remote caller forge the rate limiter's own buckets and lock a chosen IP out of login. Client identity is taken from an unvalidated X-Forwarded-For on both the typed and raw paths, so the limiter is evadable and rauthy inherits the spoof through the proxy. The liveness endpoint performs a ledger query, so a transient store blip restarts a container that the die-together supervisor then takes down whole, and the image declares no HEALTHCHECK at all. The metrics endpoint is unauthenticated on the public port with its own comment citing deployment guidance that was never written. This spec closes all four: the demo surface becomes operator-gated and demo-scoped at the capability layer, client identity becomes forge-proof by construction, liveness separates from readiness, and metrics gains a first-boot-provisioned bearer token without weakening spec 022's always-on contract.\n",
     "title": "Substrate hardening: the exposed surface, forge-proof client identity, probe separation"
   },
-  "shardHash": "54c176d778bbf9067539918aa24e85d07318f26e4d13db9d8117065c933b74c8",
+  "shardHash": "e58b0d0bda2480de8bb9774267a0ada674b02468b926a4bf5d5e581504cdfa27",
   "specVersion": "1.1.0"
 }

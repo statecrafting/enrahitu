@@ -51,13 +51,14 @@
       "Amendment (2026-07-29c): the control plane joins, and the chain records allows",
       "Amendment (2026-07-29d): the manifest splits in two (spec 035)",
       "Amendment (2026-08-02): a second transport at the egress seam (spec 037)",
-      "Amendment (2026-08-04): the admin service migrates the app ledger (spec 027)"
+      "Amendment (2026-08-04): the admin service migrates the app ledger (spec 027)",
+      "Amendment (2026-08-05): the admin service takes a backup (spec 027)"
     ],
     "specPath": "specs/021-kernel-native-consumption/spec.md",
     "status": "approved",
     "summary": "Phase A of the enforcement seam (spec 001 section 4.6, item 1 of the section 5 sequencing): the substrate consumes @statecrafting/kernel-native 0.1.0 (statecrafting spec 004) at the existing napi boundary. Three deliverables. Extraction from day one: the toolchain drives the vendored tsparser, lowers encore meta plus the capability manifest (app-manifest.json, the authored ceiling) into app-model.json per spec 020, runs the verify step (observed usage subset-of declared, ban-list, sorted arrays, schema-valid), seals the gate config hash and the integrity hash, and the committed model is a governed derived artifact whose staleness fails the gate. The kernel at the napi boundary: boot is fail-closed on the nine refusals and write-once per process; the operations that already route through Rust (CoreLedger driver calls, hiqlite kv/counters, secret reads, governed egress) are adjudicated against the booted model; a deny surfaces as a typed error naming the capability. The Decision ledger live: the deploy genesis commits to the model hash; denials and human-granted overrides append as hash-linked Decisions; the chain re-verifies via the kernel. The whole TS tier gets attempt-deny-audit semantics with no new runtime machinery. Landing this closes statecrafting spec 004 acceptance item 3 (the first consumer builds green against the published package).\n",
     "title": "Phase A: extraction, kernel-native adjudication, the live Decision ledger"
   },
-  "shardHash": "393acbaa1de62b10e0b5ddd02b453c15a104f8578fea458116df9bf89ba2f544",
+  "shardHash": "4726521009de62c58cfcef38105660aa60475ac83e9dbfc7fe9a5bd53a1dfc57",
   "specVersion": "1.1.0"
 }

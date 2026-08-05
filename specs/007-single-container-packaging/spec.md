@@ -15,6 +15,7 @@ establishes:
   - "docker/entrypoint.sh"
   - "docker/entrypoint.test.ts"
   - "docker/first-boot.mjs"
+  - "docker/first-boot.test.ts"
   - "scripts/docker-build.sh"
   - "infra.config.json"
   - ".dockerignore"
@@ -396,3 +397,45 @@ Placement is part of the guarantee. It runs before `first-boot.mjs`, because a
 pre-flight that ran after it would be validating a volume already written to, and
 before the rauthy subshell, because one that ran after it would report on ports
 it had itself just taken.
+
+## Amendment (2026-08-05): two hiqlite nodes, two restore variables (spec 027)
+
+The entrypoint gains a scrub, a mapping function, and a subshell around the app.
+All three exist for one reason: this container runs **two** hiqlite nodes, and
+`HQL_BACKUP_RESTORE` is hiqlite's own variable name. A single ambient value
+naming a single file is therefore read by both rauthy's identity store and the
+app's resource store, and whichever node it was not meant for either refuses the
+file or, worse, accepts it. Spec 027 §3.3 states the defect; this records what it
+did to this script.
+
+`restore.env` now carries two prefixed decisions rather than one ambient export,
+and `export_restore_env` maps exactly one of them onto `HQL_BACKUP_RESTORE`
+inside the process that owns that store, dropping both prefixed names there. The
+shape is the one this entrypoint already uses twice: `export_smtp_env` for
+rauthy's mail surface (spec 026 §3.1) and the `ENRAHITU_MAIL_*` unset for the
+application's (spec 037 §3.1). Two surfaces means two holders, enforced in both
+directions or it is one surface with extra prefixes.
+
+**The app moved into a subshell**, which is new and is load bearing. It started
+at top level, where an export is visible to everything started after it, so
+there was nowhere to put its restore decision that rauthy could not see. `exec`
+makes the subshell become the app process, so `$APP_PID` is still the process
+the traps signal and `wait -n` observes, and the die-together policy is
+unchanged.
+
+An inherited `HQL_BACKUP_RESTORE` is scrubbed rather than mapped, for the reason
+spec 026 §3.1 scrubs an inherited `SMTP_*`: an orchestrator exporting a name
+this substrate did not choose must not silently arm a restore here. It is
+scrubbed *after* `first-boot.mjs` runs, so the operator still gets a log line
+naming the variable that was ignored and the two that replace it.
+
+**`docker/first-boot.test.ts` moves into this spec's territory with it.** Spec
+025 established that file, for the `/metrics` bearer-token assertions of its
+§3.4, and it has since accumulated the tests of everything else `first-boot.mjs`
+does: the provisioning write-once property this spec owns, the restore marker
+spec 033 designed, and now the per-store scoping above. Ownership followed the
+first spec to need a test file rather than the script under test, so a change to
+a script this spec owns kept landing in a file it did not, and the coupling gate
+kept asking spec 025 to authorize restore semantics it has no view on. The unit
+and its tests now sit with the same spec. Spec 025's own assertions in that file
+are unchanged; only the authority over the path moved.

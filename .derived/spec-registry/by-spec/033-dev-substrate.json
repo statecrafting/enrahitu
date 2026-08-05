@@ -55,9 +55,9 @@
     ],
     "specPath": "specs/033-dev-substrate/spec.md",
     "status": "approved",
-    "summary": "Phase 1b of the pivot (spec 001 §5.1). Development becomes docker-only, and the N=1 dev topology becomes the N=1 deployment topology rather than a parallel arrangement that resembles it. Five parts: a tiered compose topology whose default tier is one container and one volume; a single generator for infra.config.<topology>.json, replacing hand-maintained twins; a backend watch loop, which the toolchain's dev runner has never had; the app-level test harness, which boots the real compiled bundle and talks to it over HTTP; and the single-shot restore marker that makes HQL_BACKUP_RESTORE safe in a container with a restart policy. The harness landed first because it is what closes spec 025 and what specs 026, 027, and the control plane all build on. Between them the harness and a real boot of the topology found five defects nothing else in the repo could see, which is the case for verifying this by running it rather than by reading it.\n",
+    "summary": "Phase 1b of the pivot (spec 001 §5.1). Development becomes docker-only, and the N=1 dev topology becomes the N=1 deployment topology rather than a parallel arrangement that resembles it. Five parts: a tiered compose topology whose default tier is one container and one volume; a single generator for infra.config.<topology>.json, replacing hand-maintained twins; a backend watch loop, which the toolchain's dev runner has never had; the app-level test harness, which boots the real compiled bundle and talks to it over HTTP; and the single-shot restore marker that makes a restore variable safe in a container with a restart policy (one variable when this shipped, one per hiqlite node since spec 027 §3.3). The harness landed first because it is what closes spec 025 and what specs 026, 027, and the control plane all build on. Between them the harness and a real boot of the topology found five defects nothing else in the repo could see, which is the case for verifying this by running it rather than by reading it.\n",
     "title": "The dev substrate: docker-only development and the app-level harness"
   },
-  "shardHash": "7ecefe69a1cad512d50d8b2c6efefa46a40aa1cf11ea496f7eb63d1e32853dba",
+  "shardHash": "616484fd24e182e607fdfb2e66fbe059ac22188b4c20f60f5db618fbb4d49fc5",
   "specVersion": "1.1.0"
 }

@@ -25,8 +25,9 @@ summary: >
   generator for infra.config.<topology>.json, replacing hand-maintained
   twins; a backend watch loop, which the toolchain's dev runner has never
   had; the app-level test harness, which boots the real compiled bundle and
-  talks to it over HTTP; and the single-shot restore marker that makes
-  HQL_BACKUP_RESTORE safe in a container with a restart policy. The harness
+  talks to it over HTTP; and the single-shot restore marker that makes a
+  restore variable safe in a container with a restart policy (one variable
+  when this shipped, one per hiqlite node since spec 027 §3.3). The harness
   landed first because it is what closes spec 025 and what specs 026, 027,
   and the control plane all build on. Between them the harness and a real
   boot of the topology found five defects nothing else in the repo could
@@ -286,6 +287,18 @@ marker into the volume recording which backup was applied and refuses to
 apply it twice. The operator sets the variable once; the platform makes it
 single-shot. Designing it out beats documenting around it.
 
+**Amended 2026-08-05 (spec 027 §3.3): one marker became one per store.** This
+section was written when the ambient variable was the interface, and that was
+already ambiguous when it shipped: `HQL_BACKUP_RESTORE` is hiqlite's own name
+and this container runs two hiqlite nodes, so one value naming one file was
+read by both. The single-shot mechanism here is unchanged and is what spec 027
+consumes rather than reinventing; what changed is that the operator now sets
+`ENRAHITU_RESTORE_RAUTHY` or `ENRAHITU_RESTORE_APP`, the marker records a
+decision under each key, and the entrypoint maps each into the owning
+process's subshell. An ambient `HQL_BACKUP_RESTORE` is named in the log and
+reaches neither node. Spec 027 §3.9 carries the reasoning and the two
+decisions the build settled.
+
 ## 4. Acceptance
 
 1. The harness boots the real bundle and serves real HTTP, with one instance
@@ -322,11 +335,14 @@ single-shot. Designing it out beats documenting around it.
    generator reproduces the previously hand-written files byte for byte, so
    adopting it was a diff of zero rather than a reformat that has to be read
    to be trusted. `check:infra` runs in CI.
-10. A container restarted twice with `HQL_BACKUP_RESTORE` still set applies
+10. A container restarted twice with a restore variable still set applies
     the backup exactly once. **Met** (7 tests), including that a *different*
     identifier is honoured as a new restore, that a boot without the variable
     clears a previous decision, and that an operator-supplied identifier
-    containing a single quote survives being sourced by bash.
+    containing a single quote survives being sourced by bash. The variable is
+    `ENRAHITU_RESTORE_RAUTHY` as of the 2026-08-05 amendment in §3.5, where it
+    was `HQL_BACKUP_RESTORE`; the property asserted is the same one, now held
+    per store.
 
 ## 5. Status
 
