@@ -84,4 +84,12 @@ export const env = {
   // (the dev topology's Mailpit); anywhere else this sends credentials and
   // member data in the clear.
   mailInsecure: bool("ENRAHITU_MAIL_DANGER_INSECURE", false),
+
+  // CoreLedger migration at boot (spec 027 §3.4), off by default and opt-in for
+  // the single-container case where the simplicity is worth it. It is off by
+  // default because boot-time migration ties schema change to process restart,
+  // so a crash loop becomes a migration loop, and because once a topology runs
+  // more than one app container against one ledger (spec 030) it races. The
+  // supported path is the operator plane's apply endpoint.
+  migrateOnBoot: bool("ENRAHITU_MIGRATE_ON_BOOT", false),
 };

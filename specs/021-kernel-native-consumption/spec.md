@@ -598,3 +598,35 @@ is visible; a mislabelled one is not.**
 
 `app-manifest.json` and `app-model.json` grow the capability, the `mail` service
 that holds it, and `cap.secret.mail-password` alongside.
+
+## Amendment (2026-08-04): the admin service migrates the app ledger (spec 027)
+
+`admin` gains `cap.db.app.migrate` and `cap.db.app.read`, mirroring exactly what
+it already holds for the state layer, because spec 027 §3.4's CoreLedger half
+lands on the operator plane for the reasons that spec records.
+
+Two grants and not four, which is the whole design question here. CoreLedger's
+runner reaches the driver's `query`, `execute` and `transaction`, which the seam
+adjudicates as `db.read`, `db.write` and `db.txn`, so running it through the
+governed driver would have required the admin service to hold write and
+transaction access over the entire application ledger in order to migrate it.
+That is not a migration grant; it is write access with a migration-shaped name,
+and a ceiling that reads as something other than what it permits is the thing
+this spec exists to prevent.
+
+So `Ledger.migrate()` demands `db.migrate` on `app` once and then drives the
+runner against the driver from before the wrap. That is what spec 032 §3.6
+already does for the state layer, with the argument that transfers unchanged:
+the runner's internal read and its per-migration transaction are the mechanism
+of the effect the caller asked for, not further effects the caller chose.
+
+The raw-driver rule is unchanged in substance and sharper in wording: the
+ungoverned driver exists in `ledger.ts` and in the enforcement plane's Decision
+store, and nowhere else. `Ledger.fromEnv()` keeps the reference it already
+constructed rather than opening a second connection, so the seam is one more use
+inside the file that always had one, not a new site.
+
+One consequence, stated rather than left to be discovered: operations inside a
+migration run carry no spans (spec 022), because instrumentation wraps outside
+governance and bypassing one bypasses both. The state layer's half has the same
+property for the same reason.

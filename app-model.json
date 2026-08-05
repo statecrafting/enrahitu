@@ -163,7 +163,7 @@
   },
   "integrity": {
     "algorithm": "sha256-canonical-keysort-v1",
-    "hash": "sha256:42bbfe20cf15fd378f536f8d53f0a5ef5b306a9593b5afa1b595c39b4e93f7b5"
+    "hash": "sha256:8d07a4dd9921844c5c512ff5e63e0748349ede3f0e59d72d91a76bc3a61449c3"
   },
   "ledger": {
     "maxRecordBytes": 1024,
@@ -227,6 +227,8 @@
   "services": [
     {
       "capabilities": [
+        "cap.db.app.migrate",
+        "cap.db.app.read",
         "cap.db.state.migrate",
         "cap.db.state.read",
         "cap.secret.jwt-public"
@@ -255,6 +257,14 @@
           "methods": [
             "POST"
           ],
+          "name": "applyLedgerSchema",
+          "path": "/api/admin/ledger/schema/apply"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "POST"
+          ],
           "name": "applySchema",
           "path": "/api/admin/schema/apply"
         },
@@ -265,6 +275,14 @@
           ],
           "name": "catalog",
           "path": "/api/admin/catalog"
+        },
+        {
+          "access": "auth",
+          "methods": [
+            "GET"
+          ],
+          "name": "ledgerSchema",
+          "path": "/api/admin/ledger/schema"
         },
         {
           "access": "auth",
@@ -712,7 +730,7 @@
     }
   ],
   "source": {
-    "revision": "af96313759db3a70781380e98dd645db05457434",
+    "revision": "58d97d39b59927f8a16638b1f19b736984b73c8a",
     "uncommittedChanges": true
   },
   "trust": {

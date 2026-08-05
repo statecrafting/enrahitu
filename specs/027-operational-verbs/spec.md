@@ -288,7 +288,22 @@ an implicit one.
 
 Runs `migrate(driver, migrations)` against the configured ledger and
 reports the versions applied. The migration list gains a declared home
-so a stamped app has an obvious place to add to.
+(`backend/core/ledger/migration-list.ts`), which is chassis schema: an
+extension registers a kind through the control plane and needs no
+migration at all (spec 034), so what belongs there is the evolution of
+the tables the chassis itself owns.
+
+**One adjudication for the whole run.** `Ledger.migrate()` demands
+`db.migrate` on `app` once and then drives the runner against the driver
+before the governance wrap, which is the shape spec 032 §3.6 already
+chose for the state layer and the reason transfers unchanged: the
+runner's internal read and its per-migration transaction are the
+mechanism of the effect the caller asked for, not further effects the
+caller chose. Adjudicating each would report several Decisions for one
+act and would leave `db.migrate` unusable alone, since a service could
+not migrate without also holding `db.read`, `db.write` and `db.txn` over
+the whole ledger. A grant that wide is not a migration grant; it is
+write access with a migration-shaped name.
 
 It is a deploy step, not a boot step. Two reasons, and the second is the
 one that decides it:
@@ -300,12 +315,33 @@ one that decides it:
    by construction, because `version` is the primary key of
    `_coreledger_migrations` and each migration shares a transaction with
    its recording insert, so a concurrent loser rolls back cleanly. But
-   surviving a race is not a reason to run one, and the loser's error is
-   a raw constraint violation rather than a legible message.
+   surviving a race is not a reason to run one, and the loser's error
+   names anything but what happened.
 
-`ENRAHITU_MIGRATE_ON_BOOT=true` remains available for the
-single-container case where the simplicity is worth it, defaulting to
-false. The verb is the supported path.
+   **What the loser actually sees, corrected 2026-08-04 by running it.**
+   The sentence this replaces said the loser's error is a raw constraint
+   violation on that primary key. It usually is not. The loser fails
+   earlier, inside its own `up()`, because the winner already created
+   the table the migration creates, and SQLite says "table already
+   exists", which looks nothing like a collision. A seam recognising the
+   loser by matching constraint text would therefore have handled the
+   case this spec imagined and missed the case that happens. So the seam
+   asks a fact instead: on any failure it re-reads the applied set, and
+   if every declared version is recorded, the failure was caused by work
+   another runner had already done and nothing is half-applied. If any
+   version is still missing, the original error is rethrown untouched.
+
+`ENRAHITU_MIGRATE_ON_BOOT=true` is available for the single-container
+case where the simplicity is worth it, defaulting to false. The operator
+plane is the supported path. It hangs off `backend/auth/store.ts`, the
+one service that opens the ledger at boot, because that is the only boot
+seam CoreLedger has; an app whose migrations must run before its first
+request has nowhere earlier to put them.
+
+(This spec said the variable "remains available", which read as a
+description of something already built. Nothing implemented it: like
+§3.8's premise, the sentence was written about a world and not checked
+against the tree.)
 
 ### 3.5 `preflight`
 
@@ -352,7 +388,7 @@ unstated RPO is always assumed to be zero:
   lock state): no objective. Derived by design, and the reason nothing
   durable may be written there.
 
-### 3.7 Status (2026-08-04): `preflight` built, on the amended design
+### 3.7 Status (2026-08-04): `preflight` and CoreLedger's `migrate`, on the amended design
 
 The amendment in §§3.1-3.3, §3.6 and §4 landed on its own, ahead of any verb,
 and was worth separating because it changed what gets built rather than how.
@@ -391,14 +427,33 @@ a stated fork:
   type-only: an erased import costs nothing outside the app, and a value import
   to an extensionless specifier is unresolvable there. Applying a migration is a
   longer reach: `migrate()` and both drivers are TS whose value imports the
-  bundler resolves and plain node does not. So CoreLedger's half of §3.4 lands
-  either on the admin plane, as the state layer's half already did and as the
-  2026-07-30 amendment's closing paragraph anticipates, or as a second runner in
-  JS. That is decided when it is built, and it is now a fork with its constraint
-  known rather than an assumption.
+  bundler resolves and plain node does not, and the verbs run in the packaged
+  image with production dependencies and no transpiler. That settled the fork
+  below rather than merely naming it.
 
-What remains, in the order the acceptance items want it: the CoreLedger half of
-`migrate` (§3.4), the admin-plane backup endpoint the hot path needs (§3.2),
+**CoreLedger's half of `migrate` (§3.4) followed, on the operator plane.** The
+volume argument that put the state layer's half there does not carry: a libSQL
+file admits other processes and a Postgres ledger is remote by definition, which
+is why §3.4 kept this half script-shaped. Two other reasons put it there anyway.
+A script-shaped half would have to be a SECOND runner, for a property whose
+entire value is that there is one, which is the duplication §3.5 had just
+removed from the entrypoint. And a migration is an act with an actor: through
+this plane it is authenticated, role-gated and adjudicated, so it lands on the
+Decision chain naming a principal rather than happening anonymously on somebody's
+shell. So "one verb over both stores" is one verb over one transport, and the
+2026-08-04 settlement's pattern now covers both halves rather than being
+re-derived per store.
+
+`GET /api/admin/ledger/schema` and `POST /api/admin/ledger/schema/apply` mirror
+the state pair exactly, and the `admin` service's ceiling grows by
+`cap.db.app.migrate` and `cap.db.app.read`, mirroring what it already holds for
+the state layer. Two premises were corrected on the way, both recorded in §3.4:
+the loser's error is not the constraint violation this spec expected, and
+`ENRAHITU_MIGRATE_ON_BOOT` did not "remain" available because it never existed.
+
+What remains, in the order the acceptance items want it: the admin-plane backup
+endpoint the hot path needs (§3.2), the `migrate` verb's own script once the
+operator-session machinery the hot path needs exists (§3.2),
 `backup` and `restore` themselves, the entrypoint's per-store restore scoping
 (§3.3), and the four `[verbs]` entries with the contract bump to 0.8.0 (§4 item
 1), which lands once all four exist rather than four times. Items 2, 3 and 5 need

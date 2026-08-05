@@ -26,7 +26,7 @@
       "3.4 `migrate`",
       "3.5 `preflight`",
       "3.6 The recovery objective, stated",
-      "3.7 Status (2026-08-04): `preflight` built, on the amended design",
+      "3.7 Status (2026-08-04): `preflight` and CoreLedger's `migrate`, on the amended design",
       "3.8 What the unamended spec would have shipped (2026-08-04)",
       "5. Out of scope",
       "Amendment (2026-07-30): the state layer's half of `migrate`"
@@ -36,6 +36,6 @@
     "summary": "The template contract can stamp an app, verify it, and package it. It has no vocabulary for running one over time. There is no backup or restore anywhere in the tree, no verb, and no documentation; the migration runner spec 011 landed has no caller outside its own tests, so a stamped app upgrading from v1 to v2 has no defined moment when schema changes apply. This spec adds four verbs to template.toml (contract v0.8.0) and their implementations. The backup design is shaped by what each of the four state classes on the volume actually is: CoreLedger snapshots online through VACUUM INTO, rauthy's identity store is captured through rauthy's own integrity-checked backup mechanism rather than by copying raft directories, the app's hiqlite is captured through the addon's own `backup()` for exactly the same reason, and key material is bound into the same archive because either encrypted store restored without its matching keys is unrecoverable. Amended 2026-08-04, before implementation: the first revision excluded the app's hiqlite as derived cache state and the pivot made that false, so §3.8 records what the unamended spec would have shipped and why it read as correct on the day it was written.\n",
     "title": "Operational verbs: preflight, migrate, backup, restore"
   },
-  "shardHash": "7b09a8dd43ee88809e538e3f8420e3b16bdcb48fc765f19e9ba8a2e4ab897a1c",
+  "shardHash": "82b9f0d77f7064d5078b566520783752ddc40210d7e5a4cd8cdcb8b1aa5f089e",
   "specVersion": "1.1.0"
 }
