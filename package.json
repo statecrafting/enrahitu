@@ -30,6 +30,7 @@
     "gen:infra": "node scripts/gen-infra-config.mjs",
     "gen:manifest": "node scripts/gen-manifest.mjs",
     "generate-keys": "tsx scripts/generate-keys.ts",
+    "ops:preflight": "node scripts/ops/preflight.mjs",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "typecheck": "tsc --noEmit",

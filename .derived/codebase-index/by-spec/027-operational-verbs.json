@@ -1,14 +1,4 @@
 {
-  "diagnostics": {
-    "errors": [],
-    "warnings": [
-      {
-        "code": "W-001",
-        "message": "spec '027-operational-verbs' directory unit 'scripts/ops/' is not a directory",
-        "path": "scripts/ops/"
-      }
-    ]
-  },
   "mapping": {
     "dependsOn": [
       "003-coreledger",
@@ -16,10 +6,19 @@
       "009-template-contract",
       "011-coreledger-postgres-driver"
     ],
-    "implementingPaths": [],
+    "implementingPaths": [
+      {
+        "path": "scripts/ops/",
+        "source": "spec-edge"
+      }
+    ],
     "resolvedUnits": [
       {
-        "locations": [],
+        "locations": [
+          {
+            "file": "scripts/ops/"
+          }
+        ],
         "ownership": true,
         "sourceField": "establishes",
         "unit": {
@@ -32,5 +31,5 @@
     "specStatus": "approved"
   },
   "schemaVersion": "1.1.0",
-  "shardHash": "1ba5ec2dd37295403e8e424529f2e25ef1c27d58d94c139852f151ae02afc54c"
+  "shardHash": "373ccd363cda6a5dbea6e9bcab304b2aade605062d774e517f1541831ad14f10"
 }

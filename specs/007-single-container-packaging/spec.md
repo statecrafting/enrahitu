@@ -373,3 +373,26 @@ The general form, which is this entrypoint's whole job stated once: a credential
 sitting in a process that has no use for it is still that process's blast
 radius. Two surfaces means two holders, and that has to be true in both
 directions or it is one surface with extra prefixes.
+
+## Amendment (2026-08-04): the pre-flight check becomes a verb (spec 027)
+
+The 2026-07-23 amendment's `ENRAHITU_REQUIRED_ENV` assertion moves out of this
+script and into `scripts/ops/preflight.mjs` (spec 027 §3.5), which the entrypoint
+calls before first-boot and before either supervised process. The contract is
+unchanged in every respect a fleet can see: the same variable, the same comma- or
+space-separated list, all missing names reported together, a nonzero exit, and an
+unset list asserting nothing. What changed is that there is now one
+implementation of it rather than two, and the copy that lived here in bash was
+the one nothing could test.
+
+The verb checks five further conditions on the same call, so this entrypoint's
+failure surface widens with it. A data directory the runtime user cannot write
+(the legacy root-owned volume of the 2026-07-23b amendment), a ledger URL naming
+no driver, an occupied port, and a public URL whose scheme silently selects
+rauthy's danger-insecure cookie mode now each stop the boot here instead of
+surfacing several screens later as something that does not name its cause.
+
+Placement is part of the guarantee. It runs before `first-boot.mjs`, because a
+pre-flight that ran after it would be validating a volume already written to, and
+before the rauthy subshell, because one that ran after it would report on ports
+it had itself just taken.
