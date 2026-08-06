@@ -317,3 +317,58 @@ Fencing uses the row's existing mark rather than a second column. A
 it: spec 036 §3.4 shows that one mark behaves correctly for both writers once an
 endpoint passes the fence it read. The subresource in §5 remains the answer for
 when two controllers contend for one status, and that has still not happened.
+
+## Amendment (2026-08-06): the loop waits for its schema (spec 028's item 4)
+
+Writing the operator manual found a defect this spec owns and recorded it there
+rather than documenting it away (spec 028's amendment, item 4). This closes it.
+
+**The symptom.** A freshly provisioned cell has no control-plane schema, because
+migration is a deploy step and never a boot step (spec 032 §3.6). Every
+controller nonetheless started immediately, read `controller_watermark` on its
+first pass, threw `no such table: controller_watermark`, logged it, slept one
+tick, and repeated. The out-of-box state of a new cell was a permanent error
+loop at roughly 1 Hz, and it lasted until an operator ran `migrate --apply`.
+
+**What was actually wrong was the altitude of the check, not its absence.** Spec
+036 §3.6 had already required exactly this behavior and `backend/members/boot.ts`
+already implemented it, waiting for the schema before starting its controller.
+The mail runtime, arriving later, did not, because nothing in `startController`
+required its caller to have thought about it. A precondition that each caller
+must remember is a precondition each new caller will eventually forget, and the
+second one already had.
+
+The wait therefore moves into the loop that holds the precondition:
+
+- `startController` waits for the control-plane tables before its first pass. It
+  says so once and then says nothing, rather than reporting a fault per tick.
+  A controller written tomorrow inherits this without its author knowing.
+- The waiter is cancellable, so `stop()` does not have to outlast a poll
+  interval. A shutdown that hangs for five seconds reads as a shutdown that hung.
+- A failing probe keeps waiting and reports through a distinct log line. The
+  loops previously caught every store error per pass and continued; a gate that
+  propagated one would have turned a transient into a permanently dead
+  controller, which is a worse failure than the noise being removed, and silent.
+
+**A missing precondition is a state, not a fault**, and the distinction is the
+whole of it. The old loop was not wrong about the facts: the table really was
+absent and the pass really did fail. It was wrong about what kind of thing that
+was, and an error per second addressed to an operator who cannot act on it any
+faster than once teaches that operator to stop reading the log, which is the
+condition under which the next real error is invisible.
+
+**`runOnce` needed its guarantee written down.** It runs one pass by calling
+`startController` and stopping it immediately, which worked because the loop
+reached its first `pass()` inside the synchronous prefix, before
+`startController` returned. Awaiting the schema yields before that, so the
+one-pass guarantee evaporated and three existing tests in this spec's suite
+failed. The loop is now a `do`/`while`: one pass runs once the gate opens, even
+if a stop was requested while it was waiting. The behavior is unchanged and is
+no longer a property of scheduling.
+
+`backend/control/schema-gate.test.ts` covers it against a node whose migration
+has never been applied, which is the only state in which the property is
+visible. Its first draft asserted that no reconcile ran and the watermark stayed
+at 0, and passed against the unfixed code: the old loop threw several statements
+before anything a reconciler would see, so both were true while it failed forty
+times a second. The assertion is on the log, because the log is the defect.

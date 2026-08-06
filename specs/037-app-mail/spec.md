@@ -400,3 +400,24 @@ API rather than only a UI.
   notice name per occasion, so that each is idempotent separately, and it needs
   somebody to decide how often an association may write to a member who has not
   paid. That is spec 036's decision to make, not this one's.
+
+## Amendment (2026-08-06): the sweep waits for the schema too
+
+Spec 034's amendment of the same date moves the control-plane schema wait into
+`startController`, which fixes the delivery controller here without this module
+changing. The sweep (§3.3) is not a controller: it scans `resource` on its own
+minute timer, so it kept its own copy of the defect at a minute's cadence
+instead of a second's. Quieter, equally permanent, and equally a fault reported
+for a state that is merely a deploy step not yet run.
+
+It now takes the same gate: `awaitControlSchema`, waiting rather than failing,
+cancellable so `stop()` returns promptly, and reporting a probe failure through
+its own log line rather than confusing it with an absent table.
+
+**Nothing in `startMailRuntime` changes.** Mail still starts unconditionally and
+still reports itself started, because both of its loops now hold their own
+precondition. The alternative was to copy `backend/members/boot.ts`'s wait into
+mail's boot, which is what this amendment's sibling in spec 034 identifies as the
+thing that went wrong the first time: a precondition each caller must remember.
+Notices raised before the schema exists are held as pending, which is the same
+state a misconfigured relay produces (§3.4) and needs no separate handling.

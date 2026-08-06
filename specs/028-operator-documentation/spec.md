@@ -244,3 +244,21 @@ cell added about 7 MB in an hour with nobody using it.
 
 `implementation` moves to `complete`, with §4 item 2's Kubernetes leg recorded
 as outstanding rather than silently counted.
+
+## Amendment (2026-08-06): item 4 is fixed, so the manual stops describing it
+
+The defect the amendment above recorded as item 4 (a fresh cell's controllers
+logging `no such table: controller_watermark` at roughly 1 Hz, forever) is fixed
+in spec 034's amendment of the same date, with the mail sweep's half in spec
+037's. The loops now wait for the schema and say so once.
+
+Two passages in `docs/OPERATIONS.md` described the old behavior as the expected
+state of a new cell and are corrected: section 1's "Apply the schema once" now
+shows the three waiting lines and notes that the membership surface answers 503,
+and the troubleshooting entry is retitled to the symptom an operator will
+actually see. That entry keeps one sentence about the old log line, because a
+cell running an older image still produces it and the operator reading it needs
+the same command either way. A troubleshooting table that only describes the
+current build is a table that fails the people most likely to be reading it.
+
+**§4 item 2's Kubernetes leg is unaffected and remains outstanding.**

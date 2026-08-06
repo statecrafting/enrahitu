@@ -55,6 +55,9 @@ export {
   OUTBOX_TABLE,
   RESOURCE_TABLE,
   WATERMARK_TABLE,
+  awaitControlSchema,
+  controlSchemaPresent,
+  type SchemaWait,
 } from "./schema";
 
 export { hydrateRow, type ResourceRow } from "./rows";

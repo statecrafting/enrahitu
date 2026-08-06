@@ -34,13 +34,14 @@
       "3.6 Sender identity",
       "3.7 Verification",
       "4. Acceptance",
-      "5. Out of scope"
+      "5. Out of scope",
+      "Amendment (2026-08-06): the sweep waits for the schema too"
     ],
     "specPath": "specs/037-app-mail/spec.md",
     "status": "approved",
     "summary": "Spec 026 gave the IdP a mail path and explicitly left application-originated mail out, naming an outbox and a sender identity as what it would need. This supplies both. Three decisions are load bearing and none is obvious. The kernel gains a second transport: `smtp.egress`, because the governed egress facade is HTTP-shaped and a raw SMTP socket would otherwise be the one channel a governed deployment cannot adjudicate, which spec 030 §3.5 already refuses for pub/sub in terms that apply verbatim here. A notice is a resource rather than a function call, so delivery is a controller reconciling toward a state and idempotence comes from the notice's name rather than from a delivery guarantee nothing can make. And the application's mail credentials are a SEPARATE surface from the IdP's, because spec 026's scoping exists precisely to keep the IdP's credentials out of this process and reusing them would dismantle it.\n",
     "title": "Application mail: the notices the association sends"
   },
-  "shardHash": "de514a51eb5eadf0820091584dee69b44c35297e87f737f9c04b4cd57ed3ab39",
+  "shardHash": "6fb2fac7deba022f32dc80ccb9f5827d08e82e892ac0ee2bfdc35530b986800d",
   "specVersion": "1.1.0"
 }

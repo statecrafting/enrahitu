@@ -35,11 +35,14 @@
  * hand the next write a revision a watcher had already passed; a tombstone also
  * happens to be what a watcher needs in order to observe the deletion at all.
  */
-import type { Migration } from "../state";
+import { query, type Migration } from "../state";
 
 export const RESOURCE_TABLE = "resource";
 export const OUTBOX_TABLE = "outbox";
 export const WATERMARK_TABLE = "controller_watermark";
+
+/** How often a waiter re-asks whether the deploy step has run. */
+const SCHEMA_POLL_MS = 5000;
 
 export const CONTROL_PLANE_MIGRATIONS: Migration[] = [
   {
@@ -93,3 +96,107 @@ export const CONTROL_PLANE_MIGRATIONS: Migration[] = [
     ],
   },
 ];
+
+/**
+ * Whether the control plane's tables exist yet.
+ *
+ * Asked of `sqlite_master` rather than by catching a failed read, so the answer
+ * separates two states a caught exception would merge: "the deploy step has not
+ * run" is a precondition to wait on, while "the store is unreachable" is a fault
+ * to report. A `catch` around a real query calls both of them the same thing.
+ *
+ * One migration creates all three tables in a single transaction, so they arrive
+ * together and either one answers for the set. It asks for both tables a
+ * controller reads because the cost is the same row scan and the answer then
+ * does not depend on which table the caller happens to touch first.
+ */
+export async function controlSchemaPresent(): Promise<boolean> {
+  const rows = await query<{ name: string }>(
+    `SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ($1, $2)`,
+    [RESOURCE_TABLE, WATERMARK_TABLE],
+    { tables: ["sqlite_master"] },
+  );
+  return rows.length === 2;
+}
+
+export interface SchemaWait {
+  /** Resolves true once the tables exist, false if `cancel()` won the race. */
+  readonly done: Promise<boolean>;
+  /** Give up waiting. Used by a loop's `stop()` so shutdown does not block. */
+  cancel(): void;
+}
+
+/**
+ * Wait for the control plane's schema, polling until it appears.
+ *
+ * **This exists because a missing precondition is a state, not a fault.**
+ * Migration is a deploy step and never a boot step (spec 032 §3.6), so a freshly
+ * provisioned cell legitimately runs for a while with no control-plane tables.
+ * A loop that discovers this by failing a pass every tick logs an error per
+ * second forever, and the operator it is addressing learns to ignore the log:
+ * the noise trains exactly the reflex that makes the next real error invisible.
+ * Waiting says the same thing once and then says nothing.
+ *
+ * Returned as a cancellable handle rather than a bare promise because every
+ * caller is a loop with a `stop()`, and a shutdown that has to outlast a poll
+ * interval is a shutdown that looks hung.
+ *
+ * **A failing probe keeps waiting rather than escaping.** The loops this gates
+ * previously caught every store error per pass and continued, and a gate that
+ * propagated one would have converted a transient into a permanently dead
+ * controller: a worse failure than the noise it replaces, and a silent one.
+ * The fault still gets said out loud through `onProbeError`, once per distinct
+ * message, which is what keeps it from being confused with a missing table.
+ */
+export function awaitControlSchema(
+  opts: { pollMs?: number; onWaiting?: () => void; onProbeError?: (err: unknown) => void } = {},
+): SchemaWait {
+  const pollMs = opts.pollMs ?? SCHEMA_POLL_MS;
+  let cancelled = false;
+  let wake: (() => void) | undefined;
+  let lastError: string | undefined;
+
+  async function probe(): Promise<boolean> {
+    try {
+      return await controlSchemaPresent();
+    } catch (err) {
+      // Repeating an unchanging fault at the poll cadence is the same mistake
+      // this gate exists to undo, one interval slower.
+      const message = String(err);
+      if (message !== lastError) {
+        lastError = message;
+        opts.onProbeError?.(err);
+      }
+      return false;
+    }
+  }
+
+  const done = (async (): Promise<boolean> => {
+    if (await probe()) return true;
+    if (cancelled) return false;
+    opts.onWaiting?.();
+
+    while (!cancelled) {
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(finish, pollMs);
+        function finish(): void {
+          clearTimeout(timer);
+          wake = undefined;
+          resolve();
+        }
+        wake = finish;
+      });
+      if (cancelled) return false;
+      if (await probe()) return true;
+    }
+    return false;
+  })();
+
+  return {
+    done,
+    cancel(): void {
+      cancelled = true;
+      wake?.();
+    },
+  };
+}
