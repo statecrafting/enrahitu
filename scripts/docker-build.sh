@@ -76,8 +76,12 @@ fi
 # absent under `npm ci --omit=dev`. Likewise the vitest configs since the
 # published-toolchain repoint (spec 018): they import @statecrafting/toolchain
 # (a devDep) to resolve the runtime for tests, and tests never run in the image.
+# `testing/` is the same case once more (spec 033's app harness): it imports the
+# toolchain's augment-infra and resolve subpaths to boot an app under test, and
+# nothing outside it imports it, so it is test-only by construction.
 rm -rf "$WORKTREE/frontend" "$WORKTREE/frontend-admin" \
-  "$WORKTREE/e2e" "$WORKTREE/vitest.config.ts" "$WORKTREE/vitest.setup.ts"
+  "$WORKTREE/e2e" "$WORKTREE/testing" \
+  "$WORKTREE/vitest.config.ts" "$WORKTREE/vitest.setup.ts"
 
 echo "==> production node_modules"
 (cd "$WORKTREE" && npm ci --omit=dev --no-fund --no-audit >/dev/null)

@@ -3,7 +3,7 @@ id: "028-operator-documentation"
 title: "Operator documentation: the manual the specs are not"
 status: approved
 created: "2026-07-25"
-implementation: pending
+implementation: complete
 depends_on:
   - "001-enrahitu-architecture"
   - "007-single-container-packaging"
@@ -184,3 +184,63 @@ first-read document that describes a deleted framework is worse than one
 that is incomplete. Operator documentation proper (runbooks, the backup
 and restore procedures, the tenant assurance) is still this spec's pending
 work.
+
+## Amendment (2026-08-06): the manual lands, and writing it found four defects
+
+`docs/OPERATIONS.md` now covers every section of §3.1, `docs/ARCHITECTURE.md` is
+restructured by plane with the phase table retired into a build-out history, and
+`README.md` leads with what this is and how to run it. §4 item 1's coverage
+check is `docs/operations-env-coverage.test.ts`.
+
+**§1 predicted this spec would be a writing exercise. It was not.** Documenting
+a claim means executing it, and four things that every code gate passes over
+surfaced the moment a real cell ran behind a real proxy:
+
+1. **The image did not build.** Spec 007's amendment of this date carries it.
+   §4 item 2 requires verification "against a locally built image", and that
+   turned out to be the first requirement in the corpus that had to build one.
+2. **The obvious nginx configuration is wrong for this application.** The OIDC
+   callback sets two JWT cookies in one response, exceeding nginx's default
+   proxy header buffer, so login completes at the IdP and then dies at the
+   callback with a `502` while the application log records a successful `302`.
+   The evidence is in the proxy's log and nowhere else. The example in §3.1's
+   TLS section therefore carries `proxy_buffer_size`, and the Ingress example
+   carries the matching annotation because ingress-nginx *is* nginx. Caddy
+   needs nothing, which is the entire difference between those two examples.
+3. **The cell must be able to reach its own `ENRAHITU_PUBLIC_URL`.** Server-side
+   OIDC discovery fetches the well-known document from the public origin, so the
+   container hairpins through its own proxy. Where that name does not resolve
+   inside, or its certificate is not trusted there, `/api/v1/auth/rauthy/login`
+   returns a bare `500` naming nothing.
+4. **A freshly provisioned cell has no control-plane schema**, so its
+   controllers log `no such table: controller_watermark` about once a second,
+   forever, until an operator runs `migrate --apply`. Migration being a deploy
+   step rather than a boot step is deliberate (spec 027 §3.4); a permanent 1 Hz
+   error loop as the out-of-box state is not, and it is recorded here as a
+   defect for spec 034 rather than documented away as expected behavior.
+
+**§4 item 2 is met for two of three examples.** nginx and Caddy were each
+verified on 2026-08-06 by driving a real password login through a real browser
+engine against the packaged image behind that proxy, asserting both token
+cookies are set and `Secure`, that `/api/v1/auth/me` returns the signed-in
+operator, and that no request left the app origin. The Kubernetes Ingress
+example is **not verified**: no cluster was available in the environment, and
+installing one was out of proportion to the remaining uncertainty. Its buffer
+annotation is derived from the nginx result rather than observed, and both the
+manual and this spec say so rather than implying a verification that did not
+happen.
+
+**§4 item 5's troubleshooting table.** Every entry names a failure this
+substrate has actually produced. Three of them are the findings above, observed
+during this work; the rest come from the operating history already recorded in
+spec prose and the entrypoint's comments, which is where an operator at 02:00
+would never have found them.
+
+**§3.1's sizing section is measured, not estimated**, against the packaged
+arm64 image at N=1 on 2026-08-06, and says explicitly that it has not been
+measured under sustained load. The one number worth stating here is that the
+raft directory grows with *write volume* rather than with data size: an idle
+cell added about 7 MB in an hour with nobody using it.
+
+`implementation` moves to `complete`, with §4 item 2's Kubernetes leg recorded
+as outstanding rather than silently counted.
