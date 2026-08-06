@@ -500,3 +500,26 @@ reads correctly and delivers nothing is the whole defect. `entrypoint.test.ts`
 runs the real `export_hiq_env` and then `exec`s, and separately asserts that a
 process which does not call it receives none of the material. That second
 assertion is the regression itself, stated as a test.
+
+## Amendment (2026-08-06b): the image worktree prunes `testing/` (spec 028)
+
+`scripts/docker-build.sh` could not build an image at all. The clean worktree it
+assembles carries `testing/app-harness.ts`, which imports
+`@statecrafting/toolchain/augment-infra` and `.../resolve` to boot an app under
+test; those are devDependency subpaths, absent under the worktree's
+`npm ci --omit=dev`, and the Encore tsparser walks the whole app root regardless
+of any `tsconfig` exclude. So the parse failed and the build stopped.
+
+This is the fourth instance of one pattern, and the prune list now says so:
+`frontend/` and `frontend-admin/` (spec 015), `e2e/` (spec 017), the vitest
+configs (spec 018), and now `testing/` (spec 033's harness). Anything that is
+test-only and imports a devDependency has to leave the worktree, because the
+parser's reach is the app root and not the build's intent.
+
+It went unnoticed because `image.yml` is cron and dispatch only, so `main` can
+carry a broken image build across many green PRs. Spec 028 caught it only
+because its §4 item 2 requires verifying reverse-proxy examples *against a
+locally built image*, which is the first thing in the corpus that had to build
+one. That is worth recording as evidence for the acceptance criterion rather
+than against it: a documentation requirement found a packaging defect that
+every code gate passed over.
