@@ -27,13 +27,14 @@
       "4. Acceptance",
       "5. Out of scope",
       "Amendment (2026-07-29): the architecture doc's frontend row",
-      "Amendment (2026-08-06): the manual lands, and writing it found four defects"
+      "Amendment (2026-08-06): the manual lands, and writing it found four defects",
+      "Amendment (2026-08-06): item 4 is fixed, so the manual stops describing it"
     ],
     "specPath": "specs/028-operator-documentation/spec.md",
     "status": "approved",
     "summary": "docs/ holds one 107-line file whose phase table stops at Phase 6 while the corpus runs to 024, so the human-facing overview describes neither the kernel plane, nor observability, nor the admin dashboard. There is no install guide, no upgrade procedure, no TLS or reverse-proxy guidance, no sizing, no runbook, and no troubleshooting. Everything an operator needs is currently reconstructible only by reading entrypoint.sh and twenty-five specs. The spec corpus is an excellent design record and a poor manual, and the two are different documents with different readers: a spec answers why this was built this way, an operations guide answers what do I type. This spec takes ownership of docs/, adds the operator surface, and realigns the two existing human-facing documents with what the substrate has become.\n",
     "title": "Operator documentation: the manual the specs are not"
   },
-  "shardHash": "f043c8af0fad1bd0c1227f26b8cd682dfec75861e9e2459fa858a2518fc38674",
+  "shardHash": "3540f584449289450c884f065c83b22f98363866450b2115e0c1a11ebd32e8f9",
   "specVersion": "1.1.0"
 }

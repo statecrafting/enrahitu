@@ -17,7 +17,14 @@
  * the property that actually prevents a member receiving a hundred reminders.
  */
 import { logInfo, logWarn } from "../lib/logger";
-import { get, list, setStatus, type Change, type ControllerSpec } from "../control";
+import {
+  awaitControlSchema,
+  get,
+  list,
+  setStatus,
+  type Change,
+  type ControllerSpec,
+} from "../control";
 import { withLease } from "../state";
 
 import { MAIL_NOTICE, type MailNoticeSpec, type MailNoticeStatus } from "./kinds";
@@ -172,6 +179,12 @@ async function tenantsWithNotices(): Promise<string[]> {
  * A minute by default. The shortest backoff is a minute, so a longer interval
  * would make the first retry late by up to the difference, and a shorter one
  * would spend passes discovering that nothing is due yet.
+ *
+ * Like the controller, it waits for the control plane's schema rather than
+ * failing a pass into its absence. `startController` gates itself, but this loop
+ * is not one: it scans `resource` on its own timer, so a fresh cell would have
+ * had the same permanent error loop here at a minute's cadence instead of a
+ * second's, which is quieter and no more correct.
  */
 export function startMailSweep(
   transport: MailTransport,
@@ -181,6 +194,15 @@ export function startMailSweep(
   let stopped = false;
   let count = 0;
   let wake: (() => void) | undefined;
+
+  const schemaWait = awaitControlSchema({
+    onWaiting: () =>
+      logInfo("mail sweep: waiting for the control plane schema", {
+        detail: "notices are held as pending until an operator applies the migration",
+      }),
+    onProbeError: (err) =>
+      logWarn("mail sweep: cannot tell whether the schema exists", { error: String(err) }),
+  });
 
   const idle = (): Promise<void> =>
     new Promise<void>((resolvePromise) => {
@@ -195,14 +217,16 @@ export function startMailSweep(
 
   const loop = (async () => {
     logInfo("mail sweep: started", { intervalMs, transport: transport.name });
-    while (!stopped) {
-      try {
-        count = await mailSweepOnce(transport);
-      } catch (err) {
-        logWarn("mail sweep: pass failed", { error: String(err) });
+    if (await schemaWait.done) {
+      while (!stopped) {
+        try {
+          count = await mailSweepOnce(transport);
+        } catch (err) {
+          logWarn("mail sweep: pass failed", { error: String(err) });
+        }
+        if (stopped) break;
+        await idle();
       }
-      if (stopped) break;
-      await idle();
     }
     logInfo("mail sweep: stopped", {});
   })();
@@ -214,6 +238,7 @@ export function startMailSweep(
   return {
     async stop(): Promise<void> {
       stopped = true;
+      schemaWait.cancel();
       wake?.();
       await loop;
     },

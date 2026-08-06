@@ -45,9 +45,19 @@ docker exec enrahitu cat /data/rauthy/admin-password
 
 ### Apply the schema once, after the first boot
 
-A freshly provisioned cell has no control-plane schema. Until it does, the
-background controllers cannot read their watermark and log
-`no such table: controller_watermark` roughly once a second, forever.
+A freshly provisioned cell has no control-plane schema, and nothing creates it
+at boot. Until you apply it the cell serves, logs in, and answers its probes;
+what it does not do is run the background loops. Each one says so once and then
+waits quietly:
+
+```
+controller: waiting for the control plane schema
+mail sweep: waiting for the control plane schema
+members: waiting for the control plane schema
+```
+
+The membership endpoints answer 503 naming the same precondition, so a cell in
+this state is legible from the outside rather than only in the log.
 
 ```bash
 node scripts/ops/migrate.mjs            # report what is pending
@@ -618,12 +628,18 @@ with:
 docker exec enrahitu node -e "fetch('$ENRAHITU_PUBLIC_URL/auth/v1/.well-known/openid-configuration').then(r=>console.log(r.status)).catch(e=>console.log('UNREACHABLE',e.cause?.code))"
 ```
 
-### `no such table: controller_watermark` or `no such table: resource`, once a second
+### `waiting for the control plane schema`, or the membership surface answers 503
 
 **Cause:** the control-plane schema was never applied. A freshly provisioned
-cell does not create it at boot, so the background controllers fail every pass.
+cell does not create it at boot, so the background loops have nothing to read
+and hold rather than run.
 
-**Fix:** `node scripts/ops/migrate.mjs --apply`. Section 1.
+**Fix:** `node scripts/ops/migrate.mjs --apply`. Section 1. The loops pick it up
+on their own within a few seconds; no restart is needed.
+
+Older cells logged `no such table: controller_watermark` roughly once a second
+instead of waiting. If you are reading that in a log, the cell is running a
+build from before this was fixed, and the fix is the same command.
 
 ### Login half-works: the form renders, the session never sticks
 

@@ -30,13 +30,14 @@
       "3.7 Audit",
       "4. Acceptance",
       "5. Out of scope",
-      "Amendment (2026-07-30): the status-write path (spec 036)"
+      "Amendment (2026-07-30): the status-write path (spec 036)",
+      "Amendment (2026-08-06): the loop waits for its schema (spec 028's item 4)"
     ],
     "specPath": "specs/034-control-plane/spec.md",
     "status": "approved",
     "summary": "Phase 3 of the pivot (spec 001 §5.1), and the layer spec 001 calls \"application code holds intent and reconciliation\". Typed, tenant-scoped resources admitted through the kernel onto the state layer, a change feed ordered by a single global revision, leased and fenced reconcile loops, and an admission record on the Decision chain. Written after building it, as the phase plan requires: two of its load-bearing properties are answers to defects that only a running node produced, and neither was visible from the design. The store binds SQL parameters in order of first appearance and ignores the number, which silently mis-binds any statement whose numbers do not ascend; and an admission that changes nothing must not produce a revision, or a controller that writes what it watches re-triggers itself until its lease expires.\n",
     "title": "The control plane: kinds, admission, watch, controllers, audit"
   },
-  "shardHash": "09bc74a7e1f6cdd3288b0b07f9c0c27baf5841668988dac07532866336181b3d",
+  "shardHash": "a94a42f8d4515ef723f7f0c83eee7788e6f5e604b157a125ea9d126401c36db5",
   "specVersion": "1.1.0"
 }
