@@ -439,3 +439,64 @@ a script this spec owns kept landing in a file it did not, and the coupling gate
 kept asking spec 025 to authorize restore semantics it has no view on. The unit
 and its tests now sit with the same spec. Spec 025's own assertions in that file
 are unchanged; only the authority over the path moved.
+
+## Amendment (2026-08-06): the app's own encryption key, and the material that never left the shell (spec 027 §4 item 5)
+
+Spec 027 §4 item 5 recorded a finding this spec is the one that has to answer:
+nothing provisions `ENRAHITU_HIQ_ENC_KEYS`, so the app's hiqlite falls back to
+the addon's publicly-known development key, and since that node encrypts its
+backup snapshots with it, every cell has been writing snapshots anyone can
+decrypt. Closing it turned out to require two changes rather than one, and the
+second is the more interesting of the pair.
+
+**`first-boot.mjs` generates a key set for the app's node.** It is a *separate*
+key set from rauthy's, not a shared one. Spec 032 reads "a deployment custodies
+one key set for both hiqlite instances", and what that requirement is about is
+custody: one file to hold, one archive to keep. That is equally true either way,
+because both key sets live in `secrets.env` and spec 027 §3.1 puts the whole
+file in every archive. Sharing the bytes would buy nothing and would mean one
+compromised key set decrypts both the identity store and the resource store.
+Every other secret in this file is already generated per store, and the
+entrypoint hands each store only its own.
+
+**The entrypoint has to export it, and that is what was actually broken.**
+`secrets.env` is *sourced*, and its lines are `NAME='value'` with no `export`,
+so every name in it becomes an unexported shell variable. A subshell inherits
+those, which is exactly why the mistake survives a careful reading: the values
+are visibly present right up to the last moment. Then `exec` replaces the
+subshell with the app, and a process environment carries only exported names.
+
+So `ENRAHITU_HIQ_SECRET_RAFT` and `ENRAHITU_HIQ_SECRET_API` had been provisioned
+on first boot and dropped at `exec` for as long as they have existed: the app's
+node has been running on the addon's compiled-in defaults for those too, and the
+comment at the top of this script claiming `secrets.env` "carries ENRAHITU_HIQ_*
+for the app" described an intention rather than a fact. A newly provisioned
+encryption key would have been discarded at the same line, which is why
+provisioning it alone would have looked like a fix and changed nothing.
+
+`export_hiq_env` is called from inside the app's subshell, for the reason
+`export_smtp_env` is called from inside rauthy's: these are the resource store's
+keys, and rauthy's process has no more business holding them than the app has
+holding rauthy's. The two-holders rule of spec 037 §3.1 now covers key material
+as well as mail credentials.
+
+**A volume whose `secrets.env` predates the key is named, not migrated.**
+Provisioning is write-once, so the generating block does not run again on an
+existing volume. Adding a key there and activating it would orphan every
+snapshot the node has already written, because those were encrypted under the
+addon's fallback and that key is not one the volume records; retaining the
+fallback as a non-active key so they still decrypt would mean committing a
+publicly-known key to this repository. Neither is worth doing for a volume shape
+that predates the first release, so `first-boot.mjs` reports the case, names the
+consequence and the remedy, and leaves the file alone. The addon warns about the
+same condition on every boot; this line is the one that says why and what to do.
+`export NAME` on an unset name leaves it absent from the child's environment
+rather than present and empty, so such a volume still boots on the fallback
+instead of handing the node a blank key.
+
+**What the tests assert is delivery, not configuration.** The environment an
+`exec`-ed child actually has is the property under test, because a subshell that
+reads correctly and delivers nothing is the whole defect. `entrypoint.test.ts`
+runs the real `export_hiq_env` and then `exec`s, and separately asserts that a
+process which does not call it receives none of the material. That second
+assertion is the regression itself, stated as a test.

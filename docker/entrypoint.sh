@@ -29,6 +29,12 @@ node /enrahitu/first-boot.mjs
 
 # secrets.env carries RAUTHY_-prefixed material for the rauthy process and
 # ENRAHITU_HIQ_* for the app; written by first-boot.mjs, chmod 0600.
+#
+# Its lines are `NAME='value'` with no `export`, so sourcing puts every name in
+# THIS shell and in no child process. Both supervised processes therefore export
+# what they need from inside their own subshell (export_hiq_env below,
+# and rauthy's block of explicit exports), which is what keeps each store's key
+# material out of the other's environment.
 # shellcheck disable=SC1091
 . "$DATA/rauthy/secrets.env"
 
@@ -67,6 +73,30 @@ export_restore_env() {
     echo "[entrypoint] restoring $src into ${2}" >&2
   fi
   unset ENRAHITU_RESTORE_RAUTHY ENRAHITU_RESTORE_APP
+}
+
+# The app's hiqlite material enters the app process and nothing else
+# (spec 007, amendment 2026-08-06; spec 027 §4 item 5).
+#
+# Provisioning a key is only half of delivering one. secrets.env is SOURCED and
+# carries no `export`, so its names are unexported shell variables: a subshell
+# inherits them, but `exec` replaces that subshell with the app and a process
+# environment carries only EXPORTED names. ENRAHITU_HIQ_SECRET_RAFT and
+# ENRAHITU_HIQ_SECRET_API were generated on first boot and then dropped at exec,
+# so the app's node has been running on the addon's compiled-in defaults, and a
+# newly provisioned ENRAHITU_HIQ_ENC_KEYS would have been dropped the same way.
+#
+# `export NAME` on an unset name leaves it ABSENT from the child's environment
+# rather than present and empty, so a volume whose secrets.env predates the
+# encryption key still boots on the addon's fallback. first-boot.mjs names that
+# case rather than letting it pass silently.
+#
+# Called from inside the app's subshell for the same reason export_smtp_env is
+# called from inside rauthy's: these are the resource store's keys, and rauthy's
+# process has no more business holding them than the app has holding rauthy's.
+export_hiq_env() {
+  export ENRAHITU_HIQ_ENC_KEYS ENRAHITU_HIQ_ENC_KEY_ACTIVE
+  export ENRAHITU_HIQ_SECRET_RAFT ENRAHITU_HIQ_SECRET_API
 }
 
 # Ambient mail configuration is removed before anything starts (spec 026 §3.1).
@@ -276,6 +306,7 @@ cd /workspace
 # $APP_PID is still the process the traps signal and `wait -n` observes.
 (
   export_restore_env ENRAHITU_RESTORE_APP "the app's resource store"
+  export_hiq_env
   if [ "${ENRAHITU_DEV:-0}" = "1" ]; then
     # node_modules is a named volume, not the host's: the addon and the napi
     # runtime are per-platform binaries, and a macOS host's tree cannot be used

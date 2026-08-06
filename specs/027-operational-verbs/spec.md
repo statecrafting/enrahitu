@@ -3,7 +3,7 @@ id: "027-operational-verbs"
 title: "Operational verbs: preflight, migrate, backup, restore"
 status: approved
 created: "2026-07-25"
-implementation: in-progress
+implementation: complete
 depends_on:
   - "003-coreledger"
   - "007-single-container-packaging"
@@ -762,5 +762,34 @@ Two consequences, and the second is larger than this spec:
 This is left for a decision rather than fixed here. Provisioning the key is one
 line in a file spec 007 owns, but doing it to a volume that already holds data
 written under the development key is a key-rotation question with a data-loss
-edge, and `secrets.env` is written once and never rewritten. `implementation`
-stays `in-progress` on item 5 alone; every other acceptance item now holds.
+edge, and `secrets.env` is written once and never rewritten.
+
+### The decision, and what item 5 now means (2026-08-06)
+
+The rotation question was answered by declaring pre-fix volumes unsupported:
+nothing is deployed on this shape yet, so a volume whose `secrets.env` lacks the
+key is reported and left alone rather than migrated. Spec 007's amendment of the
+same date carries the change and its reasoning; two things about it belong here,
+because they change what this spec may claim.
+
+**Provisioning the key was half of it.** `secrets.env` is sourced by the
+entrypoint and its lines carry no `export`, so every name in it was an
+unexported shell variable that `exec` discarded before the app started. The two
+app hiqlite secrets this spec's §3.3 work relies on had therefore never reached
+the node they were generated for either. A key provisioned into that file and
+nothing else would have read as a fix and delivered nothing, which is worth
+recording as the more general hazard: this corpus checks that material is
+*generated* far more often than it checks that material *arrives*.
+
+**Item 5's "refuses to start" phrasing is still wrong and is not what was
+fixed.** Neither store refuses to boot without its keys: rauthy's at-rest
+encryption covers particular columns and fails at first decrypt, and the addon
+supplies a fallback key rather than declining to start. What now holds is the
+substantive half, the one §3.1 builds the single-artifact archive on: the app's
+node encrypts its snapshots under a key unique to that cell, so an app snapshot
+separated from its `secrets.env` is undecryptable, and the key-binding invariant
+is true of both stores rather than one. Item 5 is met as that claim. It is not
+met as written, and the sentence should be rewritten the next time this section
+is edited rather than quietly reinterpreted.
+
+`implementation` moves to `complete`.
