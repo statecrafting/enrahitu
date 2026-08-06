@@ -62,13 +62,14 @@
       "Amendment (2026-08-01): the entrypoint scrubs before it maps (spec 026)",
       "Amendment (2026-08-02): each mail surface reaches exactly one process (spec 037)",
       "Amendment (2026-08-04): the pre-flight check becomes a verb (spec 027)",
-      "Amendment (2026-08-05): two hiqlite nodes, two restore variables (spec 027)"
+      "Amendment (2026-08-05): two hiqlite nodes, two restore variables (spec 027)",
+      "Amendment (2026-08-06): the app's own encryption key, and the material that never left the shell (spec 027 §4 item 5)"
     ],
     "specPath": "specs/007-single-container-packaging/spec.md",
     "status": "approved",
     "summary": "The deliverable image: one container running rauthy (loopback :8081) and the Encore app (:8080) under a die-together entrypoint, all durable state on a single /data volume, every secret self-provisioned at first boot. scripts/docker-build.sh builds from a clean git worktree of HEAD, injects the cross-built addon, the built SPA, and production node_modules, runs `encore build docker`, asserts the base-image entrypoint, and layers rauthy + the entrypoint on top.\n",
     "title": "Single-container packaging: app + rauthy in one image"
   },
-  "shardHash": "7c78b7a2360a9ca0f769e0628f24ebd4c784504be89d058678f48c5ce48755db",
+  "shardHash": "a967a38d46f80de99c0f7b2f26c3eb3eb432fb792037bd8b28d04c5f850c36f2",
   "specVersion": "1.1.0"
 }

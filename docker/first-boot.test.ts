@@ -234,6 +234,82 @@ describe("first-boot: restore is per-store", () => {
   });
 });
 
+/**
+ * The app's hiqlite encryption key (spec 027 §4 item 5, resolved 2026-08-06).
+ *
+ * This file provisioned rauthy's ENC_KEYS, both nodes' raft/API secrets, and no
+ * encryption key for the app's own hiqlite, so the addon fell back to its
+ * publicly-known development key. The app's node encrypts its backup snapshots
+ * with that key, which made every cell's snapshots decryptable by anyone. The
+ * failure was silent in the only way that matters: everything worked.
+ */
+describe("first-boot: the app's hiqlite encryption key", () => {
+  const secrets = () => readFileSync(join(data, "rauthy", "secrets.env"), "utf8");
+  const value = (name: string) => secrets().match(new RegExp(`^${name}='(.*)'$`, "m"))?.[1];
+
+  /** `id/base64`, split on the FIRST slash: base64 contains slashes too. */
+  function keySet(name: string): { id: string; material: Buffer } {
+    const raw = value(name);
+    if (raw === undefined) throw new Error(`${name} is absent from secrets.env`);
+    const at = raw.indexOf("/");
+    return { id: raw.slice(0, at), material: Buffer.from(raw.slice(at + 1), "base64") };
+  }
+
+  it("provisions a 32-byte key and names it active", () => {
+    runFirstBoot();
+    const { id, material } = keySet("ENRAHITU_HIQ_ENC_KEYS");
+    // A key the active id does not name is a key the node will not use.
+    expect(value("ENRAHITU_HIQ_ENC_KEY_ACTIVE")).toBe(id);
+    expect(material).toHaveLength(32);
+  });
+
+  it("gives the resource store a different key from the identity store", () => {
+    // One key set for both would mean one compromise decrypts both rauthy's
+    // identity store and the app's resource store. Custody is unchanged either
+    // way: both live in this file and spec 027 §3.1 archives it whole.
+    runFirstBoot();
+    const app = keySet("ENRAHITU_HIQ_ENC_KEYS");
+    const rauthy = keySet("RAUTHY_ENC_KEYS");
+    expect(app.id).not.toBe(rauthy.id);
+    expect(app.material.equals(rauthy.material)).toBe(false);
+  });
+
+  it("does not rotate the key on a second boot", () => {
+    // Rotating it would orphan every snapshot already written under the old one.
+    runFirstBoot();
+    const first = value("ENRAHITU_HIQ_ENC_KEYS");
+    runFirstBoot();
+    expect(value("ENRAHITU_HIQ_ENC_KEYS")).toBe(first);
+  });
+
+  it("says nothing about a legacy volume when it provisioned the key itself", () => {
+    expect(runFirstBoot()).not.toContain("predates app hiqlite encryption keys");
+  });
+
+  it("names a volume whose secrets.env predates the key instead of migrating it", () => {
+    // Provisioning is write-once, so the block that generates the key does not
+    // run again. Generating one HERE and activating it would orphan every
+    // snapshot the node has already written, and retaining the addon's fallback
+    // so they still decrypt would mean committing a public key to the repo.
+    // Neither is worth doing for a volume shape that predates the first release.
+    runFirstBoot();
+    const path = join(data, "rauthy", "secrets.env");
+    const legacy = secrets()
+      .split("\n")
+      .filter((l) => !l.startsWith("ENRAHITU_HIQ_ENC_KEY"))
+      .join("\n");
+    writeFileSync(path, legacy);
+
+    const out = runFirstBoot();
+    expect(out).toContain("predates app hiqlite encryption keys");
+    expect(out).toContain("PUBLIC development key");
+    // Reported, not repaired: the file is left exactly as it was found.
+    expect(readFileSync(path, "utf8")).toBe(legacy);
+    // And it is a notice, not a failure.
+    expect(out).toContain("[first-boot] ready");
+  });
+});
+
 describe("first-boot: the mail notice (spec 026 §3.2)", () => {
   it("names what is inert when no relay is configured", () => {
     // The failure this prevents is a silent one: rauthy treats mail as optional

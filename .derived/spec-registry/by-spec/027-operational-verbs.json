@@ -14,7 +14,7 @@
       }
     ],
     "id": "027-operational-verbs",
-    "implementation": "in-progress",
+    "implementation": "complete",
     "sectionHeadings": [
       "027: Operational verbs",
       "1. Purpose",
@@ -34,13 +34,14 @@
       "Amendment (2026-07-30): the state layer's half of `migrate`",
       "Amendment (2026-08-05): the three verbs, and two shapes §3.3 had one name for",
       "Status: run against the compose topology, 2026-08-05",
-      "§4 item 5 is disproven, not merely unmet (2026-08-05)"
+      "§4 item 5 is disproven, not merely unmet (2026-08-05)",
+      "The decision, and what item 5 now means (2026-08-06)"
     ],
     "specPath": "specs/027-operational-verbs/spec.md",
     "status": "approved",
     "summary": "The template contract can stamp an app, verify it, and package it. It has no vocabulary for running one over time. There is no backup or restore anywhere in the tree, no verb, and no documentation; the migration runner spec 011 landed has no caller outside its own tests, so a stamped app upgrading from v1 to v2 has no defined moment when schema changes apply. This spec adds four verbs to template.toml (contract v0.8.0) and their implementations. The backup design is shaped by what each of the four state classes on the volume actually is: CoreLedger snapshots online through VACUUM INTO, rauthy's identity store is captured through rauthy's own integrity-checked backup mechanism rather than by copying raft directories, the app's hiqlite is captured through the addon's own `backup()` for exactly the same reason, and key material is bound into the same archive because either encrypted store restored without its matching keys is unrecoverable. Amended 2026-08-04, before implementation: the first revision excluded the app's hiqlite as derived cache state and the pivot made that false, so §3.8 records what the unamended spec would have shipped and why it read as correct on the day it was written.\n",
     "title": "Operational verbs: preflight, migrate, backup, restore"
   },
-  "shardHash": "1b215ab40da18a30f537c4742861bf873ca2290452180b36804dae1d8f871387",
+  "shardHash": "451dce7f3667a5427a53975cadfeca321fdb04c8f39d97d5f6286402e8a90fed",
   "specVersion": "1.1.0"
 }

@@ -427,6 +427,106 @@ describe("entrypoint restore scoping (spec 027 §3.3)", () => {
 });
 
 /**
+ * The app's hiqlite material reaches the app process (spec 007, amendment
+ * 2026-08-06; spec 027 §4 item 5).
+ *
+ * secrets.env is SOURCED and its lines carry no `export`, so every name in it
+ * lands as an unexported shell variable. A subshell inherits those, which makes
+ * the mistake invisible when read: `exec` then replaces the subshell with the
+ * app, and a process environment carries only EXPORTED names. So the app's node
+ * received none of it, and provisioning an encryption key without this would
+ * have provisioned a key the app never sees.
+ *
+ * The assertions therefore run against the environment an EXEC-ED child
+ * actually has, not against the subshell's variables and not against the
+ * script's text. A subshell that reads correctly and delivers nothing is
+ * precisely the bug.
+ */
+function runHiq(secretsEnv: string): { rauthy: string[]; app: string[] } {
+  const script = readFileSync(ENTRYPOINT, "utf8");
+  const secrets = join(dir, "secrets.env");
+  writeFileSync(secrets, secretsEnv, { mode: 0o600 });
+
+  const harness = join(dir, "hiq.sh");
+  writeFileSync(
+    harness,
+    [
+      "#!/bin/bash",
+      "set -euo pipefail",
+      bashFunction(script, "export_hiq_env"),
+      // Sourced exactly as the entrypoint sources it.
+      `. "${secrets}"`,
+      // rauthy's subshell exports its own material and never calls this, so an
+      // exec-ed rauthy must see none of the app's keys.
+      '( exec env ) | grep "^ENRAHITU_HIQ_" | sort | sed "s/^/rauthy /" || true',
+      // The app's subshell. `exec env` is `exec node` with a printable payload.
+      '( export_hiq_env; exec env ) | grep "^ENRAHITU_HIQ_" | sort | sed "s/^/app /" || true',
+      "",
+    ].join("\n"),
+    { mode: 0o755 },
+  );
+  // A deliberately minimal environment: an ENRAHITU_HIQ_* inherited from the
+  // developer's shell would make this pass without the export doing anything.
+  const out = spawnSync("bash", [harness], { env: { PATH: process.env.PATH ?? "" }, encoding: "utf8" });
+  const lines = (out.stdout ?? "").trim().split("\n").filter(Boolean);
+  return {
+    rauthy: lines.filter((l) => l.startsWith("rauthy ")).map((l) => l.slice(7)),
+    app: lines.filter((l) => l.startsWith("app ")).map((l) => l.slice(4)),
+  };
+}
+
+const SECRETS_ENV = [
+  "RAUTHY_ENC_KEYS='enrahitura1234/aGVsbG8='",
+  "ENRAHITU_HIQ_ENC_KEYS='enrahituapp567/d29ybGQ='",
+  "ENRAHITU_HIQ_ENC_KEY_ACTIVE='enrahituapp567'",
+  "ENRAHITU_HIQ_SECRET_RAFT='raftsecret'",
+  "ENRAHITU_HIQ_SECRET_API='apisecret'",
+  "",
+].join("\n");
+
+describe("entrypoint hiqlite key delivery (spec 007)", () => {
+  it("puts every provisioned name in the exec-ed app's environment", () => {
+    const { app } = runHiq(SECRETS_ENV);
+    expect(app).toEqual([
+      "ENRAHITU_HIQ_ENC_KEYS=enrahituapp567/d29ybGQ=",
+      "ENRAHITU_HIQ_ENC_KEY_ACTIVE=enrahituapp567",
+      "ENRAHITU_HIQ_SECRET_API=apisecret",
+      "ENRAHITU_HIQ_SECRET_RAFT=raftsecret",
+    ]);
+  });
+
+  it("delivers nothing to a process that does not export it", () => {
+    // The regression itself: sourcing put these names in the entrypoint's shell
+    // and the raft/API secrets were provisioned for two releases without ever
+    // reaching the node they were generated for.
+    const { rauthy } = runHiq(SECRETS_ENV);
+    expect(rauthy).toEqual([]);
+  });
+
+  it("keeps the resource store's keys out of rauthy's process", () => {
+    // The other direction of spec 037 §3.1's two-holders rule. rauthy's subshell
+    // forks before this function is ever called, and the call sits inside the
+    // app's subshell rather than at top level so that stays true.
+    const script = readFileSync(ENTRYPOINT, "utf8");
+    expect(script.match(/^\s*export_hiq_env$/gm) ?? []).toHaveLength(1);
+    expect(script.indexOf("exec ./rauthy serve")).toBeLessThan(
+      script.indexOf("  export_hiq_env"),
+    );
+  });
+
+  it("still boots when the volume's secrets.env predates the encryption key", () => {
+    // `export NAME` on an unset name leaves it ABSENT rather than present and
+    // empty, so a legacy volume falls back to the addon's key instead of
+    // handing the node a blank one. first-boot.mjs names that case out loud.
+    const { app } = runHiq(
+      ["ENRAHITU_HIQ_SECRET_RAFT='raftsecret'", "ENRAHITU_HIQ_SECRET_API='apisecret'", ""].join("\n"),
+    );
+    expect(app).toEqual(["ENRAHITU_HIQ_SECRET_API=apisecret", "ENRAHITU_HIQ_SECRET_RAFT=raftsecret"]);
+    expect(app.some((l) => l.startsWith("ENRAHITU_HIQ_ENC_KEY"))).toBe(false);
+  });
+});
+
+/**
  * The pre-flight call (spec 027 §3.5, and the second half of its §4 item 8).
  *
  * "The entrypoint calls it and fails closed" is a claim about this script, so it

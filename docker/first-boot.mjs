@@ -9,7 +9,8 @@
  * - the rauthy OIDC client secret         -> /data/keys/rauthy-client-secret
  * - the rauthy admin bootstrap password   -> /data/rauthy/admin-password
  * - rauthy runtime secrets (enc keys, hiqlite raft/api) and the app's own
- *   hiqlite secrets                       -> /data/rauthy/secrets.env
+ *   hiqlite secrets (raft/api + its own
+ *   encryption key set)                   -> /data/rauthy/secrets.env
  * - the declarative rauthy client bootstrap (redirect URIs derived from
  *   ENRAHITU_PUBLIC_URL)                    -> /data/rauthy/bootstrap/clients.json
  */
@@ -91,21 +92,64 @@ if (writeOnce(metricsTokenPath, alnum(48))) {
 }
 
 // --- runtime secrets sourced by the entrypoint ------------------------------
+//
+// **The app's hiqlite gets an encryption key of its own** (spec 027 §4 item 5,
+// resolved 2026-08-06). Until this line existed the file provisioned rauthy's
+// `ENC_KEYS`, both nodes' raft/API secrets, and no encryption key for the app's
+// node, so the addon fell back to its publicly-known development key and warned
+// on every boot. That was proven rather than inferred: a cold archive restored
+// into a fresh volume with all key material deleted served every member, because
+// the key that would have stopped it was never one this substrate generated.
+// Since the app's node encrypts its backup snapshots with it, every cell was
+// writing snapshots anyone could decrypt.
+//
+// It is a SEPARATE key set from rauthy's rather than a shared one. Spec 032
+// reads "a deployment custodies one key set for both hiqlite instances", and
+// what that requirement is actually about is custody: one file to hold, one
+// archive to keep, which is equally true either way because both live here and
+// spec 027 §3.1 puts the whole file in every archive. Sharing the bytes would
+// buy nothing and would mean one compromised key set decrypts both the identity
+// store and the resource store. Every other secret in this file is already
+// generated per store, and the entrypoint hands each store only its own.
 const secretsEnvPath = join(rauthyDir, "secrets.env");
 if (!existsSync(secretsEnvPath)) {
-  const encKeyId = `enrahitu${alnum(6)}`;
+  const rauthyEncKeyId = `enrahitu${alnum(6)}`;
+  const hiqEncKeyId = `enrahitu${alnum(6)}`;
   const lines = [
-    `RAUTHY_ENC_KEYS='${encKeyId}/${randomBytes(32).toString("base64")}'`,
-    `RAUTHY_ENC_KEY_ACTIVE='${encKeyId}'`,
+    `RAUTHY_ENC_KEYS='${rauthyEncKeyId}/${randomBytes(32).toString("base64")}'`,
+    `RAUTHY_ENC_KEY_ACTIVE='${rauthyEncKeyId}'`,
     `RAUTHY_HQL_SECRET_RAFT='${alnum(32)}'`,
     `RAUTHY_HQL_SECRET_API='${alnum(32)}'`,
     `ENRAHITU_HIQ_SECRET_RAFT='${alnum(32)}'`,
     `ENRAHITU_HIQ_SECRET_API='${alnum(32)}'`,
+    `ENRAHITU_HIQ_ENC_KEYS='${hiqEncKeyId}/${randomBytes(32).toString("base64")}'`,
+    `ENRAHITU_HIQ_ENC_KEY_ACTIVE='${hiqEncKeyId}'`,
   ];
   writeFileSync(secretsEnvPath, lines.join("\n") + "\n", { mode: 0o600 });
   console.log("[first-boot] generated runtime secrets");
 }
 chmodSync(secretsEnvPath, 0o600);
+
+// A volume provisioned before that key existed is named, not migrated.
+//
+// This file is write-once by design, so the block above does not run again and
+// the key is not added retroactively. Generating one here and activating it
+// would make every snapshot the node has already written undecryptable, since
+// the key those were encrypted under is the addon's fallback and not one this
+// volume records; retaining that fallback as a non-active key would mean
+// committing a publicly-known key to the repository. Neither is worth doing for
+// a volume shape that predates the first release, so the case is reported and
+// the operator re-provisions. The addon's own boot warning says the same thing
+// less specifically; this one names the cause and the remedy.
+if (!readFileSync(secretsEnvPath, "utf8").includes("ENRAHITU_HIQ_ENC_KEYS=")) {
+  console.log(
+    "[first-boot] this volume's secrets.env predates app hiqlite encryption keys, so the\n" +
+      "             app's node will run on the addon's PUBLIC development key and its backup\n" +
+      "             snapshots will be decryptable by anyone. Provisioning is write-once and\n" +
+      "             a key added now could not decrypt what is already written. Start from a\n" +
+      "             fresh volume and restore into it.",
+  );
+}
 
 // --- declarative rauthy client bootstrap ------------------------------------
 // Applied by rauthy only while its database is uninitialized, so writing it
